@@ -37,6 +37,12 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
+        
+- name: Add Firebase config
+  run: |
+    mkdir -p astro_mobile/android/app
+    cp google-services.json astro_mobile/android/app/google-services.json
+    
       - name: Get dependencies
         working-directory: astro_mobile
         run: flutter pub get
