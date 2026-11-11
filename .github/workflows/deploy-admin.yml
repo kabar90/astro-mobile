@@ -1,1 +1,52 @@
 
+name: Deploy ASTRO MOBILE Admin Dashboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'admin-dashboard.zip'
+      - '.github/workflows/deploy-admin.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare dashboard
+        run: |
+          mkdir -p public
+          unzip -o admin-dashboard.zip -d public
+          if [ -d public/admin ]; then
+            cp -R public/admin/. public/
+            rm -rf public/admin
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
