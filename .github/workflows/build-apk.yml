@@ -6,7 +6,11 @@ on:
   push:
     paths:
       - 'astro_mobile_redesign_v1_1_compile_fixed.zip'
+      - 'google-services.json'
       - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -16,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract new design
+      - name: Extract project
         run: |
           rm -rf astro_mobile
           unzip -o astro_mobile_redesign_v1_1_compile_fixed.zip
@@ -37,12 +41,11 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
-        
-- name: Add Firebase config
-  run: |
-    mkdir -p astro_mobile/android/app
-    cp google-services.json astro_mobile/android/app/google-services.json
-    
+      - name: Add Firebase config
+        run: |
+          mkdir -p astro_mobile/android/app
+          cp google-services.json astro_mobile/android/app/google-services.json
+
       - name: Get dependencies
         working-directory: astro_mobile
         run: flutter pub get
@@ -54,5 +57,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRO-MOBILE-NEW-DESIGN
+          name: ASTRO-MOBILE-APK
           path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
