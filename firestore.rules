@@ -1,26 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAdmin() {
-      return request.auth != null
-        && request.auth.token.email == "ضع_بريد_المدير_هنا";
-    }
-
-    // الكتالوج متاح للقراءة من تطبيق الزبائن، والتعديل للمدير فقط.
-    match /products/{productId} {
-      allow read: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    // الطلبات: السماح بإنشاء الطلب من التطبيق، والقراءة والتعديل للمدير فقط.
-    // سنضيف تحققاً أدق لحقول الطلب عند تنفيذ شاشة إتمام الشراء.
-    match /orders/{orderId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
+ match /databases/{database}/documents {
+  function isAdmin(){return request.auth != null && request.auth.token.email == 'ahmedkabar.ak@gmail.com';}
+  match /products/{id}{allow read: if true; allow create,update,delete: if isAdmin();}
+  match /orders/{id}{allow create: if true; allow read,update,delete: if isAdmin();}
+  match /users/{id}{allow read,write: if request.auth != null && request.auth.uid == id;}
+ }
 }
