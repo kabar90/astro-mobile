@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'astro_mobile_redesign_v1_1_fixed.zip'
+      - 'astro_mobile_redesign_v1_1_compile_fixed.zip'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -19,7 +19,8 @@ jobs:
       - name: Extract new design
         run: |
           rm -rf astro_mobile
-          unzip -o astro_mobile_redesign_v1_1_fixed.zip
+          unzip -o astro_mobile_redesign_v1_1_compile_fixed.zip
+          mv astro_mobile_redesign astro_mobile
 
       - name: Setup Java
         uses: actions/setup-java@v5
