@@ -52,92 +52,76 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
-      - name: Configure Android Firebase and notification desugaring
+      - name: Configure Android and desugaring
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           android = Path("astro_mobile/android")
-          settings_kts = android / "settings.gradle.kts"
-          app_kts = android / "app" / "build.gradle.kts"
 
-          settings_groovy = android / "settings.gradle"
-          app_groovy = android / "app" / "build.gradle"
+          settings = android / "settings.gradle.kts"
+          app = android / "app" / "build.gradle.kts"
 
-          if settings_kts.exists() and app_kts.exists():
-              s = settings_kts.read_text()
+          if not settings.exists() or not app.exists():
+              settings = android / "settings.gradle"
+              app = android / "app" / "build.gradle"
 
-              if "com.google.gms.google-services" not in s:
-                  s = s.replace(
-                      "plugins {",
-                      'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
-                      1
-                  )
-                  settings_kts.write_text(s)
-
-              a = app_kts.read_text()
-
-              if 'id("com.google.gms.google-services")' not in a:
-                  a = a.replace(
-                      "plugins {",
-                      'plugins {\n    id("com.google.gms.google-services")',
-                      1
-                  )
-
-              if "isCoreLibraryDesugaringEnabled = true" not in a:
-                  a = a.replace(
-                      "compileOptions {",
-                      "compileOptions {\n        isCoreLibraryDesugaringEnabled = true",
-                      1
-                  )
-
-              if "coreLibraryDesugaring(" not in a:
-                  a = a.replace(
-                      "dependencies {",
-                      'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
-                      1
-                  )
-
-              app_kts.write_text(a)
-
-          elif settings_groovy.exists() and app_groovy.exists():
-              s = settings_groovy.read_text()
-
-              if "com.google.gms.google-services" not in s:
-                  s = s.replace(
-                      "plugins {",
-                      "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
-                      1
-                  )
-                  settings_groovy.write_text(s)
-
-              a = app_groovy.read_text()
-
-              if "com.google.gms.google-services" not in a:
-                  a = a.replace(
-                      "plugins {",
-                      "plugins {\n    id 'com.google.gms.google-services'",
-                      1
-                  )
-
-              if "coreLibraryDesugaringEnabled true" not in a:
-                  a = a.replace(
-                      "compileOptions {",
-                      "compileOptions {\n        coreLibraryDesugaringEnabled true",
-                      1
-                  )
-
-              if "coreLibraryDesugaring " not in a:
-                  a = a.replace(
-                      "dependencies {",
-                      "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'",
-                      1
-                  )
-
-              app_groovy.write_text(a)
-
-          else:
+          if not settings.exists() or not app.exists():
               raise SystemExit("Android Gradle files not found")
+
+          s = settings.read_text()
+
+          if "com.google.gms.google-services" not in s:
+              if "plugins {" not in s:
+                  raise SystemExit("Gradle plugins block not found in settings")
+              s = s.replace(
+                  "plugins {",
+                  'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
+                  1
+              )
+              settings.write_text(s)
+
+          a = app.read_text()
+
+          if app.name.endswith(".kts"):
+              google_plugin = 'id("com.google.gms.google-services")'
+              desugar_flag = "isCoreLibraryDesugaringEnabled = true"
+              desugar_dependency = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+          else:
+              google_plugin = "id 'com.google.gms.google-services'"
+              desugar_flag = "coreLibraryDesugaringEnabled true"
+              desugar_dependency = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+
+          if "google-services" not in a:
+              a = a.replace("plugins {", "plugins {\n    " + google_plugin, 1)
+
+          if "compileOptions {" not in a:
+              raise SystemExit("compileOptions block not found")
+
+          if "isCoreLibraryDesugaringEnabled = true" not in a and "coreLibraryDesugaringEnabled true" not in a:
+              a = a.replace(
+                  "compileOptions {",
+                  "compileOptions {\n        " + desugar_flag,
+                  1
+              )
+
+          if "dependencies {" in a:
+              if "coreLibraryDesugaring(" not in a and "coreLibraryDesugaring " not in a:
+                  a = a.replace(
+                      "dependencies {",
+                      "dependencies {\n    " + desugar_dependency,
+                      1
+                  )
+          else:
+              a += "\n\ndependencies {\n    " + desugar_dependency + "\n}\n"
+
+          app.write_text(a)
+
+          check = app.read_text()
+          if "desugar_jdk_libs" not in check:
+              raise SystemExit("Desugaring dependency was not added")
+
+          print("Android notification desugaring configured successfully")
           PY
 
       - name: Add Firebase config
