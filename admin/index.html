@@ -35,6 +35,7 @@
     <button data-view="orders">الطلبات</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
     <button data-view="notifications">إرسال إشعار للعملاء</button>
+    <button data-view="history">سجل الإشعارات</button>
   </nav>
 
   <section id="products" class="card">
@@ -104,60 +105,62 @@
     <div id="orderList">جارٍ تحميل الطلبات...</div>
   </section>
 
-  <section id="bank" class="card hide">
-    <h2>بيانات التحويل المصرفي</h2>
-    <p>هذه البيانات ستظهر للزبون عند اختيار التحويل المصرفي.</p>
-    <form id="bankForm">
-      <label>اسم المصرف
-        <input id="bankName" value="مصرف شمال أفريقيا" required>
-      </label>
-      <label>اسم صاحب الحساب
-        <input id="accountHolder" required>
-      </label>
-      <label>اسم الفرع
-        <input id="branchName">
-      </label>
-      <label>رقم الحساب العادي
-        <input id="accountNumber" inputmode="numeric" dir="ltr">
-      </label>
-      <label>رقم حساب IBAN
-        <input id="iban" dir="ltr" autocapitalize="characters">
-      </label>
-      <label>تفاصيل إضافية للحساب
-        <textarea id="accountDetails" placeholder="أي تعليمات أو تفاصيل يراد عرضها للزبون"></textarea>
-      </label>
-      <button type="submit">حفظ بيانات الحساب</button>
-      <p id="bankMsg" role="status"></p>
-    </form>
-  </section>
-
   <section id="notifications" class="card hide">
     <h2>إرسال إشعار للعملاء</h2>
     <p>اكتب عنوان ورسالة العرض، وسيصل الإشعار إلى الأجهزة المسجلة.</p>
 
     <form id="promoForm">
       <label>عنوان الإشعار
-        <input
-          id="promoTitle"
-          type="text"
-          maxlength="100"
-          required
-          placeholder="مثال: عرض خاص من ASTRO MOBILE">
+        <input id="promoTitle" maxlength="100" required placeholder="مثال: عرض خاص من ASTRO MOBILE">
       </label>
 
       <label>نص الرسالة
-        <textarea
-          id="promoBody"
-          maxlength="500"
-          required
-          placeholder="اكتب تفاصيل العرض أو الخصم هنا"></textarea>
+        <textarea id="promoBody" maxlength="500" required placeholder="اكتب تفاصيل العرض أو الخصم هنا"></textarea>
       </label>
 
-      <button id="sendPromo" type="submit">
-        إرسال الإشعار لجميع العملاء
-      </button>
-
+      <button id="sendPromo" type="submit">إرسال الإشعار لجميع العملاء</button>
       <p id="promoMsg" role="status"></p>
+    </form>
+  </section>
+
+  <section id="history" class="card hide">
+    <h2>سجل الإشعارات</h2>
+    <p>هنا ستجد الإشعارات والعروض التي أرسلتها للعملاء.</p>
+    <button id="refreshHistory" type="button">تحديث السجل</button>
+    <div id="notificationHistory">جارٍ تحميل سجل الإشعارات...</div>
+  </section>
+
+  <section id="bank" class="card hide">
+    <h2>بيانات التحويل المصرفي</h2>
+    <p>هذه البيانات ستظهر للزبون عند اختيار التحويل المصرفي.</p>
+
+    <form id="bankForm">
+      <label>اسم المصرف
+        <input id="bankName" value="مصرف شمال أفريقيا" required>
+      </label>
+
+      <label>اسم صاحب الحساب
+        <input id="accountHolder" required>
+      </label>
+
+      <label>اسم الفرع
+        <input id="branchName">
+      </label>
+
+      <label>رقم الحساب العادي
+        <input id="accountNumber" inputmode="numeric" dir="ltr">
+      </label>
+
+      <label>رقم حساب IBAN
+        <input id="iban" dir="ltr" autocapitalize="characters">
+      </label>
+
+      <label>تفاصيل إضافية للحساب
+        <textarea id="accountDetails" placeholder="أي تعليمات أو تفاصيل يراد عرضها للزبون"></textarea>
+      </label>
+
+      <button type="submit">حفظ بيانات الحساب</button>
+      <p id="bankMsg" role="status"></p>
     </form>
   </section>
 </section>
