@@ -22,16 +22,16 @@ jobs:
 
       - name: Extract project
         run: |
-          rm -rf astro_mobile ASTRO_MOBILE_FIXED_SOURCE
+          rm -rf astro_mobile
           unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip
-          test -d ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign
-          mv ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign astro_mobile
+          test -d astro_mobile_redesign
+          mv astro_mobile_redesign astro_mobile
 
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -42,16 +42,16 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
-      - name: Configure Firebase Gradle plugin
+      - name: Configure Android Firebase and notification desugaring
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           android = Path("astro_mobile/android")
           settings = android / "settings.gradle.kts"
-          app = android / "app" / "build.gradle.kts"
+          app_gradle = android / "app" / "build.gradle.kts"
 
-          if settings.exists() and app.exists():
+          if settings.exists() and app_gradle.exists():
               s = settings.read_text()
               if "com.google.gms.google-services" not in s:
                   s = s.replace(
@@ -61,20 +61,31 @@ jobs:
                   )
                   settings.write_text(s)
 
-              a = app.read_text()
+              a = app_gradle.read_text()
               if 'id("com.google.gms.google-services")' not in a:
                   a = a.replace(
                       "plugins {",
                       'plugins {\n    id("com.google.gms.google-services")',
                       1
                   )
-                  app.write_text(a)
+              if "isCoreLibraryDesugaringEnabled = true" not in a:
+                  a = a.replace(
+                      "compileOptions {",
+                      "compileOptions {\n        isCoreLibraryDesugaringEnabled = true",
+                      1
+                  )
+              if "coreLibraryDesugaring(" not in a:
+                  a = a.replace(
+                      "dependencies {",
+                      'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
+                      1
+                  )
+              app_gradle.write_text(a)
           else:
               settings = android / "settings.gradle"
-              app = android / "app" / "build.gradle"
-
-              if not settings.exists() or not app.exists():
-                  raise SystemExit("Android Gradle files not found")
+              app_gradle = android / "app" / "build.gradle"
+              if not settings.exists() or not app_gradle.exists():
+                  raise SystemExit("Could not locate Android Gradle files")
 
               s = settings.read_text()
               if "com.google.gms.google-services" not in s:
@@ -85,14 +96,26 @@ jobs:
                   )
                   settings.write_text(s)
 
-              a = app.read_text()
+              a = app_gradle.read_text()
               if "com.google.gms.google-services" not in a:
                   a = a.replace(
                       "plugins {",
                       "plugins {\n    id 'com.google.gms.google-services'",
                       1
                   )
-                  app.write_text(a)
+              if "coreLibraryDesugaringEnabled true" not in a:
+                  a = a.replace(
+                      "compileOptions {",
+                      "compileOptions {\n        coreLibraryDesugaringEnabled true",
+                      1
+                  )
+              if "coreLibraryDesugaring " not in a:
+                  a = a.replace(
+                      "dependencies {",
+                      "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'",
+                      1
+                  )
+              app_gradle.write_text(a)
           PY
 
       - name: Add Firebase config
