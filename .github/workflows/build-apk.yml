@@ -22,10 +22,10 @@ jobs:
 
       - name: Extract project
         run: |
-          rm -rf astro_mobile
+          rm -rf astro_mobile ASTRO_MOBILE_FIXED_SOURCE
           unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip
-          test -d astro_mobile_redesign
-          mv astro_mobile_redesign astro_mobile
+          test -d ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign
+          mv ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign astro_mobile
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -114,3 +114,4 @@ jobs:
         with:
           name: ASTRO-MOBILE-FIXED
           path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+          
