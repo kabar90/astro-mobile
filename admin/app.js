@@ -109,7 +109,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
 
-// التنقل بين المنتجات والطلبات والمصرف
+// التنقل بين المنتجات والطلبات والحساب المصرفي
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
     ["products", "orders", "bank"].forEach(view => {
@@ -329,7 +329,7 @@ $("form").addEventListener("submit", async (event) => {
       price: Number($("price").value),
       stock: Number($("stock").value),
       description: $("description").value.trim(),
-      colors: colors,
+      colors,
       image_url: imageUrl || null,
       is_active: $("active").checked,
       updated_at: new Date().toISOString()
@@ -589,7 +589,7 @@ $("bankForm").addEventListener("submit", async (event) => {
   }
 });
 
-// تحميل الطلبات مع صور وأسماء المنتجات
+// تحميل الطلبات مع صور المنتجات وإيصالات التحويل
 async function loadOrders() {
   const container = $("orderList");
 
@@ -614,6 +614,7 @@ async function loadOrders() {
     return;
   }
 
+  const productsMap = {};
   const productIds = [];
 
   orders.forEach(order => {
@@ -639,28 +640,22 @@ async function loadOrders() {
   });
 
   const uniqueIds = [...new Set(productIds)];
-  const productsMap = {};
 
   if (uniqueIds.length) {
-    const { data: products, error: productsError } =
+    const { data: products, error: productError } =
       await supabase
         .from("products")
         .select("id,name,image_url")
         .in("id", uniqueIds);
 
-    if (productsError) {
-      console.error(
-        "تعذر تحميل بيانات المنتجات للطلبات:",
-        productsError.message
-      );
-    } else if (products) {
+    if (!productError && products) {
       products.forEach(product => {
         productsMap[String(product.id)] = product;
       });
     }
   }
 
-  orders.forEach(order => {
+  for (const order of orders) {
     const card = document.createElement("div");
     card.className = "item";
     card.style.display = "block";
@@ -671,30 +666,18 @@ async function loadOrders() {
     title.textContent = `طلب رقم ${order.id}`;
     card.append(title);
 
-    const customer = document.createElement("p");
-    customer.textContent =
-      `العميل: ${order.customer_name || "غير محدد"}`;
-    card.append(customer);
+    const addText = (label, value) => {
+      const p = document.createElement("p");
+      p.textContent =
+        `${label}: ${value || "غير محدد"}`;
+      card.append(p);
+    };
 
-    const phone = document.createElement("p");
-    phone.textContent =
-      `الهاتف: ${order.customer_phone || "غير محدد"}`;
-    card.append(phone);
-
-    const address = document.createElement("p");
-    address.textContent =
-      `العنوان: ${order.customer_address || "غير محدد"}`;
-    card.append(address);
-
-    const delivery = document.createElement("p");
-    delivery.textContent =
-      `طريقة الاستلام: ${order.delivery_method || "غير محددة"}`;
-    card.append(delivery);
-
-    const payment = document.createElement("p");
-    payment.textContent =
-      `طريقة الدفع: ${order.payment_method || "غير محددة"}`;
-    card.append(payment);
+    addText("العميل", order.customer_name);
+    addText("الهاتف", order.customer_phone);
+    addText("العنوان", order.customer_address);
+    addText("طريقة الاستلام", order.delivery_method);
+    addText("طريقة الدفع", order.payment_method);
 
     const heading = document.createElement("h4");
     heading.textContent = "المنتجات المطلوبة:";
@@ -705,7 +688,6 @@ async function loadOrders() {
         productsMap[String(item.product_id)] || {};
 
       const row = document.createElement("div");
-
       row.style.display = "flex";
       row.style.alignItems = "center";
       row.style.gap = "12px";
@@ -722,14 +704,12 @@ async function loadOrders() {
 
       if (imageUrl) {
         const img = document.createElement("img");
-
         img.src = imageUrl;
         img.alt = product.name || "صورة المنتج";
         img.style.width = "85px";
         img.style.height = "85px";
         img.style.objectFit = "contain";
         img.style.borderRadius = "8px";
-
         row.append(img);
       }
 
@@ -737,7 +717,6 @@ async function loadOrders() {
       details.style.flex = "1";
 
       const name = document.createElement("strong");
-
       name.textContent =
         product.name ||
         item.product_name ||
@@ -761,24 +740,73 @@ async function loadOrders() {
     });
 
     const total = document.createElement("h3");
-
     total.textContent =
       `الإجمالي: ${order.total_price ?? order.total ?? "—"} د.ل`;
 
     card.append(total);
 
-    const status = document.createElement("p");
+    addText("الحالة", order.status || "جديد");
 
-    status.textContent =
-      `الحالة: ${order.status || "جديد"}`;
+    // عرض إيصال التحويل المصرفي
+    if (
+      order.payment_method === "transfer" &&
+      order.receipt_path
+    ) {
+      const receiptTitle = document.createElement("h4");
+      receiptTitle.textContent = "إيصال التحويل المصرفي";
+      card.append(receiptTitle);
 
-    card.append(status);
+      const { data: receiptData, error: receiptError } =
+        await supabase.storage
+          .from("receipts")
+          .createSignedUrl(order.receipt_path, 3600);
+
+      if (!receiptError && receiptData?.signedUrl) {
+        const receiptImage = document.createElement("img");
+
+        receiptImage.src = receiptData.signedUrl;
+        receiptImage.alt = "إيصال التحويل المصرفي";
+        receiptImage.style.display = "block";
+        receiptImage.style.width = "100%";
+        receiptImage.style.maxWidth = "350px";
+        receiptImage.style.maxHeight = "450px";
+        receiptImage.style.objectFit = "contain";
+        receiptImage.style.border = "1px solid #ddd";
+        receiptImage.style.borderRadius = "10px";
+        receiptImage.style.margin = "10px 0";
+        receiptImage.style.cursor = "zoom-in";
+
+        receiptImage.addEventListener("click", () => {
+          window.open(receiptData.signedUrl, "_blank");
+        });
+
+        card.append(receiptImage);
+
+        const openReceipt = makeButton(
+          "فتح الإيصال بالحجم الكامل",
+          () => window.open(receiptData.signedUrl, "_blank")
+        );
+
+        card.append(openReceipt);
+
+      } else {
+        const errorText = document.createElement("p");
+
+        errorText.textContent =
+          "تعذر عرض الإيصال. تحقق من صلاحيات مخزن receipts.";
+
+        errorText.style.color = "#b42318";
+        card.append(errorText);
+      }
+    }
 
     container.append(card);
-  });
+  }
 }
 
 // استعادة جلسة المدير عند فتح الصفحة
-const { data: initial } = await supabase.auth.getSession();
+const { data: initial } =
+  await supabase.auth.getSession();
 
 await showSession(initial.session);
+        
