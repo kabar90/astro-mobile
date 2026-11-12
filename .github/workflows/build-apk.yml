@@ -22,10 +22,10 @@ jobs:
 
       - name: Extract project
         run: |
-          rm -rf astro_mobile
+          rm -rf astro_mobile ASTRO_MOBILE_FIXED_SOURCE
           unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip
-          test -d astro_mobile_redesign
-          mv astro_mobile_redesign astro_mobile
+          test -d ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign
+          mv ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign astro_mobile
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -158,10 +158,9 @@ jobs:
 
           content = root_gradle.read_text()
 
-          if "name.startsWith(\"lintVital\")" not in content:
+          if 'name.startsWith("lintVital")' not in content:
               root_gradle.write_text(content.rstrip() + "\n" + snippet)
 
-          print("Release lint workaround configured.")
           PY
 
       - name: Add Firebase config
