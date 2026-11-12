@@ -24,8 +24,18 @@ jobs:
         run: |
           rm -rf astro_mobile
           unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip
-          test -d astro_mobile_redesign
-          mv astro_mobile_redesign astro_mobile
+
+          if [ -d ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign ]; then
+            mv ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign astro_mobile
+          elif [ -d astro_mobile_redesign ]; then
+            mv astro_mobile_redesign astro_mobile
+          else
+            echo "Project folder not found"
+            find . -maxdepth 4 -name pubspec.yaml
+            exit 1
+          fi
+
+          test -f astro_mobile/pubspec.yaml
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -48,74 +58,86 @@ jobs:
           from pathlib import Path
 
           android = Path("astro_mobile/android")
-          settings = android / "settings.gradle.kts"
-          app_gradle = android / "app" / "build.gradle.kts"
+          settings_kts = android / "settings.gradle.kts"
+          app_kts = android / "app" / "build.gradle.kts"
 
-          if settings.exists() and app_gradle.exists():
-              s = settings.read_text()
+          settings_groovy = android / "settings.gradle"
+          app_groovy = android / "app" / "build.gradle"
+
+          if settings_kts.exists() and app_kts.exists():
+              s = settings_kts.read_text()
+
               if "com.google.gms.google-services" not in s:
                   s = s.replace(
                       "plugins {",
                       'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false',
                       1
                   )
-                  settings.write_text(s)
+                  settings_kts.write_text(s)
 
-              a = app_gradle.read_text()
+              a = app_kts.read_text()
+
               if 'id("com.google.gms.google-services")' not in a:
                   a = a.replace(
                       "plugins {",
                       'plugins {\n    id("com.google.gms.google-services")',
                       1
                   )
+
               if "isCoreLibraryDesugaringEnabled = true" not in a:
                   a = a.replace(
                       "compileOptions {",
                       "compileOptions {\n        isCoreLibraryDesugaringEnabled = true",
                       1
                   )
+
               if "coreLibraryDesugaring(" not in a:
                   a = a.replace(
                       "dependencies {",
                       'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
                       1
                   )
-              app_gradle.write_text(a)
-          else:
-              settings = android / "settings.gradle"
-              app_gradle = android / "app" / "build.gradle"
-              if not settings.exists() or not app_gradle.exists():
-                  raise SystemExit("Could not locate Android Gradle files")
 
-              s = settings.read_text()
+              app_kts.write_text(a)
+
+          elif settings_groovy.exists() and app_groovy.exists():
+              s = settings_groovy.read_text()
+
               if "com.google.gms.google-services" not in s:
                   s = s.replace(
                       "plugins {",
                       "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false",
                       1
                   )
-                  settings.write_text(s)
+                  settings_groovy.write_text(s)
 
-              a = app_gradle.read_text()
+              a = app_groovy.read_text()
+
               if "com.google.gms.google-services" not in a:
                   a = a.replace(
                       "plugins {",
                       "plugins {\n    id 'com.google.gms.google-services'",
                       1
                   )
+
               if "coreLibraryDesugaringEnabled true" not in a:
                   a = a.replace(
                       "compileOptions {",
                       "compileOptions {\n        coreLibraryDesugaringEnabled true",
                       1
                   )
+
               if "coreLibraryDesugaring " not in a:
                   a = a.replace(
                       "dependencies {",
                       "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'",
                       1
                   )
-              app_gradle.write_text(a)
+
+              app_groovy.write_text(a)
+
+          else:
+              raise SystemExit("Android Gradle files not found")
           PY
 
       - name: Add Firebase config
