@@ -33,6 +33,7 @@
   <nav>
     <button data-view="products">المنتجات</button>
     <button data-view="orders">الطلبات</button>
+    <button data-view="bank">بيانات التحويل المصرفي</button>
   </nav>
 
   <section id="products" class="card">
@@ -100,6 +101,33 @@
   <section id="orders" class="card hide">
     <h2>الطلبات</h2>
     <div id="orderList">جارٍ تحميل الطلبات...</div>
+  </section>
+
+  <section id="bank" class="card hide">
+    <h2>بيانات التحويل المصرفي</h2>
+    <p>هذه البيانات ستظهر للزبون عند اختيار التحويل المصرفي.</p>
+    <form id="bankForm">
+      <label>اسم المصرف
+        <input id="bankName" value="مصرف شمال أفريقيا" required>
+      </label>
+      <label>اسم صاحب الحساب
+        <input id="accountHolder" required>
+      </label>
+      <label>اسم الفرع
+        <input id="branchName">
+      </label>
+      <label>رقم الحساب العادي
+        <input id="accountNumber" inputmode="numeric" dir="ltr">
+      </label>
+      <label>رقم حساب IBAN
+        <input id="iban" dir="ltr" autocapitalize="characters">
+      </label>
+      <label>تفاصيل إضافية للحساب
+        <textarea id="accountDetails" placeholder="أي تعليمات أو تفاصيل يراد عرضها للزبون"></textarea>
+      </label>
+      <button type="submit">حفظ بيانات الحساب</button>
+      <p id="bankMsg" role="status"></p>
+    </form>
   </section>
 </section>
 
