@@ -34,6 +34,7 @@
     <button data-view="products">المنتجات</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
+    <button data-view="notifications">إرسال إشعار للعملاء</button>
   </nav>
 
   <section id="products" class="card">
@@ -127,6 +128,36 @@
       </label>
       <button type="submit">حفظ بيانات الحساب</button>
       <p id="bankMsg" role="status"></p>
+    </form>
+  </section>
+
+  <section id="notifications" class="card hide">
+    <h2>إرسال إشعار للعملاء</h2>
+    <p>اكتب عنوان ورسالة العرض، وسيصل الإشعار إلى الأجهزة المسجلة.</p>
+
+    <form id="promoForm">
+      <label>عنوان الإشعار
+        <input
+          id="promoTitle"
+          type="text"
+          maxlength="100"
+          required
+          placeholder="مثال: عرض خاص من ASTRO MOBILE">
+      </label>
+
+      <label>نص الرسالة
+        <textarea
+          id="promoBody"
+          maxlength="500"
+          required
+          placeholder="اكتب تفاصيل العرض أو الخصم هنا"></textarea>
+      </label>
+
+      <button id="sendPromo" type="submit">
+        إرسال الإشعار لجميع العملاء
+      </button>
+
+      <p id="promoMsg" role="status"></p>
     </form>
   </section>
 </section>
