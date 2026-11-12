@@ -35,7 +35,7 @@ async function showSession(session) {
     $("dash").classList.remove("hide");
     $("logout").classList.remove("hide");
 
-    await Promise.all([loadProducts(), loadOrders()]);
+    await Promise.all([loadProducts(), loadOrders(), loadBankSettings()]);
   } else {
     currentUser = null;
 
@@ -107,7 +107,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
 // التنقل بين المنتجات والطلبات
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
-    ["products", "orders"].forEach(view => {
+    ["products", "orders", "bank"].forEach(view => {
       $(view).classList.toggle(
         "hide",
         view !== button.dataset.view
@@ -484,6 +484,70 @@ async function loadProducts() {
   });
 }
 
+// تحميل بيانات التحويل المصرفي
+async function loadBankSettings() {
+  setMessage("bankMsg", "جارٍ تحميل بيانات الحساب...");
+  const { data, error } = await supabase
+    .from("bank_transfer_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    setMessage("bankMsg", `تعذر تحميل بيانات الحساب: ${error.message}`, true);
+    return;
+  }
+
+  const settings = data || {};
+  $("bankName").value = settings.bank_name || "مصرف شمال أفريقيا";
+  $("accountHolder").value = settings.account_holder || "";
+  $("branchName").value = settings.branch_name || "";
+  $("accountNumber").value = settings.account_number || "";
+  $("iban").value = settings.iban || "";
+  $("accountDetails").value = settings.account_details || "";
+  setMessage("bankMsg", data ? "تم تحميل بيانات الحساب." : "أدخل بيانات الحساب ثم اضغط حفظ.");
+}
+
+// حفظ بيانات التحويل المصرفي
+$("bankForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return setMessage("bankMsg", "انتهت جلسة المدير. سجّل الدخول مجدداً.", true);
+  }
+
+  const saveButton = $("bankForm").querySelector('button[type="submit"]');
+  saveButton.disabled = true;
+
+  try {
+    const record = {
+      id: 1,
+      bank_name: $("bankName").value.trim(),
+      account_holder: $("accountHolder").value.trim(),
+      branch_name: $("branchName").value.trim(),
+      account_number: $("accountNumber").value.trim(),
+      iban: $("iban").value.trim(),
+      account_details: $("accountDetails").value.trim(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (!record.bank_name || !record.account_holder) {
+      throw new Error("أدخل اسم المصرف واسم صاحب الحساب.");
+    }
+
+    const { error } = await supabase
+      .from("bank_transfer_settings")
+      .upsert(record, { onConflict: "id" });
+
+    if (error) throw error;
+    setMessage("bankMsg", "تم حفظ بيانات الحساب المصرفي بنجاح.");
+  } catch (error) {
+    setMessage("bankMsg", error.message || "تعذر حفظ بيانات الحساب.", true);
+  } finally {
+    saveButton.disabled = false;
+  }
+});
+
 // تحميل الطلبات
 async function loadOrders() {
   const container = $("orderList");
@@ -523,3 +587,4 @@ async function loadOrders() {
 const { data: initial } = await supabase.auth.getSession();
 
 await showSession(initial.session);
+                            
