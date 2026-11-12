@@ -1,11 +1,111 @@
+
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d35"><title>ASTRO MOBILE | لوحة الإدارة</title><link rel="stylesheet" href="style.css"></head>
-<body><main class="wrap">
-<header><b>ASTRO <span>MOBILE</span></b><button id="logout" class="hide">تسجيل الخروج</button></header>
-<section id="login" class="card"><h1>لوحة إدارة المتجر</h1><p>سجّل الدخول بحساب المدير</p><label>البريد الإلكتروني<input id="email" type="email" autocomplete="username" value="ahmedkabar.ak@gmail.com"></label><label>كلمة المرور<input id="password" type="password" autocomplete="current-password"></label><button id="loginBtn">تسجيل الدخول</button><p id="loginMsg" role="status"></p></section>
-<section id="dash" class="hide"><nav><button data-view="products">المنتجات</button><button data-view="orders">الطلبات</button></nav>
-<section id="products" class="card"><h2>المنتجات <button id="add">＋ إضافة منتج</button></h2>
-<form id="form" class="hide"><input id="pid" type="hidden"><label>اسم المنتج<input id="name" required></label><label>القسم<select id="category"><option>هواتف</option><option>كماليات</option><option>مستعمل</option><option>أجهزة لوحية</option><option>أخرى</option></select></label><label>السعر بالدينار الليبي<input id="price" type="number" min="0" step="0.01" required></label><label>الكمية<input id="stock" type="number" min="0" step="1" value="1" required></label><label>الوصف<textarea id="description"></textarea></label><label>صورة المنتج<input id="imageFile" type="file" accept="image/*"></label><p id="uploadMsg">اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.</p><label>رابط الصورة<input id="imageUrl" type="url" placeholder="يُملأ تلقائياً بعد الرفع" dir="ltr" readonly></label><img id="preview" class="preview hide" alt="معاينة صورة المنتج"><label><input id="active" type="checkbox" checked> ظاهر في المتجر</label><button type="submit">حفظ المنتج</button><button type="button" id="cancel">إلغاء</button><p id="formMsg" role="status"></p></form><div id="productList">جارٍ تحميل المنتجات...</div></section>
-<section id="orders" class="card hide"><h2>الطلبات</h2><div id="orderList">جارٍ تحميل الطلبات...</div></section></section>
-<footer>ASTRO MOBILE · ليبيا</footer></main><script type="module" src="app.js"></script></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101d35">
+  <title>ASTRO MOBILE | لوحة الإدارة</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+
+<header>
+  <b>ASTRO <span>MOBILE</span></b>
+  <button id="logout" class="hide">تسجيل الخروج</button>
+</header>
+
+<section id="login" class="card">
+  <h1>لوحة إدارة المتجر</h1>
+  <p>سجّل الدخول بحساب المدير</p>
+  <label>البريد الإلكتروني
+    <input id="email" type="email" autocomplete="username" value="ahmedkabar.ak@gmail.com">
+  </label>
+  <label>كلمة المرور
+    <input id="password" type="password" autocomplete="current-password">
+  </label>
+  <button id="loginBtn">تسجيل الدخول</button>
+  <p id="loginMsg" role="status"></p>
+</section>
+
+<section id="dash" class="hide">
+  <nav>
+    <button data-view="products">المنتجات</button>
+    <button data-view="orders">الطلبات</button>
+  </nav>
+
+  <section id="products" class="card">
+    <h2>المنتجات <button id="add">＋ إضافة منتج</button></h2>
+
+    <form id="form" class="hide">
+      <input id="pid" type="hidden">
+
+      <label>اسم المنتج
+        <input id="name" required>
+      </label>
+
+      <label>القسم
+        <select id="category">
+          <option>هواتف</option>
+          <option>كماليات</option>
+          <option>مستعمل</option>
+          <option>أجهزة لوحية</option>
+          <option>أخرى</option>
+        </select>
+      </label>
+
+      <label>السعر بالدينار الليبي
+        <input id="price" type="number" min="0" step="0.01" required>
+      </label>
+
+      <label>الكمية
+        <input id="stock" type="number" min="0" step="1" value="1" required>
+      </label>
+
+      <label>الوصف
+        <textarea id="description"></textarea>
+      </label>
+
+      <label>ألوان المنتج
+        <input id="colors" type="text" placeholder="مثال: أسود، أبيض، أزرق">
+      </label>
+      <small>اكتب الألوان وافصل بينها بفاصلة.</small>
+
+      <label>صورة المنتج
+        <input id="imageFile" type="file" accept="image/*">
+      </label>
+
+      <p id="uploadMsg">اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.</p>
+
+      <label>رابط الصورة
+        <input id="imageUrl" type="url" placeholder="يُملأ تلقائياً بعد الرفع" dir="ltr" readonly>
+      </label>
+
+      <img id="preview" class="preview hide" alt="معاينة صورة المنتج">
+
+      <label>
+        <input id="active" type="checkbox" checked>
+        ظاهر في المتجر
+      </label>
+
+      <button type="submit">حفظ المنتج</button>
+      <button type="button" id="cancel">إلغاء</button>
+      <p id="formMsg" role="status"></p>
+    </form>
+
+    <div id="productList">جارٍ تحميل المنتجات...</div>
+  </section>
+
+  <section id="orders" class="card hide">
+    <h2>الطلبات</h2>
+    <div id="orderList">جارٍ تحميل الطلبات...</div>
+  </section>
+</section>
+
+<footer>ASTRO MOBILE · ليبيا</footer>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
