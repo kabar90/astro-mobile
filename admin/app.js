@@ -18,6 +18,7 @@ let currentImageUrl = "";
 
 const setMessage = (id, message, error = false) => {
   const el = $(id);
+  if (!el) return;
   el.textContent = message;
   el.style.color = error ? "#b42318" : "#16734a";
 };
@@ -35,7 +36,11 @@ async function showSession(session) {
     $("dash").classList.remove("hide");
     $("logout").classList.remove("hide");
 
-    await Promise.all([loadProducts(), loadOrders(), loadBankSettings()]);
+    await Promise.all([
+      loadProducts(),
+      loadOrders(),
+      loadBankSettings()
+    ]);
   } else {
     currentUser = null;
 
@@ -104,7 +109,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
 
-// التنقل بين المنتجات والطلبات
+// التنقل بين المنتجات والطلبات والمصرف
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
     ["products", "orders", "bank"].forEach(view => {
@@ -313,7 +318,6 @@ $("form").addEventListener("submit", async (event) => {
       imageUrl = await uploadProductImage(file);
     }
 
-    // قراءة الألوان وتحويلها إلى قائمة
     const colors = $("colors").value
       .split(/[,،\n]/)
       .map(color => color.trim())
@@ -429,7 +433,6 @@ async function loadProducts() {
     info.textContent =
       `${product.name} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
-    // تعديل المنتج
     const edit = makeButton("تعديل", () => {
       resetForm();
 
@@ -440,7 +443,6 @@ async function loadProducts() {
       $("stock").value = product.stock ?? 0;
       $("description").value = product.description || "";
 
-      // استرجاع ألوان المنتج
       $("colors").value = Array.isArray(product.colors)
         ? product.colors.join("، ")
         : "";
@@ -463,7 +465,6 @@ async function loadProducts() {
       });
     });
 
-    // حذف المنتج
     const del = makeButton("حذف", async () => {
       if (!confirm("هل تريد حذف هذا المنتج؟")) return;
 
@@ -487,6 +488,7 @@ async function loadProducts() {
 // تحميل بيانات التحويل المصرفي
 async function loadBankSettings() {
   setMessage("bankMsg", "جارٍ تحميل بيانات الحساب...");
+
   const { data, error } = await supabase
     .from("bank_transfer_settings")
     .select("*")
@@ -494,18 +496,40 @@ async function loadBankSettings() {
     .maybeSingle();
 
   if (error) {
-    setMessage("bankMsg", `تعذر تحميل بيانات الحساب: ${error.message}`, true);
+    setMessage(
+      "bankMsg",
+      `تعذر تحميل بيانات الحساب: ${error.message}`,
+      true
+    );
     return;
   }
 
   const settings = data || {};
-  $("bankName").value = settings.bank_name || "مصرف شمال أفريقيا";
-  $("accountHolder").value = settings.account_holder || "";
-  $("branchName").value = settings.branch_name || "";
-  $("accountNumber").value = settings.account_number || "";
-  $("iban").value = settings.iban || "";
-  $("accountDetails").value = settings.account_details || "";
-  setMessage("bankMsg", data ? "تم تحميل بيانات الحساب." : "أدخل بيانات الحساب ثم اضغط حفظ.");
+
+  $("bankName").value =
+    settings.bank_name || "مصرف شمال أفريقيا";
+
+  $("accountHolder").value =
+    settings.account_holder || "";
+
+  $("branchName").value =
+    settings.branch_name || "";
+
+  $("accountNumber").value =
+    settings.account_number || "";
+
+  $("iban").value =
+    settings.iban || "";
+
+  $("accountDetails").value =
+    settings.account_details || "";
+
+  setMessage(
+    "bankMsg",
+    data
+      ? "تم تحميل بيانات الحساب."
+      : "أدخل بيانات الحساب ثم اضغط حفظ."
+  );
 }
 
 // حفظ بيانات التحويل المصرفي
@@ -513,10 +537,16 @@ $("bankForm").addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!currentUser) {
-    return setMessage("bankMsg", "انتهت جلسة المدير. سجّل الدخول مجدداً.", true);
+    return setMessage(
+      "bankMsg",
+      "انتهت جلسة المدير. سجّل الدخول مجدداً.",
+      true
+    );
   }
 
-  const saveButton = $("bankForm").querySelector('button[type="submit"]');
+  const saveButton =
+    $("bankForm").querySelector('button[type="submit"]');
+
   saveButton.disabled = true;
 
   try {
@@ -532,7 +562,9 @@ $("bankForm").addEventListener("submit", async (event) => {
     };
 
     if (!record.bank_name || !record.account_holder) {
-      throw new Error("أدخل اسم المصرف واسم صاحب الحساب.");
+      throw new Error(
+        "أدخل اسم المصرف واسم صاحب الحساب."
+      );
     }
 
     const { error } = await supabase
@@ -540,21 +572,30 @@ $("bankForm").addEventListener("submit", async (event) => {
       .upsert(record, { onConflict: "id" });
 
     if (error) throw error;
-    setMessage("bankMsg", "تم حفظ بيانات الحساب المصرفي بنجاح.");
+
+    setMessage(
+      "bankMsg",
+      "تم حفظ بيانات الحساب المصرفي بنجاح."
+    );
+
   } catch (error) {
-    setMessage("bankMsg", error.message || "تعذر حفظ بيانات الحساب.", true);
+    setMessage(
+      "bankMsg",
+      error.message || "تعذر حفظ بيانات الحساب.",
+      true
+    );
   } finally {
     saveButton.disabled = false;
   }
 });
 
-// تحميل الطلبات
+// تحميل الطلبات مع صور وأسماء المنتجات
 async function loadOrders() {
   const container = $("orderList");
 
   container.textContent = "جارٍ تحميل الطلبات...";
 
-  const { data, error } = await supabase
+  const { data: orders, error } = await supabase
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false })
@@ -562,24 +603,178 @@ async function loadOrders() {
 
   if (error) {
     container.textContent =
-      `قسم الطلبات جاهز، لكن تعذر تحميلها: ${error.message}`;
+      `تعذر تحميل الطلبات: ${error.message}`;
     return;
   }
 
   container.replaceChildren();
 
-  if (!data?.length) {
+  if (!orders?.length) {
     container.textContent = "لا توجد طلبات حالياً.";
     return;
   }
 
-  data.forEach(order => {
-    const p = document.createElement("p");
+  const productIds = [];
 
-    p.textContent =
-      `طلب ${order.id} — الحالة: ${order.status || "جديد"} — الإجمالي: ${order.total ?? "—"} د.ل`;
+  orders.forEach(order => {
+    let items = order.items;
 
-    container.append(p);
+    if (typeof items === "string") {
+      try {
+        items = JSON.parse(items);
+      } catch {
+        items = [];
+      }
+    }
+
+    if (!Array.isArray(items)) items = [];
+
+    order.parsedItems = items;
+
+    items.forEach(item => {
+      if (item.product_id != null) {
+        productIds.push(String(item.product_id));
+      }
+    });
+  });
+
+  const uniqueIds = [...new Set(productIds)];
+  const productsMap = {};
+
+  if (uniqueIds.length) {
+    const { data: products, error: productsError } =
+      await supabase
+        .from("products")
+        .select("id,name,image_url")
+        .in("id", uniqueIds);
+
+    if (productsError) {
+      console.error(
+        "تعذر تحميل بيانات المنتجات للطلبات:",
+        productsError.message
+      );
+    } else if (products) {
+      products.forEach(product => {
+        productsMap[String(product.id)] = product;
+      });
+    }
+  }
+
+  orders.forEach(order => {
+    const card = document.createElement("div");
+    card.className = "item";
+    card.style.display = "block";
+    card.style.padding = "15px";
+    card.style.marginBottom = "15px";
+
+    const title = document.createElement("h3");
+    title.textContent = `طلب رقم ${order.id}`;
+    card.append(title);
+
+    const customer = document.createElement("p");
+    customer.textContent =
+      `العميل: ${order.customer_name || "غير محدد"}`;
+    card.append(customer);
+
+    const phone = document.createElement("p");
+    phone.textContent =
+      `الهاتف: ${order.customer_phone || "غير محدد"}`;
+    card.append(phone);
+
+    const address = document.createElement("p");
+    address.textContent =
+      `العنوان: ${order.customer_address || "غير محدد"}`;
+    card.append(address);
+
+    const delivery = document.createElement("p");
+    delivery.textContent =
+      `طريقة الاستلام: ${order.delivery_method || "غير محددة"}`;
+    card.append(delivery);
+
+    const payment = document.createElement("p");
+    payment.textContent =
+      `طريقة الدفع: ${order.payment_method || "غير محددة"}`;
+    card.append(payment);
+
+    const heading = document.createElement("h4");
+    heading.textContent = "المنتجات المطلوبة:";
+    card.append(heading);
+
+    order.parsedItems.forEach(item => {
+      const product =
+        productsMap[String(item.product_id)] || {};
+
+      const row = document.createElement("div");
+
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "12px";
+      row.style.padding = "10px";
+      row.style.marginBottom = "8px";
+      row.style.border = "1px solid #ddd";
+      row.style.borderRadius = "10px";
+
+      const imageUrl =
+        product.image_url ||
+        item.image_url ||
+        item.imageUrl ||
+        "";
+
+      if (imageUrl) {
+        const img = document.createElement("img");
+
+        img.src = imageUrl;
+        img.alt = product.name || "صورة المنتج";
+        img.style.width = "85px";
+        img.style.height = "85px";
+        img.style.objectFit = "contain";
+        img.style.borderRadius = "8px";
+
+        row.append(img);
+      }
+
+      const details = document.createElement("div");
+      details.style.flex = "1";
+
+      const name = document.createElement("strong");
+
+      name.textContent =
+        product.name ||
+        item.product_name ||
+        `منتج رقم ${item.product_id || ""}`;
+
+      const color = document.createElement("p");
+      color.textContent =
+        `اللون: ${item.color || "غير محدد"}`;
+
+      const quantity = document.createElement("p");
+      quantity.textContent =
+        `الكمية: ${item.quantity || 1}`;
+
+      const price = document.createElement("p");
+      price.textContent =
+        `سعر القطعة: ${item.unit_price ?? "—"} د.ل`;
+
+      details.append(name, color, quantity, price);
+      row.append(details);
+      card.append(row);
+    });
+
+    const total = document.createElement("h3");
+
+    total.textContent =
+      `الإجمالي: ${order.total_price ?? order.total ?? "—"} د.ل`;
+
+    card.append(total);
+
+    const status = document.createElement("p");
+
+    status.textContent =
+      `الحالة: ${order.status || "جديد"}`;
+
+    card.append(status);
+
+    container.append(card);
   });
 }
 
@@ -587,4 +782,3 @@ async function loadOrders() {
 const { data: initial } = await supabase.auth.getSession();
 
 await showSession(initial.session);
-                            
