@@ -18,7 +18,6 @@ let currentImageUrl = "";
 
 const setMessage = (id, message, error = false) => {
   const el = $(id);
-  if (!el) return;
   el.textContent = message;
   el.style.color = error ? "#b42318" : "#16734a";
 };
@@ -36,11 +35,7 @@ async function showSession(session) {
     $("dash").classList.remove("hide");
     $("logout").classList.remove("hide");
 
-    await Promise.all([
-      loadProducts(),
-      loadOrders(),
-      loadBankSettings()
-    ]);
+    await Promise.all([loadProducts(), loadOrders()]);
   } else {
     currentUser = null;
 
@@ -109,21 +104,87 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
 
-// التنقل بين الأقسام
+// التنقل بين أقسام لوحة التحكم
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
-    ["products", "orders", "bank"].forEach(view => {
-      $(view).classList.toggle(
-        "hide",
-        view !== button.dataset.view
-      );
+    ["products", "orders", "bank", "notifications"].forEach(view => {
+      const section = $(view);
+
+      if (section) {
+        section.classList.toggle(
+          "hide",
+          view !== button.dataset.view
+        );
+      }
     });
   });
+});
+
+// إرسال إشعار ترويجي لجميع العملاء المسجلين
+$("promoForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return setMessage(
+      "promoMsg",
+      "انتهت جلسة المدير. سجّل الدخول مجدداً.",
+      true
+    );
+  }
+
+  const title = $("promoTitle").value.trim();
+  const body = $("promoBody").value.trim();
+
+  if (!title || !body) {
+    return setMessage(
+      "promoMsg",
+      "اكتب عنوان الإشعار ونص الرسالة.",
+      true
+    );
+  }
+
+  if (!confirm("هل تريد إرسال هذا الإشعار إلى جميع العملاء المسجلين؟")) {
+    return;
+  }
+
+  const sendButton = $("sendPromo");
+  sendButton.disabled = true;
+
+  setMessage("promoMsg", "جارٍ إرسال الإشعار...");
+
+  try {
+    const { error } = await supabase.rpc(
+      "send_promo_notification",
+      {
+        p_title: title,
+        p_body: body
+      }
+    );
+
+    if (error) throw error;
+
+    setMessage(
+      "promoMsg",
+      "تم إرسال طلب الإشعار بنجاح. تحقق من وصوله إلى الهاتف."
+    );
+
+    $("promoForm").reset();
+
+  } catch (error) {
+    setMessage(
+      "promoMsg",
+      `تعذر إرسال الإشعار: ${error.message || error}`,
+      true
+    );
+  } finally {
+    sendButton.disabled = false;
+  }
 });
 
 // إعادة ضبط نموذج المنتج
 function resetForm() {
   $("form").reset();
+
   $("pid").value = "";
   $("colors").value = "";
 
@@ -167,7 +228,7 @@ $("imageFile").addEventListener("change", () => {
   if (file.size > 5 * 1024 * 1024) {
     setMessage(
       "formMsg",
-      "حجم الصورة أكبر من 5 ميغابايت.",
+      "حجم الصورة أكبر من 5 ميغابايت. اختر صورة أصغر.",
       true
     );
     $("imageFile").value = "";
@@ -189,13 +250,17 @@ async function uploadProductImage(file) {
   } = await supabase.auth.getSession();
 
   if (sessionError) {
-    throw new Error(sessionError.message);
+    throw new Error(
+      `تعذر قراءة جلسة الدخول: ${sessionError.message}`
+    );
   }
 
   const accessToken = sessionData.session?.access_token;
 
   if (!accessToken) {
-    throw new Error("انتهت جلسة المدير. سجّل الدخول مجدداً.");
+    throw new Error(
+      "انتهت جلسة المدير. سجّل الخروج ثم الدخول مجدداً."
+    );
   }
 
   const extFromName = (
@@ -210,27 +275,62 @@ async function uploadProductImage(file) {
   }[file.type];
 
   const ext = extFromType || extFromName || "jpg";
+
   const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
   const endpoint =
     `${SUPABASE_URL}/storage/v1/object/products/${path}`;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "apikey": SUPABASE_PUBLISHABLE_KEY,
-      "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": file.type || "image/jpeg",
-      "x-upsert": "false",
-      "cache-control": "3600"
-    },
-    body: file
-  });
+  const controller = new AbortController();
+
+  const timeout = setTimeout(
+    () => controller.abort(),
+    45000
+  );
+
+  let response;
+
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": file.type || "image/jpeg",
+        "x-upsert": "false",
+        "cache-control": "3600"
+      },
+      body: file,
+      signal: controller.signal
+    });
+
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(
+        "انتهت مهلة رفع الصورة بعد 45 ثانية. جرّب صورة أصغر أو أعد المحاولة."
+      );
+    }
+
+    throw new Error(
+      `تعذر الاتصال بخدمة رفع الصور: ${error.message || error}`
+    );
+
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
+    let detail = "";
+
+    try {
+      const body = await response.json();
+      detail = body.message || body.error || JSON.stringify(body);
+    } catch {
+      detail = await response.text().catch(() => "");
+    }
+
     throw new Error(
-      `فشل رفع الصورة (${response.status}): ${detail}`
+      `فشل رفع الصورة (${response.status}): ${detail || response.statusText}`
     );
   }
 
@@ -240,7 +340,9 @@ async function uploadProductImage(file) {
     .getPublicUrl(path);
 
   if (!data?.publicUrl) {
-    throw new Error("تعذر استخراج رابط الصورة.");
+    throw new Error(
+      "تم رفع الصورة لكن تعذر استخراج رابطها."
+    );
   }
 
   return data.publicUrl;
@@ -270,10 +372,13 @@ $("form").addEventListener("submit", async (event) => {
     const file = $("imageFile").files?.[0];
 
     if (file) {
-      $("uploadMsg").textContent = "جارٍ رفع الصورة...";
+      $("uploadMsg").textContent =
+        "جارٍ رفع الصورة إلى Supabase... لا تغلق الصفحة.";
+
       imageUrl = await uploadProductImage(file);
     }
 
+    // قراءة الألوان وتحويلها إلى قائمة
     const colors = $("colors").value
       .split(/[,،\n]/)
       .map(color => color.trim())
@@ -285,7 +390,7 @@ $("form").addEventListener("submit", async (event) => {
       price: Number($("price").value),
       stock: Number($("stock").value),
       description: $("description").value.trim(),
-      colors,
+      colors: colors,
       image_url: imageUrl || null,
       is_active: $("active").checked,
       updated_at: new Date().toISOString()
@@ -296,7 +401,9 @@ $("form").addEventListener("submit", async (event) => {
       !Number.isFinite(record.price) ||
       !Number.isFinite(record.stock)
     ) {
-      throw new Error("تحقق من اسم المنتج والسعر والكمية.");
+      throw new Error(
+        "تحقق من اسم المنتج والسعر والكمية."
+      );
     }
 
     let result;
@@ -312,10 +419,16 @@ $("form").addEventListener("submit", async (event) => {
         .insert(record);
     }
 
-    if (result.error) throw result.error;
+    if (result.error) {
+      throw new Error(
+        `تعذر حفظ المنتج: ${result.error.message}`
+      );
+    }
 
     setMessage("formMsg", "تم حفظ المنتج بنجاح.");
+
     $("form").classList.add("hide");
+
     resetForm();
 
     await loadProducts();
@@ -342,6 +455,7 @@ function makeButton(label, action) {
 // تحميل المنتجات
 async function loadProducts() {
   const container = $("productList");
+
   container.textContent = "جارٍ تحميل المنتجات...";
 
   const { data, error } = await supabase
@@ -380,6 +494,7 @@ async function loadProducts() {
     info.textContent =
       `${product.name} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
+    // تعديل المنتج
     const edit = makeButton("تعديل", () => {
       resetForm();
 
@@ -396,6 +511,7 @@ async function loadProducts() {
 
       currentImageUrl = product.image_url || "";
       $("imageUrl").value = currentImageUrl;
+
       $("active").checked = product.is_active !== false;
 
       if (currentImageUrl) {
@@ -404,9 +520,14 @@ async function loadProducts() {
       }
 
       $("form").classList.remove("hide");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     });
 
+    // حذف المنتج
     const del = makeButton("حذف", async () => {
       if (!confirm("هل تريد حذف هذا المنتج؟")) return;
 
@@ -427,147 +548,13 @@ async function loadProducts() {
   });
 }
 
-// تحميل بيانات التحويل المصرفي
-async function loadBankSettings() {
-  setMessage("bankMsg", "جارٍ تحميل بيانات الحساب...");
-
-  const { data, error } = await supabase
-    .from("bank_transfer_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
-
-  if (error) {
-    setMessage(
-      "bankMsg",
-      `تعذر تحميل بيانات الحساب: ${error.message}`,
-      true
-    );
-    return;
-  }
-
-  const settings = data || {};
-
-  $("bankName").value =
-    settings.bank_name || "مصرف شمال أفريقيا";
-  $("accountHolder").value = settings.account_holder || "";
-  $("branchName").value = settings.branch_name || "";
-  $("accountNumber").value = settings.account_number || "";
-  $("iban").value = settings.iban || "";
-  $("accountDetails").value = settings.account_details || "";
-
-  setMessage(
-    "bankMsg",
-    data ? "تم تحميل بيانات الحساب." :
-      "أدخل بيانات الحساب ثم اضغط حفظ."
-  );
-}
-
-// حفظ بيانات التحويل المصرفي
-$("bankForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  if (!currentUser) {
-    return setMessage(
-      "bankMsg",
-      "انتهت جلسة المدير. سجّل الدخول مجدداً.",
-      true
-    );
-  }
-
-  const saveButton =
-    $("bankForm").querySelector('button[type="submit"]');
-
-  saveButton.disabled = true;
-
-  try {
-    const record = {
-      id: 1,
-      bank_name: $("bankName").value.trim(),
-      account_holder: $("accountHolder").value.trim(),
-      branch_name: $("branchName").value.trim(),
-      account_number: $("accountNumber").value.trim(),
-      iban: $("iban").value.trim(),
-      account_details: $("accountDetails").value.trim(),
-      updated_at: new Date().toISOString()
-    };
-
-    if (!record.bank_name || !record.account_holder) {
-      throw new Error("أدخل اسم المصرف واسم صاحب الحساب.");
-    }
-
-    const { error } = await supabase
-      .from("bank_transfer_settings")
-      .upsert(record, { onConflict: "id" });
-
-    if (error) throw error;
-
-    setMessage(
-      "bankMsg",
-      "تم حفظ بيانات الحساب المصرفي بنجاح."
-    );
-
-  } catch (error) {
-    setMessage(
-      "bankMsg",
-      error.message || "تعذر حفظ بيانات الحساب.",
-      true
-    );
-  } finally {
-    saveButton.disabled = false;
-  }
-});
-
-// تغيير حالة الطلب وحفظها
-async function updateOrderStatus(order, select, saveButton) {
-  if (!currentUser) {
-    alert("انتهت جلسة المدير. سجّل الدخول مجدداً.");
-    return;
-  }
-
-  const newStatus = select.value;
-  const oldStatus = order.status || "جديد";
-
-  if (newStatus === oldStatus) {
-    alert("لم يتم تغيير حالة الطلب.");
-    return;
-  }
-
-  select.disabled = true;
-  saveButton.disabled = true;
-  saveButton.textContent = "جارٍ الحفظ...";
-
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", order.id)
-      .select("id,status")
-      .single();
-
-    if (error) throw error;
-
-    order.status = data.status;
-    saveButton.textContent = "تم الحفظ";
-    alert("تم تحديث حالة الطلب بنجاح.");
-
-  } catch (error) {
-    select.value = oldStatus;
-    saveButton.textContent = "حفظ الحالة";
-    alert(`تعذر تحديث حالة الطلب: ${error.message}`);
-
-  } finally {
-    select.disabled = false;
-    saveButton.disabled = false;
-  }
-}
-
-// تحميل الطلبات مع صور المنتجات والإيصالات
+// تحميل الطلبات
 async function loadOrders() {
   const container = $("orderList");
+
   container.textContent = "جارٍ تحميل الطلبات...";
 
-  const { data: orders, error } = await supabase
+  const { data, error } = await supabase
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false })
@@ -575,260 +562,28 @@ async function loadOrders() {
 
   if (error) {
     container.textContent =
-      `تعذر تحميل الطلبات: ${error.message}`;
+      `قسم الطلبات جاهز، لكن تعذر تحميلها: ${error.message}`;
     return;
   }
 
   container.replaceChildren();
 
-  if (!orders?.length) {
+  if (!data?.length) {
     container.textContent = "لا توجد طلبات حالياً.";
     return;
   }
 
-  const productsMap = {};
-  const productIds = [];
+  data.forEach(order => {
+    const p = document.createElement("p");
 
-  orders.forEach(order => {
-    let items = order.items;
+    p.textContent =
+      `طلب ${order.id} — الحالة: ${order.status || "جديد"} — الإجمالي: ${order.total ?? "—"} د.ل`;
 
-    if (typeof items === "string") {
-      try {
-        items = JSON.parse(items);
-      } catch {
-        items = [];
-      }
-    }
-
-    if (!Array.isArray(items)) items = [];
-    order.parsedItems = items;
-
-    items.forEach(item => {
-      if (item.product_id != null) {
-        productIds.push(String(item.product_id));
-      }
-    });
+    container.append(p);
   });
-
-  const uniqueIds = [...new Set(productIds)];
-
-  if (uniqueIds.length) {
-    const { data: products, error: productError } =
-      await supabase
-        .from("products")
-        .select("id,name,image_url")
-        .in("id", uniqueIds);
-
-    if (!productError && products) {
-      products.forEach(product => {
-        productsMap[String(product.id)] = product;
-      });
-    }
-  }
-
-  const statusOptions = [
-    "جديد",
-    "تم تأكيد الدفع",
-    "قيد التجهيز",
-    "جاهز للاستلام",
-    "خرج للتوصيل",
-    "تم التسليم",
-    "ملغي"
-  ];
-
-  for (const order of orders) {
-    const card = document.createElement("div");
-    card.className = "item";
-    card.style.display = "block";
-    card.style.padding = "15px";
-    card.style.marginBottom = "15px";
-
-    const title = document.createElement("h3");
-    title.textContent = `طلب رقم ${order.id}`;
-    card.append(title);
-
-    const addText = (label, value) => {
-      const p = document.createElement("p");
-      p.textContent = `${label}: ${value || "غير محدد"}`;
-      card.append(p);
-    };
-
-    addText("العميل", order.customer_name);
-    addText("الهاتف", order.customer_phone);
-    addText("العنوان", order.customer_address);
-    addText("طريقة الاستلام", order.delivery_method);
-    addText("طريقة الدفع", order.payment_method);
-
-    const heading = document.createElement("h4");
-    heading.textContent = "المنتجات المطلوبة:";
-    card.append(heading);
-
-    order.parsedItems.forEach(item => {
-      const product =
-        productsMap[String(item.product_id)] || {};
-
-      const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.alignItems = "center";
-      row.style.gap = "12px";
-      row.style.padding = "10px";
-      row.style.marginBottom = "8px";
-      row.style.border = "1px solid #ddd";
-      row.style.borderRadius = "10px";
-
-      const imageUrl =
-        product.image_url ||
-        item.image_url ||
-        item.imageUrl ||
-        "";
-
-      if (imageUrl) {
-        const img = document.createElement("img");
-        img.src = imageUrl;
-        img.alt = product.name || "صورة المنتج";
-        img.style.width = "85px";
-        img.style.height = "85px";
-        img.style.objectFit = "contain";
-        img.style.borderRadius = "8px";
-        row.append(img);
-      }
-
-      const details = document.createElement("div");
-      details.style.flex = "1";
-
-      const name = document.createElement("strong");
-      name.textContent =
-        product.name ||
-        item.product_name ||
-        `منتج رقم ${item.product_id || ""}`;
-
-      const color = document.createElement("p");
-      color.textContent = `اللون: ${item.color || "غير محدد"}`;
-
-      const quantity = document.createElement("p");
-      quantity.textContent = `الكمية: ${item.quantity || 1}`;
-
-      const price = document.createElement("p");
-      price.textContent =
-        `سعر القطعة: ${item.unit_price ?? "—"} د.ل`;
-
-      details.append(name, color, quantity, price);
-      row.append(details);
-      card.append(row);
-    });
-
-    const total = document.createElement("h3");
-    total.textContent =
-      `الإجمالي: ${order.total_price ?? order.total ?? "—"} د.ل`;
-    card.append(total);
-
-    // قائمة تغيير حالة الطلب
-    const statusContainer = document.createElement("div");
-    statusContainer.style.margin = "15px 0";
-    statusContainer.style.display = "flex";
-    statusContainer.style.alignItems = "center";
-    statusContainer.style.gap = "10px";
-    statusContainer.style.flexWrap = "wrap";
-
-    const statusLabel = document.createElement("strong");
-    statusLabel.textContent = "حالة الطلب:";
-
-    const statusSelect = document.createElement("select");
-    statusSelect.style.padding = "10px";
-    statusSelect.style.borderRadius = "8px";
-    statusSelect.style.border = "1px solid #ccc";
-    statusSelect.style.minWidth = "180px";
-
-    statusOptions.forEach(status => {
-      const option = document.createElement("option");
-      option.value = status;
-      option.textContent = status;
-      statusSelect.append(option);
-    });
-
-    const currentStatus = statusOptions.includes(order.status)
-      ? order.status
-      : "جديد";
-
-    statusSelect.value = currentStatus;
-
-    const saveStatus = makeButton("حفظ الحالة", () => {
-      updateOrderStatus(order, statusSelect, saveStatus);
-    });
-
-    statusContainer.append(
-      statusLabel,
-      statusSelect,
-      saveStatus
-    );
-
-    card.append(statusContainer);
-
-    // عرض إيصال التحويل المصرفي
-    if (
-      order.payment_method === "transfer" &&
-      order.receipt_path
-    ) {
-      const receiptTitle = document.createElement("h4");
-      receiptTitle.textContent = "إيصال التحويل المصرفي";
-      card.append(receiptTitle);
-
-      const { data: receiptData, error: receiptError } =
-        await supabase.storage
-          .from("receipts")
-          .createSignedUrl(order.receipt_path, 3600);
-
-      if (!receiptError && receiptData?.signedUrl) {
-        const receiptImage = document.createElement("img");
-
-        receiptImage.src = receiptData.signedUrl;
-        receiptImage.alt = "إيصال التحويل المصرفي";
-        receiptImage.style.display = "block";
-        receiptImage.style.width = "100%";
-        receiptImage.style.maxWidth = "350px";
-        receiptImage.style.maxHeight = "450px";
-        receiptImage.style.objectFit = "contain";
-        receiptImage.style.border = "1px solid #ddd";
-        receiptImage.style.borderRadius = "10px";
-        receiptImage.style.margin = "10px 0";
-        receiptImage.style.cursor = "zoom-in";
-
-        receiptImage.addEventListener("click", () => {
-          window.open(receiptData.signedUrl, "_blank");
-        });
-
-        card.append(receiptImage);
-
-        const openReceipt = makeButton(
-          "فتح الإيصال بالحجم الكامل",
-          () => window.open(receiptData.signedUrl, "_blank")
-        );
-
-        card.append(openReceipt);
-
-      } else {
-        const errorText = document.createElement("p");
-        errorText.textContent
-        
- =
-  "تعذر عرض الإيصال. تحقق من صلاحيات مخزن receipts.";
-        errorText.style.color = "#b42318";
-        card.append(errorText);
-      }
-    }
-
-    container.append(card);
-  }
 }
 
-// استعادة جلسة المدير عند فتح لوحة التحكم
-const { data: initial, error: sessionError } =
-  await supabase.auth.getSession();
+// استعادة جلسة المدير عند فتح الصفحة
+const { data: initial } = await supabase.auth.getSession();
 
-if (sessionError) {
-  console.error("Session error:", sessionError);
-  setMessage("loginMsg", sessionError.message, true);
-} else {
-  await showSession(initial.session);
-}
-
+await showSession(initial.session);
