@@ -1,5 +1,6 @@
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
 import {
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
@@ -18,9 +19,15 @@ let currentImageUrl = "";
 
 const setMessage = (id, message, error = false) => {
   const el = $(id);
+  if (!el) return;
+
   el.textContent = message;
   el.style.color = error ? "#b42318" : "#16734a";
 };
+
+// ========================================
+// تسجيل الدخول والتحقق من حساب المدير
+// ========================================
 
 async function showSession(session) {
   const user = session?.user;
@@ -35,11 +42,18 @@ async function showSession(session) {
     $("dash").classList.remove("hide");
     $("logout").classList.remove("hide");
 
-    await Promise.all([loadProducts(), loadOrders()]);
+    await Promise.all([
+      loadProducts(),
+      loadOrders(),
+      loadNotificationHistory()
+    ]);
+
   } else {
     currentUser = null;
 
-    if (user) await supabase.auth.signOut();
+    if (user) {
+      await supabase.auth.signOut();
+    }
 
     $("login").classList.remove("hide");
     $("dash").classList.add("hide");
@@ -104,10 +118,19 @@ supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
 
+// ========================================
 // التنقل بين أقسام لوحة التحكم
+// ========================================
+
 document.querySelectorAll("nav button").forEach(button => {
   button.addEventListener("click", () => {
-    ["products", "orders", "bank", "notifications"].forEach(view => {
+    [
+      "products",
+      "orders",
+      "bank",
+      "notifications",
+      "history"
+    ].forEach(view => {
       const section = $(view);
 
       if (section) {
@@ -117,10 +140,88 @@ document.querySelectorAll("nav button").forEach(button => {
         );
       }
     });
+
+    if (button.dataset.view === "history") {
+      loadNotificationHistory();
+    }
   });
 });
 
-// إرسال إشعار ترويجي لجميع العملاء المسجلين
+// ========================================
+// سجل الإشعارات
+// ========================================
+
+async function loadNotificationHistory() {
+  const container = $("notificationHistory");
+
+  if (!container || !currentUser) return;
+
+  container.textContent = "جارٍ تحميل سجل الإشعارات...";
+
+  const { data, error } = await supabase
+    .from("astro_notification_history")
+    .select("id, title, body, sent_by, request_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    container.textContent =
+      `تعذر تحميل سجل الإشعارات: ${error.message}`;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data || data.length === 0) {
+    container.textContent = "لا توجد إشعارات مسجلة حتى الآن.";
+    return;
+  }
+
+  data.forEach(notification => {
+    const card = document.createElement("div");
+    card.className = "item";
+
+    const content = document.createElement("div");
+    content.className = "info";
+
+    const title = document.createElement("h3");
+    title.textContent = notification.title;
+
+    const body = document.createElement("p");
+    body.textContent = notification.body;
+
+    const date = document.createElement("small");
+
+    date.textContent = notification.created_at
+      ? new Date(notification.created_at).toLocaleString("ar-LY", {
+          dateStyle: "medium",
+          timeStyle: "short"
+        })
+      : "التاريخ غير متوفر";
+
+    const sender = document.createElement("small");
+    sender.textContent = `أرسل بواسطة: ${notification.sent_by || "المدير"}`;
+
+    const status = document.createElement("small");
+    status.textContent =
+      "تم تسجيل طلب الإرسال في النظام";
+
+    content.append(title, body, date, sender, status);
+    card.append(content);
+
+    container.append(card);
+  });
+}
+
+// تحديث السجل يدوياً
+$("refreshHistory")?.addEventListener("click", async () => {
+  await loadNotificationHistory();
+});
+
+// ========================================
+// إرسال إشعار ترويجي
+// ========================================
+
 $("promoForm").addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -143,7 +244,11 @@ $("promoForm").addEventListener("submit", async (event) => {
     );
   }
 
-  if (!confirm("هل تريد إرسال هذا الإشعار إلى جميع العملاء المسجلين؟")) {
+  if (
+    !confirm(
+      "هل تريد إرسال هذا الإشعار إلى جميع العملاء المسجلين؟"
+    )
+  ) {
     return;
   }
 
@@ -165,10 +270,12 @@ $("promoForm").addEventListener("submit", async (event) => {
 
     setMessage(
       "promoMsg",
-      "تم إرسال طلب الإشعار بنجاح. تحقق من وصوله إلى الهاتف."
+      "تم تسجيل طلب الإرسال بنجاح."
     );
 
     $("promoForm").reset();
+
+    await loadNotificationHistory();
 
   } catch (error) {
     setMessage(
@@ -181,7 +288,10 @@ $("promoForm").addEventListener("submit", async (event) => {
   }
 });
 
+// ========================================
 // إعادة ضبط نموذج المنتج
+// ========================================
+
 function resetForm() {
   $("form").reset();
 
@@ -213,7 +323,10 @@ $("cancel").addEventListener("click", () => {
   $("form").classList.add("hide");
 });
 
+// ========================================
 // اختيار صورة المنتج
+// ========================================
+
 $("imageFile").addEventListener("change", () => {
   const file = $("imageFile").files?.[0];
 
@@ -231,6 +344,7 @@ $("imageFile").addEventListener("change", () => {
       "حجم الصورة أكبر من 5 ميغابايت. اختر صورة أصغر.",
       true
     );
+
     $("imageFile").value = "";
     return;
   }
@@ -242,7 +356,10 @@ $("imageFile").addEventListener("change", () => {
     `تم اختيار ${file.name}؛ سترفع عند حفظ المنتج.`;
 });
 
-// رفع صورة المنتج
+// ========================================
+// رفع صورة المنتج إلى Supabase
+// ========================================
+
 async function uploadProductImage(file) {
   const {
     data: sessionData,
@@ -276,7 +393,8 @@ async function uploadProductImage(file) {
 
   const ext = extFromType || extFromName || "jpg";
 
-  const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const path =
+    `${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
   const endpoint =
     `${SUPABASE_URL}/storage/v1/object/products/${path}`;
@@ -324,7 +442,12 @@ async function uploadProductImage(file) {
 
     try {
       const body = await response.json();
-      detail = body.message || body.error || JSON.stringify(body);
+
+      detail =
+        body.message ||
+        body.error ||
+        JSON.stringify(body);
+
     } catch {
       detail = await response.text().catch(() => "");
     }
@@ -348,7 +471,10 @@ async function uploadProductImage(file) {
   return data.publicUrl;
 }
 
+// ========================================
 // حفظ المنتج أو تعديله
+// ========================================
+
 $("form").addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -378,7 +504,6 @@ $("form").addEventListener("submit", async (event) => {
       imageUrl = await uploadProductImage(file);
     }
 
-    // قراءة الألوان وتحويلها إلى قائمة
     const colors = $("colors").value
       .split(/[,،\n]/)
       .map(color => color.trim())
@@ -444,15 +569,23 @@ $("form").addEventListener("submit", async (event) => {
   }
 });
 
+// ========================================
 // إنشاء الأزرار
+// ========================================
+
 function makeButton(label, action) {
-  const b = document.createElement("button");
-  b.textContent = label;
-  b.addEventListener("click", action);
-  return b;
+  const button = document.createElement("button");
+
+  button.textContent = label;
+  button.addEventListener("click", action);
+
+  return button;
 }
 
+// ========================================
 // تحميل المنتجات
+// ========================================
+
 async function loadProducts() {
   const container = $("productList");
 
@@ -548,7 +681,10 @@ async function loadProducts() {
   });
 }
 
+// ========================================
 // تحميل الطلبات
+// ========================================
+
 async function loadOrders() {
   const container = $("orderList");
 
@@ -577,13 +713,16 @@ async function loadOrders() {
     const p = document.createElement("p");
 
     p.textContent =
-      `طلب ${order.id} — الحالة: ${order.status || "جديد"} — الإجمالي: ${order.total ?? "—"} د.ل`;
+      `طلب ${order.id} — الحالة: ${order.status || "جديد"} — الإجمالي: ${order.total_price ?? order.total ?? "—"} د.ل`;
 
     container.append(p);
   });
 }
 
+// ========================================
 // استعادة جلسة المدير عند فتح الصفحة
+// ========================================
+
 const { data: initial } = await supabase.auth.getSession();
 
 await showSession(initial.session);
