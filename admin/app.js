@@ -518,31 +518,51 @@ $("bankForm").addEventListener("submit", async (event) => {
   }
 });
 
-// تغيير حالة الطلب
-async function updateOrderStatus(order, select, newStatus) {
-  const oldStatus = order.status || "جديد";
-
-  if (newStatus === oldStatus) return;
-
-  select.disabled = true;
-
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: newStatus })
-    .eq("id", order.id);
-
-  if (error) {
-    alert(`تعذر تحديث حالة الطلب: ${error.message}`);
-    select.value = oldStatus;
-  } else {
-    order.status = newStatus;
-    alert("تم تحديث حالة الطلب بنجاح.");
+// تغيير حالة الطلب وحفظها
+async function updateOrderStatus(order, select, saveButton) {
+  if (!currentUser) {
+    alert("انتهت جلسة المدير. سجّل الدخول مجدداً.");
+    return;
   }
 
-  select.disabled = false;
+  const newStatus = select.value;
+  const oldStatus = order.status || "جديد";
+
+  if (newStatus === oldStatus) {
+    alert("لم يتم تغيير حالة الطلب.");
+    return;
+  }
+
+  select.disabled = true;
+  saveButton.disabled = true;
+  saveButton.textContent = "جارٍ الحفظ...";
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", order.id)
+      .select("id,status")
+      .single();
+
+    if (error) throw error;
+
+    order.status = data.status;
+    saveButton.textContent = "تم الحفظ";
+    alert("تم تحديث حالة الطلب بنجاح.");
+
+  } catch (error) {
+    select.value = oldStatus;
+    saveButton.textContent = "حفظ الحالة";
+    alert(`تعذر تحديث حالة الطلب: ${error.message}`);
+
+  } finally {
+    select.disabled = false;
+    saveButton.disabled = false;
+  }
 }
 
-// تحميل الطلبات مع صور المنتجات والإيصالات والحالات
+// تحميل الطلبات مع صور المنتجات والإيصالات
 async function loadOrders() {
   const container = $("orderList");
   container.textContent = "جارٍ تحميل الطلبات...";
@@ -732,15 +752,16 @@ async function loadOrders() {
 
     statusSelect.value = currentStatus;
 
-    statusSelect.addEventListener("change", () => {
-      updateOrderStatus(
-        order,
-        statusSelect,
-        statusSelect.value
-      );
+    const saveStatus = makeButton("حفظ الحالة", () => {
+      updateOrderStatus(order, statusSelect, saveStatus);
     });
 
-    statusContainer.append(statusLabel, statusSelect);
+    statusContainer.append(
+      statusLabel,
+      statusSelect,
+      saveStatus
+    );
+
     card.append(statusContainer);
 
     // عرض إيصال التحويل المصرفي
@@ -784,21 +805,7 @@ async function loadOrders() {
         );
 
         card.append(openReceipt);
+
       } else {
         const errorText = document.createElement("p");
-        errorText.textContent =
-          "تعذر عرض الإيصال. تحقق من صلاحيات مخزن receipts.";
-        errorText.style.color = "#b42318";
-        card.append(errorText);
-      }
-    }
-
-    container.append(card);
-  }
-}
-
-// استعادة جلسة المدير
-const { data: initial } =
-  await supabase.auth.getSession();
-
-await showSession(initial.session);
+        errorText.textContent 
