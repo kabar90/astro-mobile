@@ -808,4 +808,27 @@ async function loadOrders() {
 
       } else {
         const errorText = document.createElement("p");
-        errorText.textContent 
+        errorText.textContent
+        
+ =
+  "تعذر عرض الإيصال. تحقق من صلاحيات مخزن receipts.";
+        errorText.style.color = "#b42318";
+        card.append(errorText);
+      }
+    }
+
+    container.append(card);
+  }
+}
+
+// استعادة جلسة المدير عند فتح لوحة التحكم
+const { data: initial, error: sessionError } =
+  await supabase.auth.getSession();
+
+if (sessionError) {
+  console.error("Session error:", sessionError);
+  setMessage("loginMsg", sessionError.message, true);
+} else {
+  await showSession(initial.session);
+}
+
