@@ -1,3 +1,4 @@
+
 importScripts(
   "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"
 );
@@ -17,6 +18,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+const DASHBOARD_URL =
+  "https://kabar90.github.io/astro-mobile/";
+
 messaging.onBackgroundMessage((payload) => {
   const title =
     payload.notification?.title ||
@@ -30,7 +34,7 @@ messaging.onBackgroundMessage((payload) => {
       "لديك إشعار جديد من المتجر.",
     icon: "./icon-192.png",
     data: {
-      url: "https://kabar90.github.io/astro-mobile/admin/"
+      url: DASHBOARD_URL
     }
   };
 
@@ -41,17 +45,21 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const url =
-    event.notification.data?.url ||
-    "https://kabar90.github.io/astro-mobile/admin/";
+    event.notification.data?.url || DASHBOARD_URL;
 
   event.waitUntil(
     clients.matchAll({
       type: "window",
       includeUncontrolled: true
-    }).then((windowClients) => {
+    }).then(async (windowClients) => {
       for (const client of windowClients) {
         if ("focus" in client) {
-          return client.focus().then(() => client.navigate(url));
+          try {
+            await client.navigate(url);
+            return await client.focus();
+          } catch (error) {
+            console.error("Notification navigation error:", error);
+          }
         }
       }
 
