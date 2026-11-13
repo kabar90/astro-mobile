@@ -4,8 +4,18 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import {
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
-  ADMIN_EMAIL
+  ADMIN_EMAIL,
+  FIREBASE_CONFIG,
+  FIREBASE_VAPID_KEY
 } from "./supabase-config.js";
+
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+
+import {
+  getMessaging,
+  getToken,
+  isSupported
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ========================================
 // الاتصال بقاعدة بيانات Supabase
@@ -16,7 +26,6 @@ const supabase = createClient(
   SUPABASE_PUBLISHABLE_KEY
 );
 
-// إتاحة الاتصال لملف notifications.js
 window.supabaseClient = supabase;
 window.sb = supabase;
 
@@ -26,7 +35,185 @@ let currentUser = null;
 let currentImageUrl = "";
 
 // ========================================
-// الرسائل
+// Firebase - إشعارات متصفح المدير
+// ========================================
+
+let firebaseMessaging = null;
+
+function initializeFirebaseMessaging() {
+  if (!FIREBASE_CONFIG || !FIREBASE_VAPID_KEY) {
+    throw new Error("إعدادات Firebase غير موجودة في supabase-config.js");
+  }
+
+  const firebaseApp = getApps().length
+    ? getApps()[0]
+    : initializeApp(FIREBASE_CONFIG);
+
+  firebaseMessaging = getMessaging(firebaseApp);
+
+  return firebaseMessaging;
+}
+
+// إنشاء زر تفعيل إشعارات المتصفح
+function createBrowserNotificationButton() {
+  if ($("astroEnableBrowserNotifications")) return;
+
+  const button = document.createElement("button");
+
+  button.id = "astroEnableBrowserNotifications";
+  button.type = "button";
+  button.textContent = "تفعيل إشعارات الطلبات على هذا المتصفح";
+
+  button.style.cssText = `
+    display:block;
+    width:100%;
+    margin:12px 0;
+    padding:13px;
+    border:0;
+    border-radius:10px;
+    background:#16734a;
+    color:white;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+  `;
+
+  const message = document.createElement("p");
+  message.id = "astroBrowserNotificationMsg";
+  message.setAttribute("role", "status");
+
+  const dash = $("dash");
+
+  if (dash) {
+    dash.insertBefore(button, dash.firstChild);
+    dash.insertBefore(message, button.nextSibling);
+  }
+
+  button.addEventListener("click", registerAdminBrowser);
+}
+
+// عرض رسالة حالة إشعارات المتصفح
+function showBrowserMessage(message, error = false) {
+  const element = $("astroBrowserNotificationMsg");
+
+  if (!element) return;
+
+  element.textContent = message;
+  element.style.color = error ? "#b42318" : "#16734a";
+}
+
+// تسجيل المتصفح وحفظ رمز Firebase في جدول الإدارة
+async function registerAdminBrowser() {
+  const button = $("astroEnableBrowserNotifications");
+
+  if (!currentUser) {
+    showBrowserMessage("يرجى تسجيل الدخول بحساب المدير.", true);
+    return;
+  }
+
+  if (!("Notification" in window)) {
+    showBrowserMessage(
+      "هذا المتصفح لا يدعم إشعارات الويب.",
+      true
+    );
+    return;
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    showBrowserMessage(
+      "المتصفح لا يدعم خدمة الإشعارات المطلوبة.",
+      true
+    );
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "جارٍ تفعيل الإشعارات...";
+  }
+
+  try {
+    const supported = await isSupported();
+
+    if (!supported) {
+      throw new Error(
+        "إشعارات Firebase غير مدعومة في هذا المتصفح."
+      );
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== "granted") {
+      throw new Error(
+        "لم تسمح للمتصفح بإرسال الإشعارات."
+      );
+    }
+
+    initializeFirebaseMessaging();
+
+    const registration = await navigator.serviceWorker.register(
+      "./firebase-messaging-sw.js",
+      {
+        scope: "./"
+      }
+    );
+
+    await navigator.serviceWorker.ready;
+
+    const token = await getToken(firebaseMessaging, {
+      vapidKey: FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+
+    if (!token) {
+      throw new Error(
+        "لم يتم الحصول على رمز جهاز المتصفح من Firebase."
+      );
+    }
+
+    const { error } = await supabase
+      .from("astro_admin_device_tokens")
+      .upsert(
+        {
+          token,
+          platform: "web",
+          admin_email: currentUser.email.toLowerCase(),
+          updated_at: new Date().toISOString()
+        },
+        {
+          onConflict: "token"
+        }
+      );
+
+    if (error) throw error;
+
+    showBrowserMessage(
+      "تم تفعيل إشعارات الطلبات لهذا المتصفح وحفظ الجهاز بنجاح."
+    );
+
+    if (button) {
+      button.textContent = "تم تفعيل إشعارات هذا المتصفح";
+    }
+
+  } catch (error) {
+    console.error("ASTRO browser notifications:", error);
+
+    showBrowserMessage(
+      `تعذر تفعيل الإشعارات: ${error.message || error}`,
+      true
+    );
+
+    if (button) {
+      button.textContent = "إعادة محاولة تفعيل الإشعارات";
+    }
+
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+// ========================================
+// الرسائل العامة
 // ========================================
 
 const setMessage = (id, message, error = false) => {
@@ -54,12 +241,13 @@ async function showSession(session) {
     $("dash")?.classList.remove("hide");
     $("logout")?.classList.remove("hide");
 
+    createBrowserNotificationButton();
+
     await Promise.all([
       loadProducts(),
       loadOrders()
     ]);
 
-    // تحديث إحصائيات الإشعارات
     if (window.ASTRONotifications?.refresh) {
       await window.ASTRONotifications.refresh();
     }
@@ -156,7 +344,8 @@ document.querySelectorAll("nav button").forEach(button => {
       "products",
       "orders",
       "bank",
-      "notifications"
+      "notifications",
+      "history"
     ];
 
     views.forEach(view => {
@@ -178,7 +367,10 @@ document.querySelectorAll("nav button").forEach(button => {
       await loadOrders();
     }
 
-    if (button.dataset.view === "notifications") {
+    if (
+      button.dataset.view === "notifications" ||
+      button.dataset.view === "history"
+    ) {
       await window.ASTRONotifications?.refresh?.();
     }
   });
@@ -622,7 +814,6 @@ async function loadProducts() {
     info.textContent =
       `${product.name} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
-    // تعديل المنتج
     const edit = makeButton("تعديل", () => {
       resetForm();
 
@@ -655,7 +846,6 @@ async function loadProducts() {
       });
     });
 
-    // حذف المنتج
     const del = makeButton("حذف", async () => {
       if (!confirm("هل تريد حذف هذا المنتج؟")) return;
 
@@ -728,8 +918,4 @@ if (initialError) {
   setMessage(
     "loginMsg",
     initialError.message,
-    true
-  );
-} else {
-  await showSession(initial.session);
-}
+  
