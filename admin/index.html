@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -40,9 +41,11 @@
     <button data-view="products">المنتجات</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
-    <button data-view="notifications">سجل الإشعارات</button>
+    <button data-view="notifications">إرسال إشعار للعملاء</button>
+    <button data-view="history">سجل الإشعارات</button>
   </nav>
 
+  <!-- المنتجات -->
   <section id="products" class="card">
     <h2>المنتجات <button id="add">＋ إضافة منتج</button></h2>
 
@@ -114,11 +117,13 @@
     <div id="productList">جارٍ تحميل المنتجات...</div>
   </section>
 
+  <!-- الطلبات -->
   <section id="orders" class="card hide">
     <h2>الطلبات</h2>
     <div id="orderList">جارٍ تحميل الطلبات...</div>
   </section>
 
+  <!-- التحويل المصرفي -->
   <section id="bank" class="card hide">
     <h2>بيانات التحويل المصرفي</h2>
     <p>هذه البيانات ستظهر للزبون عند اختيار التحويل المصرفي.</p>
@@ -157,8 +162,45 @@
     </form>
   </section>
 
-  <!-- إحصائيات وسجل الإشعارات -->
+  <!-- إرسال الإشعارات -->
   <section id="notifications" class="card hide">
+
+    <h2>إرسال إشعار للعملاء</h2>
+
+    <p>
+      اكتب عنوان الإشعار والرسالة، وسيصل الإشعار إلى الأجهزة المسجلة
+      حسب آلية الإرسال في النظام.
+    </p>
+
+    <form id="promoForm">
+
+      <label>عنوان الإشعار
+        <input
+          id="promoTitle"
+          type="text"
+          placeholder="مثال: عروض ASTRO MOBILE"
+          maxlength="100"
+          required>
+      </label>
+
+      <label>نص الرسالة
+        <textarea
+          id="promoBody"
+          placeholder="اكتب نص الإشعار هنا..."
+          rows="4"
+          maxlength="500"
+          required></textarea>
+      </label>
+
+      <button id="sendPromo" type="submit">
+        إرسال الإشعار لجميع العملاء
+      </button>
+
+      <p id="promoMsg" role="status"></p>
+
+    </form>
+
+    <hr>
 
     <h2>إحصائيات الإشعارات</h2>
 
@@ -170,27 +212,33 @@
       </div>
 
       <div class="stat-card">
-        <span>الإرسال الناجح</span>
+        <span>الإشعارات المرسلة</span>
         <strong id="notifySent">—</strong>
       </div>
 
       <div class="stat-card">
-        <span>الإرسال الفاشل</span>
+        <span>الإشعارات الفاشلة</span>
         <strong id="notifyFailed">—</strong>
       </div>
 
     </div>
 
-    <div class="notification-heading">
-      <h3>آخر الإشعارات المرسلة</h3>
-      <button id="refreshNotifications">تحديث</button>
-    </div>
+    <p id="notificationMsg" role="status"></p>
 
-    <p id="notificationMsg" role="status">
+  </section>
+
+  <!-- سجل الإشعارات -->
+  <section id="history" class="card hide">
+
+    <h2>سجل الإشعارات</h2>
+
+    <button id="refreshHistory" type="button">
+      تحديث سجل الإشعارات
+    </button>
+
+    <div id="notificationHistory">
       جارٍ تحميل سجل الإشعارات...
-    </p>
-
-    <div id="notificationHistory"></div>
+    </div>
 
   </section>
 
