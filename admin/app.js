@@ -16,6 +16,10 @@ const supabase = createClient(
   SUPABASE_PUBLISHABLE_KEY
 );
 
+// إتاحة الاتصال لملف notifications.js
+window.supabaseClient = supabase;
+window.sb = supabase;
+
 const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
@@ -55,7 +59,7 @@ async function showSession(session) {
       loadOrders()
     ]);
 
-    // تحديث الإشعارات بعد تسجيل دخول المدير
+    // تحديث إحصائيات الإشعارات
     if (window.ASTRONotifications?.refresh) {
       await window.ASTRONotifications.refresh();
     }
@@ -136,7 +140,7 @@ $("logout")?.addEventListener("click", async () => {
   await showSession(null);
 });
 
-// متابعة تغييرات تسجيل الدخول
+// متابعة تغييرات الجلسة
 supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
@@ -146,7 +150,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
 // ========================================
 
 document.querySelectorAll("nav button").forEach(button => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
 
     const views = [
       "products",
@@ -167,15 +171,15 @@ document.querySelectorAll("nav button").forEach(button => {
     });
 
     if (button.dataset.view === "products") {
-      loadProducts();
+      await loadProducts();
     }
 
     if (button.dataset.view === "orders") {
-      loadOrders();
+      await loadOrders();
     }
 
     if (button.dataset.view === "notifications") {
-      window.ASTRONotifications?.refresh?.();
+      await window.ASTRONotifications?.refresh?.();
     }
   });
 });
@@ -238,7 +242,6 @@ $("promoForm")?.addEventListener("submit", async (event) => {
 
     $("promoForm")?.reset();
 
-    // تحديث إحصائيات الإشعارات والسجل
     await window.ASTRONotifications?.refresh?.();
 
   } catch (error) {
@@ -266,8 +269,8 @@ function resetForm() {
   $("colors").value = "";
 
   currentImageUrl = "";
-  $("imageUrl").value = "";
 
+  $("imageUrl").value = "";
   $("imageFile").value = "";
 
   $("preview").removeAttribute("src");
@@ -619,10 +622,7 @@ async function loadProducts() {
     info.textContent =
       `${product.name} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
-    // ====================================
     // تعديل المنتج
-    // ====================================
-
     const edit = makeButton("تعديل", () => {
       resetForm();
 
@@ -655,10 +655,7 @@ async function loadProducts() {
       });
     });
 
-    // ====================================
     // حذف المنتج
-    // ====================================
-
     const del = makeButton("حذف", async () => {
       if (!confirm("هل تريد حذف هذا المنتج؟")) return;
 
