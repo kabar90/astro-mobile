@@ -918,3 +918,8 @@ if (initialError) {
     "loginMsg",
     initialError.message,
    
+      true
+    );
+  } else {
+    await showSession(initial.session);
+}
