@@ -901,7 +901,7 @@ function addOrderField(parent, label, value) {
 
 async function updateOrderStatus(orderId, newStatus, button, message) {
   if (!currentUser) {
-  message.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
+    message.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
     return;
   }
 
@@ -974,6 +974,33 @@ async function loadOrders() {
     itemsByOrder.set(item.order_id, list);
   });
 
+  // صور المنتجات محفوظة في جدول products.image_url؛ نربطها بتفاصيل الطلب
+  // باستخدام product_id حتى لا نحتاج إلى تعديل تطبيق Flutter أو إعادة إرسال الطلب.
+  const productIds = [...new Set(
+    (itemsError ? [] : (items || []))
+      .map(item => item.product_id)
+      .filter(id => id !== null && id !== undefined && String(id).trim() !== "")
+      .map(id => String(id))
+  )];
+
+  const productImages = new Map();
+  if (productIds.length) {
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id,image_url")
+      .in("id", productIds);
+
+    if (productsError) {
+      console.warn("ASTRO MOBILE product images lookup error:", productsError);
+    } else {
+      (products || []).forEach(product => {
+        if (product.image_url) {
+          productImages.set(String(product.id), product.image_url);
+        }
+      });
+    }
+  }
+
   for (const order of orders) {
     const card = document.createElement("article");
     card.className = "item";
@@ -1002,6 +1029,16 @@ async function loadOrders() {
       orderItems.forEach(item => {
         const itemBox = document.createElement("div");
         itemBox.style.cssText = "border:1px solid #ddd;border-radius:9px;padding:10px;margin:8px 0;";
+        const imageUrl = item.image_url || productImages.get(String(item.product_id));
+        if (imageUrl) {
+          const image = document.createElement("img");
+          image.src = imageUrl;
+          image.alt = item.product_name || "صورة المنتج";
+          image.loading = "lazy";
+          image.style.cssText = "display:block;width:88px;height:88px;object-fit:contain;border:1px solid #eee;border-radius:8px;margin:8px 0;background:#fff;";
+          image.onerror = () => image.remove();
+          itemBox.append(image);
+        }
         addOrderField(itemBox, "المنتج", item.product_name);
         addOrderField(itemBox, "اللون", item.color || "غير محدد");
         addOrderField(itemBox, "الكمية", String(item.quantity ?? 1));
@@ -1097,4 +1134,4 @@ if (initialError) {
   );
 } else {
   await showSession(initial.session);
-}
+                                    }
