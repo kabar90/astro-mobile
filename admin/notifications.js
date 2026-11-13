@@ -1,252 +1,214 @@
 
-/* =====================================
-   ASTRO MOBILE - NOTIFICATIONS DASHBOARD
-   ===================================== */
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-(function () {
-  "use strict";
+import {
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  ADMIN_EMAIL
+} from "./supabase-config.js";
 
-  const getClient = () =>
-    window.supabaseClient ||
-    window.sb ||
-    window.supabase;
+// الاتصال بقاعدة بيانات ASTRO MOBILE
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 
-  const client = getClient();
+const $ = (id) => document.getElementById(id);
 
-  const styles = `
-    .notification-dashboard {
-      direction: rtl;
-      font-family: inherit;
-      margin: 20px 0;
-      color: #172033;
-    }
+let loading = false;
 
-    .notification-dashboard h2 {
-      margin-bottom: 18px;
-    }
+// =====================================
+// تنسيق لوحة الإشعارات
+// =====================================
 
-    .notification-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(145px,1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
+function addNotificationStyles() {
+  if ($("astro-notification-styles")) return;
 
-    .notification-stat {
-      background: white;
-      border-radius: 12px;
-      padding: 18px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 2px 8px #00000008;
-    }
+  const style = document.createElement("style");
+  style.id = "astro-notification-styles";
 
-    .notification-stat span {
-      display: block;
-      color: #64748b;
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    .notification-stat strong {
-      font-size: 27px;
-      color: #14213d;
-    }
-
-    .notification-history {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
+  style.textContent = `
+    #notificationHistory {
       overflow-x: auto;
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
     }
 
-    .notification-history table {
+    #notificationHistory table {
       width: 100%;
-      border-collapse: collapse;
       min-width: 550px;
+      border-collapse: collapse;
     }
 
-    .notification-history th,
-    .notification-history td {
-      padding: 12px;
+    #notificationHistory th,
+    #notificationHistory td {
+      padding: 12px 8px;
       text-align: right;
       border-bottom: 1px solid #eee;
       font-size: 13px;
     }
 
-    .notification-status {
+    #notificationHistory th {
+      color: #64748b;
+    }
+
+    .astro-sent {
+      color: #16a34a;
       font-weight: bold;
     }
 
-    .notification-status.sent {
-      color: #16a34a;
-    }
-
-    .notification-status.failed {
+    .astro-failed {
       color: #dc2626;
+      font-weight: bold;
     }
 
-    .notification-refresh {
-      background: #14213d;
-      color: white;
-      border: 0;
-      border-radius: 8px;
-      padding: 10px 18px;
-      margin-bottom: 15px;
-      cursor: pointer;
+    #refreshNotifications:disabled {
+      opacity: .6;
+      cursor: wait;
     }
   `;
 
-  function addStyles() {
-    if (document.getElementById("astro-notifications-style")) return;
+  document.head.appendChild(style);
+}
 
-    const style = document.createElement("style");
-    style.id = "astro-notifications-style";
-    style.textContent = styles;
-    document.head.appendChild(style);
+// =====================================
+// عرض الرسائل
+// =====================================
+
+function showMessage(message, error = false) {
+  const element = $("notificationMsg");
+
+  if (!element) return;
+
+  element.textContent = message;
+  element.style.color = error ? "#dc2626" : "#64748b";
+}
+
+// =====================================
+// التحقق من حساب المدير
+// =====================================
+
+async function checkAdmin() {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) throw error;
+
+  const user = data.session?.user;
+
+  if (
+    !user ||
+    (user.email || "").toLowerCase() !== ADMIN_EMAIL.toLowerCase()
+  ) {
+    throw new Error("يرجى تسجيل الدخول بحساب المدير.");
   }
 
-  function createDashboard() {
-    let dashboard = document.getElementById(
-      "astro-notification-dashboard"
+  return true;
+}
+
+// =====================================
+// جلب إحصائيات الأجهزة
+// =====================================
+
+async function loadDeviceCount() {
+  const { count, error } = await supabase
+    .from("astro_device_tokens")
+    .select("token", {
+      count: "exact",
+      head: true
+    })
+    .not("token", "is", null);
+
+  if (error) throw error;
+
+  $("notifyTotal").textContent = count ?? 0;
+}
+
+// =====================================
+// تحميل سجل الإشعارات والإحصائيات
+// =====================================
+
+async function loadNotifications() {
+  if (loading) return;
+
+  loading = true;
+
+  const refreshButton = $("refreshNotifications");
+
+  if (refreshButton) {
+    refreshButton.disabled = true;
+    refreshButton.textContent = "جارٍ التحديث...";
+  }
+
+  showMessage("جارٍ تحميل بيانات الإشعارات...");
+
+  try {
+    await checkAdmin();
+
+    // إجمالي الأجهزة
+    await loadDeviceCount();
+
+    // سجل عمليات الإرسال
+    const { data, error } = await supabase
+      .from("astro_notification_history")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const history = data || [];
+
+    // حساب الإرسال الناجح والفاشل
+    const sent = history.reduce(
+      (sum, item) => sum + (Number(item.sent_count) || 0),
+      0
     );
 
-    if (dashboard) return dashboard;
+    const failed = history.reduce(
+      (sum, item) => sum + (Number(item.failed_count) || 0),
+      0
+    );
 
-    dashboard = document.createElement("section");
-    dashboard.id = "astro-notification-dashboard";
-    dashboard.className = "notification-dashboard";
+    $("notifySent").textContent = sent;
+    $("notifyFailed").textContent = failed;
 
-    dashboard.innerHTML = `
-      <h2>إحصائيات الإشعارات</h2>
+    // عرض سجل الإشعارات
+    const container = $("notificationHistory");
 
-      <div class="notification-stats">
-        <div class="notification-stat">
-          <span>إجمالي الأجهزة المسجلة</span>
-          <strong id="astro-total-devices">0</strong>
-        </div>
-
-        <div class="notification-stat">
-          <span>الإشعارات المرسلة</span>
-          <strong id="astro-sent-count">0</strong>
-        </div>
-
-        <div class="notification-stat">
-          <span>الإشعارات الفاشلة</span>
-          <strong id="astro-failed-count">0</strong>
-        </div>
-
-        <div class="notification-stat">
-          <span>عمليات الإرسال</span>
-          <strong id="astro-total-requests">0</strong>
-        </div>
-      </div>
-
-      <h2>سجل الإشعارات</h2>
-
-      <button class="notification-refresh"
-        id="astro-refresh-notifications">
-        تحديث البيانات
-      </button>
-
-      <div class="notification-history">
-        <table>
-          <thead>
-            <tr>
-              <th>العنوان</th>
-              <th>الأجهزة</th>
-              <th>تم الإرسال</th>
-              <th>فشل</th>
-              <th>الحالة</th>
-              <th>التاريخ</th>
-            </tr>
-          </thead>
-
-          <tbody id="astro-notification-rows">
-            <tr><td colspan="6">جاري تحميل البيانات...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    const main =
-      document.querySelector("main") ||
-      document.querySelector(".container") ||
-      document.body;
-
-    main.appendChild(dashboard);
-
-    return dashboard;
-  }
-
-  async function loadNotifications() {
-    if (!client || typeof client.from !== "function") {
-      console.error("ASTRO MOBILE: Supabase client not found");
-      return;
+    if (!container) {
+      throw new Error("لم يتم العثور على جدول سجل الإشعارات.");
     }
 
-    const totalElement = document.getElementById(
-      "astro-total-devices"
-    );
+    if (!history.length) {
+      container.textContent = "لا توجد إشعارات مسجلة حتى الآن.";
+    } else {
+      const table = document.createElement("table");
 
-    if (!totalElement) return;
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
 
-    totalElement.textContent = "...";
+      [
+        "العنوان",
+        "الأجهزة",
+        "تم الإرسال",
+        "فشل",
+        "الحالة",
+        "التاريخ"
+      ].forEach(label => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
 
-    try {
-      const deviceResult = await client
-        .from("astro_device_tokens")
-        .select("*", { count: "exact", head: true })
-        .not("token", "is", null);
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
 
-      if (deviceResult.error) throw deviceResult.error;
+      const tbody = document.createElement("tbody");
 
-      document.getElementById(
-        "astro-total-devices"
-      ).textContent = deviceResult.count ?? 0;
+      history.forEach(item => {
+        const row = document.createElement("tr");
 
-      const historyResult = await client
-        .from("astro_notification_history")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30);
-
-      if (historyResult.error) throw historyResult.error;
-
-      const history = historyResult.data || [];
-
-      const sent = history.reduce(
-        (sum, item) => sum + (Number(item.sent_count) || 0),
-        0
-      );
-
-      const failed = history.reduce(
-        (sum, item) => sum + (Number(item.failed_count) || 0),
-        0
-      );
-
-      document.getElementById(
-        "astro-sent-count"
-      ).textContent = sent;
-
-      document.getElementById(
-        "astro-failed-count"
-      ).textContent = failed;
-
-      document.getElementById(
-        "astro-total-requests"
-      ).textContent = history.length;
-
-      const rows = document.getElementById(
-        "astro-notification-rows"
-      );
-
-      if (!history.length) {
-        rows.innerHTML =
-          '<tr><td colspan="6">لا توجد إشعارات حتى الآن</td></tr>';
-        return;
-      }
-
-      rows.innerHTML = history.map(item => {
         const status = item.delivery_status || "queued";
 
         const statusText =
@@ -254,71 +216,93 @@
           status === "failed" ? "فشل الإرسال" :
           "قيد الانتظار";
 
-        const statusClass =
-          status === "sent" ? "sent" :
-          status === "failed" ? "failed" : "";
+        const values = [
+          item.title || "-",
+          Number(item.total_devices) || 0,
+          Number(item.sent_count) || 0,
+          Number(item.failed_count) || 0,
+          statusText,
+          item.created_at
+            ? new Date(item.created_at).toLocaleString("ar-LY")
+            : "-"
+        ];
 
-        const date = item.created_at
-          ? new Date(item.created_at).toLocaleString("ar-LY")
-          : "-";
+        values.forEach((value, index) => {
+          const td = document.createElement("td");
+          td.textContent = String(value);
 
-        return `
-          <tr>
-            <td>${escapeHTML(item.title || "-")}</td>
-            <td>${Number(item.total_devices) || 0}</td>
-            <td>${Number(item.sent_count) || 0}</td>
-            <td>${Number(item.failed_count) || 0}</td>
-            <td>
-              <span class="notification-status ${statusClass}">
-                ${statusText}
-              </span>
-            </td>
-            <td>${escapeHTML(date)}</td>
-          </tr>
-        `;
-      }).join("");
+          if (index === 4) {
+            td.className =
+              status === "sent" ? "astro-sent" :
+              status === "failed" ? "astro-failed" : "";
+          }
 
-    } catch (error) {
-      console.error("ASTRO notifications error:", error);
+          row.appendChild(td);
+        });
 
-      document.getElementById(
-        "astro-notification-rows"
-      ).innerHTML =
-        '<tr><td colspan="6">تعذر تحميل البيانات. تحقق من صلاحيات قاعدة البيانات.</td></tr>';
+        tbody.appendChild(row);
+      });
+
+      table.appendChild(tbody);
+
+      container.replaceChildren(table);
+    }
+
+    showMessage("تم تحديث الإحصائيات وسجل الإشعارات بنجاح.");
+
+  } catch (error) {
+    console.error("ASTRO notifications:", error);
+
+    showMessage(
+      `تعذر تحديث البيانات: ${error.message || error}`,
+      true
+    );
+
+    if ($("notificationHistory")) {
+      $("notificationHistory").textContent =
+        error.message || "حدث خطأ أثناء تحميل البيانات.";
+    }
+
+  } finally {
+    loading = false;
+
+    if (refreshButton) {
+      refreshButton.disabled = false;
+      refreshButton.textContent = "تحديث البيانات";
     }
   }
+}
 
-  function escapeHTML(value) {
-    return String(value).replace(/[&<>"']/g, char => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    })[char]);
+// =====================================
+// زر تحديث البيانات
+// =====================================
+
+function initializeNotifications() {
+  addNotificationStyles();
+
+  const button = $("refreshNotifications");
+
+  if (button) {
+    button.removeEventListener("click", loadNotifications);
+    button.addEventListener("click", loadNotifications);
   }
 
-  function initialize() {
-    addStyles();
-    createDashboard();
+  loadNotifications();
+}
 
-    document.getElementById(
-      "astro-refresh-notifications"
-    ).addEventListener("click", loadNotifications);
+// =====================================
+// تشغيل النظام
+// =====================================
 
-    loadNotifications();
-  }
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeNotifications
+  );
+} else {
+  initializeNotifications();
+}
 
-  window.ASTRONotifications = {
-    initialize,
-    refresh: loadNotifications
-  };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initialize);
-  } else {
-    initialize();
-  }
-
-})();
-
+window.ASTRONotifications = {
+  refresh: loadNotifications
+};
