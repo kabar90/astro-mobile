@@ -1,4 +1,3 @@
-
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 import {
@@ -231,9 +230,6 @@ const setMessage = (id, message, error = false) => {
 async function showSession(session) {
   const user = session?.user;
 
-  // منع تنفيذ تحميل لوحة التحكم مرتين لنفس جلسة المدير
-  if (user && currentUser?.id === user.id) return;
-
   if (
     user &&
     (user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()
@@ -308,7 +304,8 @@ $("loginBtn")?.addEventListener("click", async () => {
     }
 
     setMessage("loginMsg", "تم تسجيل الدخول بنجاح.");
-    // onAuthStateChange يتولى تحديث واجهة لوحة التحكم بعد نجاح الدخول
+
+    await showSession(data.session);
 
   } catch (error) {
     setMessage(
@@ -326,20 +323,13 @@ $("loginBtn")?.addEventListener("click", async () => {
 // ========================================
 
 $("logout")?.addEventListener("click", async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    setMessage("loginMsg", `تعذر تسجيل الخروج: ${error.message}`, true);
-  }
+  await supabase.auth.signOut();
+  await showSession(null);
 });
 
-// متابعة تغييرات الجلسة خارج قفل مصادقة Supabase
+// متابعة تغييرات الجلسة
 supabase.auth.onAuthStateChange((_event, session) => {
-  setTimeout(() => {
-    showSession(session).catch(error => {
-      console.error("ASTRO session error:", error);
-      setMessage("loginMsg", error.message || "تعذر تحميل لوحة التحكم.", true);
-    });
-  }, 0);
+  showSession(session);
 });
 
 // ========================================
@@ -877,28 +867,58 @@ async function loadProducts() {
 }
 
 // ========================================
-// تحميل الطلبات بالتفاصيل الكاملة وإدارة حالتها
+// تحميل الطلبات
 // ========================================
 
-const ORDER_STATUSES = [
-  "جديد",
-  "قيد التجهيز",
-  "جاهز للاستلام",
-  "خرج للتوصيل",
-  "تم التسليم",
-  "ملغي"
-];
+async function loadOrders() {
+  const container = $("orderList");
 
-function addOrderField(parent, label, value) {
-  const line = document.createElement("p");
-  line.style.cssText = "margin:10px 0;line-height:1.8;";
-  const strong = document.createElement("strong");
-  strong.textContent = `${label}: `;
-  line.append(strong, document.createTextNode(value || "غير محدد"));
-  parent.append(line);
-  return line;
+  if (!container) return;
+
+  container.textContent = "جارٍ تحميل الطلبات...";
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    container.textContent =
+      `تعذر تحميل الطلبات: ${error.message}`;
+    return;
+  }
+
+  container.replaceChildren();
+
+  if (!data?.length) {
+    container.textContent = "لا توجد طلبات حالياً.";
+    return;
+  }
+
+  data.forEach(order => {
+    const p = document.createElement("p");
+
+    p.textContent =
+      `طلب ${order.id} — الحالة: ${order.status || "جديد"} — الإجمالي: ${order.total_price ?? order.total ?? "—"} د.ل`;
+
+    container.append(p);
+  });
 }
 
-async function updateOrderStatus(orderId, newStatus, button, message) {
-  if (!currentUser) {
-    message.textContent = "ا
+// ========================================
+// استعادة جلسة المدير عند فتح الصفحة
+// ========================================
+
+const { data: initial, error: initialError } =
+  await supabase.auth.getSession();
+
+if (initialError) {
+  setMessage(
+    "loginMsg",
+    initialError.message,
+         true
+    );
+  } else {
+    await showSession(initial.session);
+}
