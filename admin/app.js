@@ -901,7 +901,7 @@ function addOrderField(parent, label, value) {
 
 async function updateOrderStatus(orderId, newStatus, button, message) {
   if (!currentUser) {
-   message.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
+  message.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
     return;
   }
 
@@ -956,13 +956,19 @@ async function loadOrders() {
     .select("*")
     .in("order_id", orderIds);
 
+  // لا نوقف عرض الطلبات إذا كان جدول تفاصيل المنتجات غير موجود.
+  // تبقى بيانات الطلب وتغيير الحالة متاحين، مع إظهار تنبيه واضح.
   if (itemsError) {
-    container.textContent = `تم تحميل الطلبات، لكن تعذر تحميل المنتجات داخلها: ${itemsError.message}`;
-    return;
+    console.error("ASTRO MOBILE order_items error:", itemsError);
+    const warning = document.createElement("p");
+    warning.setAttribute("role", "alert");
+    warning.style.cssText = "padding:10px;background:#fff3cd;color:#664d03;border-radius:8px;margin:10px 0;";
+    warning.textContent = "تنبيه: تم تحميل الطلبات، لكن تفاصيل المنتجات غير متاحة حالياً لأن جدول order_items غير موجود أو غير ظاهر في قاعدة البيانات.";
+    container.append(warning);
   }
 
   const itemsByOrder = new Map();
-  (items || []).forEach(item => {
+  (itemsError ? [] : (items || [])).forEach(item => {
     const list = itemsByOrder.get(item.order_id) || [];
     list.push(item);
     itemsByOrder.set(item.order_id, list);
