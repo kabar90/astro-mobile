@@ -16,6 +16,7 @@ const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
 let currentImageUrl = "";
+let loadingSession = false;
 
 const setMessage = (id, message, error = false) => {
   const el = $(id);
@@ -26,38 +27,46 @@ const setMessage = (id, message, error = false) => {
 };
 
 // ========================================
-// تسجيل الدخول والتحقق من حساب المدير
+// تسجيل الدخول والتحقق من المدير
 // ========================================
 
 async function showSession(session) {
-  const user = session?.user;
+  if (loadingSession) return;
+  loadingSession = true;
 
-  if (
-    user &&
-    (user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()
-  ) {
-    currentUser = user;
+  try {
+    const user = session?.user;
 
-    $("login").classList.add("hide");
-    $("dash").classList.remove("hide");
-    $("logout").classList.remove("hide");
+    if (
+      user &&
+      (user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()
+    ) {
+      currentUser = user;
 
-    await Promise.all([
-      loadProducts(),
-      loadOrders(),
-      loadNotificationHistory()
-    ]);
+      $("login").classList.add("hide");
+      $("dash").classList.remove("hide");
+      $("logout").classList.remove("hide");
 
-  } else {
-    currentUser = null;
+      await Promise.all([
+        loadProducts(),
+        loadOrders(),
+        loadNotificationHistory(),
+        loadNotificationStats()
+      ]);
 
-    if (user) {
-      await supabase.auth.signOut();
+    } else {
+      currentUser = null;
+
+      if (user) {
+        await supabase.auth.signOut();
+      }
+
+      $("login").classList.remove("hide");
+      $("dash").classList.add("hide");
+      $("logout").classList.add("hide");
     }
-
-    $("login").classList.remove("hide");
-    $("dash").classList.add("hide");
-    $("logout").classList.add("hide");
+  } finally {
+    loadingSession = false;
   }
 }
 
@@ -100,7 +109,7 @@ $("loginBtn").addEventListener("click", async () => {
   } catch (e) {
     setMessage(
       "loginMsg",
-      e.message || "تعذر تسجيل الدخول. تحقق من البيانات.",
+      e.message || "تعذر تسجيل الدخول.",
       true
     );
   } finally {
@@ -111,19 +120,21 @@ $("loginBtn").addEventListener("click", async () => {
 // تسجيل الخروج
 $("logout").addEventListener("click", async () => {
   await supabase.auth.signOut();
+  currentUser = null;
   await showSession(null);
 });
 
+// مراقبة الجلسة
 supabase.auth.onAuthStateChange((_event, session) => {
   showSession(session);
 });
 
 // ========================================
-// التنقل بين أقسام لوحة التحكم
+// التنقل بين الأقسام
 // ========================================
 
 document.querySelectorAll("nav button").forEach(button => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
     [
       "products",
       "orders",
@@ -142,10 +153,70 @@ document.querySelectorAll("nav button").forEach(button => {
     });
 
     if (button.dataset.view === "history") {
-      loadNotificationHistory();
+      await loadNotificationHistory();
+      await loadNotificationStats();
+    }
+
+    if (button.dataset.view === "notifications") {
+      await loadNotificationStats();
     }
   });
 });
+
+// ========================================
+// إحصائيات الإشعارات
+// ========================================
+
+async function loadNotificationStats() {
+  if (!currentUser) return;
+
+  const totalEl = $("notifyTotal");
+  const sentEl = $("notifySent");
+  const failedEl = $("notifyFailed");
+
+  if (!totalEl || !sentEl || !failedEl) return;
+
+  totalEl.textContent = "...";
+  sentEl.textContent = "...";
+  failedEl.textContent = "...";
+
+  try {
+    const { data, error } = await supabase
+      .from("astro_notification_history")
+      .select("total_devices, sent_count, failed_count")
+      .limit(1000);
+
+    if (error) throw error;
+
+    const stats = (data || []).reduce((result, item) => {
+      result.total += Number(item.total_devices || 0);
+      result.sent += Number(item.sent_count || 0);
+      result.failed += Number(item.failed_count || 0);
+
+      return result;
+    }, {
+      total: 0,
+      sent: 0,
+      failed: 0
+    });
+
+    totalEl.textContent = stats.total;
+    sentEl.textContent = stats.sent;
+    failedEl.textContent = stats.failed;
+
+  } catch (error) {
+    totalEl.textContent = "—";
+    sentEl.textContent = "—";
+    failedEl.textContent = "—";
+
+    console.error("Notification stats error:", error);
+    setMessage(
+      "notificationMsg",
+      `تعذر تحميل الإحصائيات: ${error.message}`,
+      true
+    );
+  }
+}
 
 // ========================================
 // سجل الإشعارات
@@ -160,7 +231,19 @@ async function loadNotificationHistory() {
 
   const { data, error } = await supabase
     .from("astro_notification_history")
-    .select("id, title, body, sent_by, request_id, created_at")
+    .select(`
+      id,
+      title,
+      body,
+      sent_by,
+      request_id,
+      created_at,
+      total_devices,
+      sent_count,
+      failed_count,
+      delivery_status,
+      error_message
+    `)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -185,10 +268,10 @@ async function loadNotificationHistory() {
     content.className = "info";
 
     const title = document.createElement("h3");
-    title.textContent = notification.title;
+    title.textContent = notification.title || "بدون عنوان";
 
     const body = document.createElement("p");
-    body.textContent = notification.body;
+    body.textContent = notification.body || "";
 
     const date = document.createElement("small");
 
@@ -200,23 +283,80 @@ async function loadNotificationHistory() {
       : "التاريخ غير متوفر";
 
     const sender = document.createElement("small");
-    sender.textContent = `أرسل بواسطة: ${notification.sent_by || "المدير"}`;
+    sender.textContent =
+      `أرسل بواسطة: ${notification.sent_by || "المدير"}`;
 
-    const status = document.createElement("small");
+    const devices = document.createElement("p");
+    devices.textContent =
+      `إجمالي الأجهزة: ${notification.total_devices ?? 0}`;
+
+    const sent = document.createElement("p");
+    sent.textContent =
+      `تم الإرسال: ${notification.sent_count ?? 0}`;
+
+    const failed = document.createElement("p");
+    failed.textContent =
+      `فشل الإرسال: ${notification.failed_count ?? 0}`;
+
+    const status = document.createElement("p");
+
+    const statusLabels = {
+      sent: "تم الإرسال بنجاح",
+      queued: "قيد الانتظار",
+      failed: "فشل الإرسال",
+      partial: "تم الإرسال جزئياً"
+    };
+
     status.textContent =
-      "تم تسجيل طلب الإرسال في النظام";
+      `الحالة: ${statusLabels[notification.delivery_status] ||
+      notification.delivery_status || "غير محددة"}`;
 
-    content.append(title, body, date, sender, status);
+    content.append(
+      title,
+      body,
+      date,
+      sender,
+      devices,
+      sent,
+      failed,
+      status
+    );
+
+    if (notification.error_message) {
+      const errorText = document.createElement("small");
+      errorText.textContent =
+        `سبب الخطأ: ${notification.error_message}`;
+      content.append(errorText);
+    }
+
     card.append(content);
-
     container.append(card);
   });
 }
 
-// تحديث السجل يدوياً
-$("refreshHistory")?.addEventListener("click", async () => {
-  await loadNotificationHistory();
-});
+// تحديث الإحصائيات والسجل
+async function refreshNotificationData() {
+  if (!currentUser) return;
+
+  setMessage("notificationMsg", "جارٍ تحديث البيانات...");
+
+  await Promise.all([
+    loadNotificationStats(),
+    loadNotificationHistory()
+  ]);
+
+  setMessage("notificationMsg", "تم تحديث البيانات.");
+}
+
+$("refreshNotifications")?.addEventListener(
+  "click",
+  refreshNotificationData
+);
+
+$("refreshHistory")?.addEventListener(
+  "click",
+  refreshNotificationData
+);
 
 // ========================================
 // إرسال إشعار ترويجي
@@ -244,11 +384,9 @@ $("promoForm").addEventListener("submit", async (event) => {
     );
   }
 
-  if (
-    !confirm(
-      "هل تريد إرسال هذا الإشعار إلى جميع العملاء المسجلين؟"
-    )
-  ) {
+  if (!confirm(
+    "هل تريد إرسال هذا الإشعار إلى جميع العملاء المسجلين؟"
+  )) {
     return;
   }
 
@@ -275,7 +413,7 @@ $("promoForm").addEventListener("submit", async (event) => {
 
     $("promoForm").reset();
 
-    await loadNotificationHistory();
+    await refreshNotificationData();
 
   } catch (error) {
     setMessage(
@@ -376,7 +514,7 @@ async function uploadProductImage(file) {
 
   if (!accessToken) {
     throw new Error(
-      "انتهت جلسة المدير. سجّل الخروج ثم الدخول مجدداً."
+      "انتهت جلسة المدير. سجّل الدخول مجدداً."
     );
   }
 
@@ -425,7 +563,7 @@ async function uploadProductImage(file) {
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error(
-        "انتهت مهلة رفع الصورة بعد 45 ثانية. جرّب صورة أصغر أو أعد المحاولة."
+        "انتهت مهلة رفع الصورة بعد 45 ثانية."
       );
     }
 
@@ -589,6 +727,8 @@ function makeButton(label, action) {
 async function loadProducts() {
   const container = $("productList");
 
+  if (!container) return;
+
   container.textContent = "جارٍ تحميل المنتجات...";
 
   const { data, error } = await supabase
@@ -688,6 +828,8 @@ async function loadProducts() {
 async function loadOrders() {
   const container = $("orderList");
 
+  if (!container) return;
+
   container.textContent = "جارٍ تحميل الطلبات...";
 
   const { data, error } = await supabase
@@ -720,9 +862,18 @@ async function loadOrders() {
 }
 
 // ========================================
-// استعادة جلسة المدير عند فتح الصفحة
+// استعادة جلسة المدير
 // ========================================
 
-const { data: initial } = await supabase.auth.getSession();
+const { data: initial, error: initialError } =
+  await supabase.auth.getSession();
 
-await showSession(initial.session);
+if (initialError) {
+  setMessage(
+    "loginMsg",
+    `تعذر استعادة الجلسة: ${initialError.message}`,
+    true
+  );
+} else {
+  await showSession(initial.session);
+}
