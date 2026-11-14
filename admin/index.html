@@ -62,9 +62,15 @@
         <input id="name" required>
       </label>
 
-      <label>القسم
+      <label>القسم الرئيسي
         <select id="category" required>
           <option value="">جارٍ تحميل الأقسام...</option>
+        </select>
+      </label>
+
+      <label>القسم الفرعي
+        <select id="subcategory" disabled>
+          <option value="">اختر القسم الرئيسي أولاً</option>
         </select>
       </label>
 
@@ -122,11 +128,17 @@
   <!-- إدارة الأقسام -->
   <section id="categories" class="card hide">
     <h2>إدارة أقسام المتجر</h2>
-    <p>أضف الأقسام وعدّل أسماءها ورتّب ظهورها. يمكنك إيقاف القسم دون حذف المنتجات المرتبطة به.</p>
+    <p>أنشئ أقساماً رئيسية وفرعية، وعدّل أسماءها وترتيبها وحالتها من هنا دون الحاجة إلى تعديل الكود.</p>
     <form id="categoryForm">
       <label>اسم القسم
-        <input id="categoryName" type="text" maxlength="60" placeholder="مثال: هواتف" required>
+        <input id="categoryName" type="text" maxlength="60" placeholder="مثال: هواتف أو آيفون" required>
       </label>
+      <label>يتبع القسم الرئيسي
+        <select id="categoryParent">
+          <option value="">قسم رئيسي (بدون قسم أب)</option>
+        </select>
+      </label>
+      <small>اتركه على "قسم رئيسي" لإنشاء قسم رئيسي، أو اختر قسماً رئيسياً لإنشاء قسم فرعي تحته.</small>
       <label>ترتيب الظهور
         <input id="categoryOrder" type="number" step="1" value="0" required>
       </label>
