@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'ASTRO_MOBILE_FIXED_SOURCE.zip'
+      - 'ASTRO_MOBILE_DEEPLINK_FIXED.zip'
       - 'google-services.json'
       - '.github/workflows/build-apk.yml'
 
@@ -24,7 +24,7 @@ jobs:
           set -e
           rm -rf astro_mobile extracted_project
           mkdir -p extracted_project
-          unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip -d extracted_project
+          unzip -o ASTRO_MOBILE_DEEPLINK_FIXED.zip -d extracted_project
 
           PROJECT_DIR="$(find extracted_project -type f -name pubspec.yaml -print -quit | xargs -r dirname)"
           if [ -z "$PROJECT_DIR" ]; then
@@ -52,6 +52,31 @@ jobs:
       - name: Generate Android project
         working-directory: astro_mobile
         run: flutter create --platforms=android .
+
+      - name: Configure Supabase email deep link
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          manifest = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
+          content = manifest.read_text()
+          scheme = "com.astromobile.store"
+          host = "login-callback"
+          if f'android:scheme="{scheme}"' not in content:
+              intent_filter = f'''
+                  <intent-filter>
+                      <action android:name="android.intent.action.VIEW" />
+                      <category android:name="android.intent.category.DEFAULT" />
+                      <category android:name="android.intent.category.BROWSABLE" />
+                      <data android:scheme="{scheme}" android:host="{host}" />
+                  </intent-filter>
+              '''
+              if "</activity>" not in content:
+                  raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
+              content = content.replace("</activity>", intent_filter + "\n        </activity>", 1)
+              manifest.write_text(content)
+          print(f"Configured Android auth callback: {scheme}://{host}")
+          PY
 
       - name: Configure Android Gradle
         run: |
