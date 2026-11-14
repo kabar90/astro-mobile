@@ -21,10 +21,22 @@ jobs:
 
       - name: Extract project
         run: |
-          rm -rf astro_mobile ASTRO_MOBILE_FIXED_SOURCE
-          unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip
-          test -d ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign
-          mv ASTRO_MOBILE_FIXED_SOURCE/astro_mobile_redesign astro_mobile
+          set -e
+          rm -rf astro_mobile extracted_project
+          mkdir -p extracted_project
+          unzip -o ASTRO_MOBILE_FIXED_SOURCE.zip -d extracted_project
+
+          PROJECT_DIR="$(find extracted_project -type f -name pubspec.yaml -print -quit | xargs -r dirname)"
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Could not find pubspec.yaml in the extracted archive."
+            find extracted_project -maxdepth 4 -type f | sort | head -100
+            exit 1
+          fi
+
+          mv "$PROJECT_DIR" astro_mobile
+          rm -rf extracted_project
+          test -f astro_mobile/pubspec.yaml
+          echo "Flutter project found and extracted successfully."
 
       - name: Setup Java
         uses: actions/setup-java@v5
