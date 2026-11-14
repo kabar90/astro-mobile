@@ -487,6 +487,7 @@ function resetForm() {
 
   if ($("rewardEnabled")) $("rewardEnabled").checked = false;
   if ($("rewardPoints")) $("rewardPoints").value = "0";
+  if ($("allowPointsPayment")) $("allowPointsPayment").checked = false;
 
   $("uploadMsg").textContent =
     "اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.";
@@ -726,6 +727,7 @@ $("form")?.addEventListener("submit", async (event) => {
       price: Number($("price").value),
       stock: Number($("stock").value),
       reward_points: rewardPoints,
+      allow_points_payment: $("allowPointsPayment")?.checked === true,
       description: $("description").value.trim(),
       colors: colors,
       image_url: imageUrl || null,
@@ -1229,6 +1231,7 @@ async function loadProducts() {
       $("stock").value = product.stock ?? 0;
       if ($("rewardPoints")) $("rewardPoints").value = String(product.reward_points ?? 0);
       if ($("rewardEnabled")) $("rewardEnabled").checked = Number(product.reward_points ?? 0) > 0;
+      if ($("allowPointsPayment")) $("allowPointsPayment").checked = product.allow_points_payment === true;
       $("description").value = product.description || "";
 
       $("colors").value = Array.isArray(product.colors)
