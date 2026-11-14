@@ -1,4 +1,7 @@
-/* ASTRO MOBILE admin theme — branded navy header */
+/* ASTRO MOBILE — Admin Dashboard Theme
+   Palette: navy, blue, sky, white
+   Safe visual-only stylesheet. Does not change application logic.
+*/
 :root{
   --astro-navy:#082C5C;
   --astro-blue:#087FE5;
@@ -6,11 +9,23 @@
   --astro-white:#FFFFFF;
   --astro-bg:#F3F8FD;
   --astro-text:#173451;
+  --astro-muted:#66809A;
   --astro-border:#D7E5F2;
+  --astro-soft:#EAF4FC;
+  --astro-shadow:0 5px 18px rgba(8,44,92,.07);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--astro-bg);color:var(--astro-text);font-family:Arial,Tahoma,sans-serif}
-.wrap{max-width:900px;margin:auto;padding:16px}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--astro-bg);
+  color:var(--astro-text);
+  font-family:Arial,Tahoma,sans-serif;
+  line-height:1.6;
+}
+.wrap{max-width:1100px;margin:auto;padding:16px}
+
+/* Branded header */
 .astro-header{
   min-height:104px;
   background:linear-gradient(120deg,#061F43 0%,#082C5C 58%,#0A4C8F 100%);
@@ -26,41 +41,165 @@ body{margin:0;background:var(--astro-bg);color:var(--astro-text);font-family:Ari
 }
 .astro-brand{display:flex;align-items:center;gap:14px;min-width:0}
 .astro-logo{
-  display:block;
-  width:72px;
-  height:72px;
-  object-fit:contain;
-  background:#fff;
-  border-radius:14px;
-  padding:4px;
-  flex:0 0 auto;
+  display:block;width:72px;height:72px;object-fit:contain;
+  background:#fff;border-radius:14px;padding:4px;flex:0 0 auto;
 }
 .astro-brand-text{display:flex;flex-direction:column;gap:5px;min-width:0}
 .astro-name{font-size:clamp(19px,4vw,27px);font-weight:900;letter-spacing:.5px;white-space:nowrap}
 .astro-name span{color:var(--astro-sky)}
 .astro-subtitle{font-size:13px;color:#D6E9FA;font-weight:600}
-.astro-header #logout{background:#fff;color:var(--astro-navy);margin:0;white-space:nowrap}
-.card{background:var(--astro-white);border:1px solid var(--astro-border);border-radius:18px;padding:22px;margin:14px 0;box-shadow:0 5px 18px rgba(8,44,92,.06)}
+.astro-header #logout{
+  background:#fff;color:var(--astro-navy);margin:0;white-space:nowrap;
+}
+.astro-header #logout:hover{background:var(--astro-sky);color:var(--astro-navy)}
+
+/* Main cards and headings */
+.card{
+  background:var(--astro-white);
+  border:1px solid var(--astro-border);
+  border-radius:18px;
+  padding:22px;
+  margin:14px 0;
+  box-shadow:var(--astro-shadow);
+}
+.card h1,.card h2,.card h3{
+  color:var(--astro-navy);
+  margin-top:0;
+  line-height:1.35;
+}
+.card h2{font-size:21px}
+.card h3{font-size:17px}
 #login{max-width:520px;margin:35px auto}
-label{display:block;margin:14px 0;font-weight:bold;color:var(--astro-navy)}
-input,select,textarea{display:block;width:100%;padding:12px;margin-top:7px;border:1px solid #C8D9E8;border-radius:10px;background:#fff;color:var(--astro-text);font:inherit}
-input:focus,select:focus,textarea:focus{outline:2px solid rgba(57,189,245,.35);border-color:var(--astro-blue)}
-input[type=checkbox]{display:inline-block;width:auto;accent-color:var(--astro-blue)}
-button{padding:12px 16px;border:0;border-radius:10px;background:var(--astro-blue);color:#fff;font-weight:bold;margin:4px;cursor:pointer;transition:background .18s ease,transform .18s ease}
-button:hover{background:var(--astro-navy)}
+#dash{min-width:0}
+
+/* Navigation */
+nav{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:10px;margin:0 0 16px;
+  background:#E8F2FB;border:1px solid var(--astro-border);
+  border-radius:14px;
+}
+nav button{
+  flex:1 1 auto;
+  min-width:105px;
+  margin:0;
+  background:#fff;
+  color:var(--astro-navy);
+  border:1px solid #C9DDED;
+  box-shadow:0 2px 6px rgba(8,44,92,.04);
+}
+nav button:hover,nav button:focus-visible{
+  background:var(--astro-blue);color:#fff;border-color:var(--astro-blue);
+}
+
+/* Form controls */
+label{
+  display:block;margin:14px 0;
+  font-weight:bold;color:var(--astro-navy);
+}
+input,select,textarea{
+  display:block;width:100%;max-width:100%;
+  padding:12px;margin-top:7px;
+  border:1px solid #C8D9E8;border-radius:10px;
+  background:#fff;color:var(--astro-text);
+  font:inherit;min-height:44px;
+}
+textarea{min-height:100px;resize:vertical}
+input::placeholder,textarea::placeholder{color:#8AA0B4}
+input:focus,select:focus,textarea:focus{
+  outline:2px solid rgba(57,189,245,.35);
+  border-color:var(--astro-blue);
+}
+input[type=checkbox]{
+  display:inline-block;width:auto;min-height:auto;
+  accent-color:var(--astro-blue);transform:scale(1.08);
+}
+input[type=file]{padding:9px;background:#F8FBFE}
+button{
+  padding:12px 16px;border:0;border-radius:10px;
+  background:var(--astro-blue);color:#fff;
+  font-weight:bold;margin:4px;cursor:pointer;
+  font:inherit;font-weight:700;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+button:hover{
+  background:var(--astro-navy);
+  box-shadow:0 3px 9px rgba(8,44,92,.15);
+}
 button:active{transform:translateY(1px)}
-button:disabled{opacity:.55;cursor:wait}
+button:disabled{opacity:.55;cursor:wait;box-shadow:none}
+#cancel,#cancelCategoryEdit{background:#71869A}
+#cancel:hover,#cancelCategoryEdit:hover{background:#53697D}
+#sendPromo{background:var(--astro-navy)}
+#sendPromo:hover{background:var(--astro-blue)}
 .hide{display:none!important}
-nav{display:flex;gap:8px;flex-wrap:wrap}
-.preview{width:150px;height:150px;object-fit:contain;display:block;margin:10px 0}
-.item{border:1px solid var(--astro-border);border-radius:12px;padding:12px;margin:10px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff}
-.item img{width:65px;height:65px;object-fit:contain}
+
+/* Product, category and order lists */
+.preview{
+  width:150px;height:150px;object-fit:contain;
+  display:block;margin:10px 0;
+  border:1px solid var(--astro-border);border-radius:12px;
+  background:#fff;padding:5px;
+}
+.item{
+  border:1px solid var(--astro-border);border-radius:12px;
+  padding:12px;margin:10px 0;
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  background:#fff;
+}
+.item img{width:65px;height:65px;object-fit:contain;border-radius:9px}
 .item .info{flex:1;min-width:160px}
-footer{text-align:center;color:#66809A;padding:20px}
-#form{background:#F0F7FD;padding:15px;border:1px solid var(--astro-border);border-radius:12px}
-#formMsg,#loginMsg{overflow-wrap:anywhere}
+#productList,#categoryList,#orderList,#notificationHistory{
+  min-width:0;
+}
+#productList:empty,#categoryList:empty,#orderList:empty,#notificationHistory:empty{
+  min-height:12px;
+}
+#form{
+  background:#F0F7FD;padding:15px;
+  border:1px solid var(--astro-border);border-radius:12px;
+}
+#formMsg,#loginMsg,#categoryMsg,#bankMsg,#promoMsg,#notificationMsg{
+  overflow-wrap:anywhere;
+}
 #uploadMsg{color:#596579;font-size:14px}
-@media(max-width:600px){
+footer{text-align:center;color:var(--astro-muted);padding:20px}
+
+/* Notification summary cards */
+.notification-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;margin:14px 0;
+}
+.stat-card{
+  background:linear-gradient(145deg,#fff 0%,#F0F7FD 100%);
+  border:1px solid var(--astro-border);
+  border-radius:14px;padding:16px;
+  box-shadow:0 3px 12px rgba(8,44,92,.05);
+  color:var(--astro-navy);
+}
+.stat-card h3,.stat-card h4{margin:0 0 6px;color:var(--astro-muted);font-size:14px}
+.stat-card strong,.stat-card .number{
+  display:block;color:var(--astro-blue);
+  font-size:26px;font-weight:900;
+}
+
+/* Tables and generated content */
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{padding:10px;border-bottom:1px solid var(--astro-border);text-align:right}
+th{background:var(--astro-soft);color:var(--astro-navy)}
+img{max-width:100%}
+a{color:var(--astro-blue)}
+a:hover{color:var(--astro-navy)}
+hr{border:0;border-top:1px solid var(--astro-border);margin:18px 0}
+
+/* Keyboard accessibility */
+button:focus-visible,a:focus-visible{
+  outline:3px solid rgba(57,189,245,.65);
+  outline-offset:2px;
+}
+
+@media(max-width:700px){
   .wrap{padding:10px}
   .astro-header{min-height:88px;padding:12px;gap:8px;border-radius:14px}
   .astro-brand{gap:10px}
@@ -68,12 +207,16 @@ footer{text-align:center;color:#66809A;padding:20px}
   .astro-name{font-size:19px}
   .astro-subtitle{font-size:11px}
   .astro-header #logout{font-size:12px;padding:10px}
-  .card{padding:16px}
-  nav{gap:5px}
+  .card{padding:16px;border-radius:14px}
+  nav{gap:6px;padding:8px}
+  nav button{min-width:calc(50% - 6px);padding:10px 8px;font-size:13px}
   button{padding:11px 13px}
+  .notification-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:380px){
   .astro-logo{width:50px;height:50px}
   .astro-name{font-size:16px}
   .astro-header #logout{font-size:11px;padding:8px}
+  .notification-stats{grid-template-columns:1fr}
+  .card{padding:13px}
 }
