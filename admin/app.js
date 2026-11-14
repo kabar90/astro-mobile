@@ -489,6 +489,11 @@ function resetForm() {
     "اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.";
 
   setMessage("formMsg", "");
+
+  if ($("subcategory")) {
+    $("subcategory").replaceChildren(new Option("اختر القسم الرئيسي أولاً", ""));
+    $("subcategory").disabled = true;
+  }
 }
 
 // ========================================
@@ -706,6 +711,7 @@ $("form")?.addEventListener("submit", async (event) => {
     const record = {
       name: $("name").value.trim(),
       category: $("category").value,
+      subcategory_id: $("subcategory").value || null,
       price: Number($("price").value),
       stock: Number($("stock").value),
       description: $("description").value.trim(),
@@ -790,24 +796,46 @@ function makeButton(label, action) {
 let cachedCategories = [];
 let editingCategoryId = null;
 
-function renderCategoryOptions(selectedValue = $("category")?.value || "") {
+function getCategoryById(id) {
+  return cachedCategories.find(category => String(category.id) === String(id));
+}
+
+function getDescendantCategoryIds(categoryId) {
+  const found = new Set([String(categoryId)]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    cachedCategories.forEach(category => {
+      if (category.parent_id != null && found.has(String(category.parent_id)) && !found.has(String(category.id))) {
+        found.add(String(category.id));
+        changed = true;
+      }
+    });
+  }
+  return found;
+}
+
+function renderCategoryOptions(selectedValue = $("category")?.value || "", selectedSubcategoryId = $("subcategory")?.value || "") {
   const select = $("category");
   if (!select) return;
   select.replaceChildren();
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = cachedCategories.some(item => item.is_active)
-    ? "اختر القسم"
-    : "لا توجد أقسام نشطة؛ أضف أو فعّل قسماً أولاً";
+  placeholder.textContent = cachedCategories.some(item => item.is_active && !item.parent_id)
+    ? "اختر القسم الرئيسي"
+    : "لا توجد أقسام رئيسية نشطة؛ أضف قسماً أولاً";
   select.append(placeholder);
 
-  cachedCategories.filter(category => category.is_active).forEach(category => {
-    const option = document.createElement("option");
-    option.value = category.name;
-    option.textContent = category.name;
-    select.append(option);
-  });
+  cachedCategories
+    .filter(category => !category.parent_id && category.is_active)
+    .forEach(category => {
+      const option = document.createElement("option");
+      option.value = category.name;
+      option.dataset.categoryId = category.id;
+      option.textContent = category.name;
+      select.append(option);
+    });
 
   if (selectedValue && !Array.from(select.options).some(option => option.value === selectedValue)) {
     const legacyOption = document.createElement("option");
@@ -816,6 +844,79 @@ function renderCategoryOptions(selectedValue = $("category")?.value || "") {
     select.append(legacyOption);
   }
   if (selectedValue) select.value = selectedValue;
+
+  renderProductSubcategoryOptions(selectedSubcategoryId);
+}
+
+function renderProductSubcategoryOptions(selectedSubcategoryId = $("subcategory")?.value || "") {
+  const select = $("subcategory");
+  const parentSelect = $("category");
+  if (!select || !parentSelect) return;
+
+  const parent = cachedCategories.find(category =>
+    !category.parent_id && category.name === parentSelect.value
+  );
+
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = parent ? "بدون قسم فرعي" : "اختر القسم الرئيسي أولاً";
+  select.append(placeholder);
+
+  if (!parent) {
+    select.disabled = true;
+    return;
+  }
+
+  const children = cachedCategories
+    .filter(category => String(category.parent_id) === String(parent.id) && category.is_active)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"));
+
+  children.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = category.name;
+    select.append(option);
+  });
+
+  const selected = getCategoryById(selectedSubcategoryId);
+  if (selected && String(selected.parent_id) === String(parent.id) &&
+      !Array.from(select.options).some(option => option.value === String(selected.id))) {
+    const legacyOption = document.createElement("option");
+    legacyOption.value = selected.id;
+    legacyOption.textContent = `${selected.name} (متوقف)`;
+    select.append(legacyOption);
+  }
+
+  select.disabled = children.length === 0 && !selectedSubcategoryId;
+  if (selectedSubcategoryId) select.value = String(selectedSubcategoryId);
+}
+
+function renderCategoryParentOptions(selectedParentId = "") {
+  const select = $("categoryParent");
+  if (!select) return;
+  select.replaceChildren();
+
+  const rootOption = document.createElement("option");
+  rootOption.value = "";
+  rootOption.textContent = "قسم رئيسي (بدون قسم أب)";
+  select.append(rootOption);
+
+  const excluded = editingCategoryId !== null
+    ? getDescendantCategoryIds(editingCategoryId)
+    : new Set();
+
+  cachedCategories
+    .filter(category => !excluded.has(String(category.id)) && !category.parent_id)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"))
+    .forEach(category => {
+      const option = document.createElement("option");
+      option.value = category.id;
+      option.textContent = category.name;
+      select.append(option);
+    });
+
+  if (selectedParentId) select.value = String(selectedParentId);
 }
 
 function resetCategoryForm() {
@@ -823,6 +924,7 @@ function resetCategoryForm() {
   $("categoryForm")?.reset();
   if ($("categoryOrder")) $("categoryOrder").value = "0";
   if ($("categoryActive")) $("categoryActive").checked = true;
+  renderCategoryParentOptions();
   if ($("saveCategory")) $("saveCategory").textContent = "إضافة القسم";
   $("cancelCategoryEdit")?.classList.add("hide");
   setMessage("categoryMsg", "");
@@ -838,72 +940,133 @@ function renderCategoryList() {
     return;
   }
 
-  cachedCategories.forEach(category => {
-    const row = document.createElement("div");
-    row.className = "item";
+  const roots = cachedCategories
+    .filter(category => !category.parent_id)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"));
 
-    const info = document.createElement("div");
-    info.className = "info";
-    info.textContent = `${category.name} — الترتيب: ${category.sort_order ?? 0} — ${category.is_active ? "نشط" : "متوقف"}`;
+  roots.forEach(parent => {
+    const parentRow = document.createElement("div");
+    parentRow.className = "item category-parent-item";
 
-    const editButton = makeButton("تعديل", () => {
-      editingCategoryId = category.id;
-      $("categoryName").value = category.name;
-      $("categoryOrder").value = category.sort_order ?? 0;
-      $("categoryActive").checked = category.is_active !== false;
-      $("saveCategory").textContent = "حفظ التعديلات";
-      $("cancelCategoryEdit").classList.remove("hide");
-      setMessage("categoryMsg", "عدّل البيانات ثم اضغط حفظ التعديلات.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    const parentInfo = document.createElement("div");
+    parentInfo.className = "info";
+    parentInfo.textContent = `📁 ${parent.name} — قسم رئيسي — الترتيب: ${parent.sort_order ?? 0} — ${parent.is_active ? "نشط" : "متوقف"}`;
 
-    const toggleButton = makeButton(category.is_active ? "إيقاف" : "تفعيل", async () => {
-      toggleButton.disabled = true;
+    const parentEdit = makeButton("تعديل", () => beginCategoryEdit(parent));
+    const parentToggle = makeButton(parent.is_active ? "إيقاف" : "تفعيل", async () => {
+      parentToggle.disabled = true;
       const { error } = await supabase.from("categories")
-        .update({ is_active: !category.is_active }).eq("id", category.id);
+        .update({ is_active: !parent.is_active }).eq("id", parent.id);
       if (error) {
         alert(`تعذر تغيير حالة القسم: ${error.message}`);
-        toggleButton.disabled = false;
+        parentToggle.disabled = false;
         return;
       }
-       await loadCategories();
-      renderCategoryOptions();
-    });
-
-    const deleteButton = makeButton("حذف", async () => {
-      const { count, error: countError } = await supabase.from("products")
-        .select("id", { count: "exact", head: true }).eq("category", category.name);
-      if (countError) {
-        alert(`تعذر التحقق من المنتجات المرتبطة: ${countError.message}`);
-        return;
-      }
-      if ((count || 0) > 0) {
-        alert(`لا يمكن حذف القسم "${category.name}" لأنه مرتبط بـ ${count} منتج. انقل المنتجات إلى قسم آخر أولاً، أو أوقف القسم بدلاً من حذفه.`);
-        return;
-      }
-      if (!confirm(`هل تريد حذف قسم "${category.name}" نهائياً؟`)) return;
-      deleteButton.disabled = true;
-      const { error } = await supabase.from("categories").delete().eq("id", category.id);
-      if (error) {
-        alert(`تعذر حذف القسم: ${error.message}`);
-        deleteButton.disabled = false;
-        return;
-      }
-      if (editingCategoryId === category.id) resetCategoryForm();
       await loadCategories();
-      renderCategoryOptions();
     });
+    const parentDelete = makeButton("حذف", () => deleteCategory(parent));
+    parentRow.append(parentInfo, parentEdit, parentToggle, parentDelete);
+    container.append(parentRow);
 
-    row.append(info, editButton, toggleButton, deleteButton);
+    const children = cachedCategories
+      .filter(category => String(category.parent_id) === String(parent.id))
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"));
+
+    children.forEach(child => {
+      const childRow = document.createElement("div");
+      childRow.className = "item category-child-item";
+
+      const childInfo = document.createElement("div");
+      childInfo.className = "info";
+      childInfo.textContent = `↳ ${child.name} — فرعي من ${parent.name} — الترتيب: ${child.sort_order ?? 0} — ${child.is_active ? "نشط" : "متوقف"}`;
+
+      const childEdit = makeButton("تعديل", () => beginCategoryEdit(child));
+      const childToggle = makeButton(child.is_active ? "إيقاف" : "تفعيل", async () => {
+        childToggle.disabled = true;
+        const { error } = await supabase.from("categories")
+          .update({ is_active: !child.is_active }).eq("id", child.id);
+        if (error) {
+          alert(`تعذر تغيير حالة القسم الفرعي: ${error.message}`);
+          childToggle.disabled = false;
+          return;
+        }
+        await loadCategories();
+      });
+      const childDelete = makeButton("حذف", () => deleteCategory(child));
+      childRow.append(childInfo, childEdit, childToggle, childDelete);
+      container.append(childRow);
+    });
+  });
+
+  // Keep any orphaned/legacy categories visible so they can be repaired.
+  cachedCategories.filter(category => category.parent_id && !getCategoryById(category.parent_id)).forEach(category => {
+    const row = document.createElement("div");
+    row.className = "item";
+    const info = document.createElement("div");
+    info.className = "info";
+    info.textContent = `⚠ ${category.name} — القسم الرئيسي غير موجود`;
+    row.append(info, makeButton("تعديل", () => beginCategoryEdit(category)));
     container.append(row);
   });
+}
+
+function beginCategoryEdit(category) {
+  editingCategoryId = category.id;
+  $("categoryName").value = category.name;
+  $("categoryOrder").value = category.sort_order ?? 0;
+  $("categoryActive").checked = category.is_active !== false;
+  renderCategoryParentOptions(category.parent_id || "");
+  $("saveCategory").textContent = "حفظ التعديلات";
+  $("cancelCategoryEdit").classList.remove("hide");
+  setMessage("categoryMsg", "عدّل البيانات ثم اضغط حفظ التعديلات.");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function deleteCategory(category) {
+  const children = cachedCategories.filter(item => String(item.parent_id) === String(category.id));
+  if (children.length) {
+    alert(`لا يمكن حذف "${category.name}" لأنه يحتوي على ${children.length} قسم فرعي. احذف الأقسام الفرعية أو انقلها أولاً.`);
+    return;
+  }
+
+  const { count, error: countError } = await supabase.from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("category", category.parent_id ? (getCategoryById(category.parent_id)?.name || "") : category.name);
+
+  if (countError) {
+    alert(`تعذر التحقق من المنتجات المرتبطة: ${countError.message}`);
+    return;
+  }
+
+  const { count: subCount, error: subError } = await supabase.from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("subcategory_id", category.id);
+
+  if (subError) {
+    alert(`تعذر التحقق من المنتجات المرتبطة بالقسم الفرعي: ${subError.message}`);
+    return;
+  }
+
+  if ((subCount || 0) > 0 || (!category.parent_id && (count || 0) > 0)) {
+    alert(`لا يمكن حذف "${category.name}" لأنه مرتبط بمنتجات. انقل المنتجات إلى قسم آخر أولاً، أو أوقف القسم بدلاً من حذفه.`);
+    return;
+  }
+  if (!confirm(`هل تريد حذف قسم "${category.name}" نهائياً؟`)) return;
+
+  const { error } = await supabase.from("categories").delete().eq("id", category.id);
+  if (error) {
+    alert(`تعذر حذف القسم: ${error.message}`);
+    return;
+  }
+  if (editingCategoryId === category.id) resetCategoryForm();
+  await loadCategories();
 }
 
 async function loadCategories() {
   const container = $("categoryList");
   if (container) container.textContent = "جارٍ تحميل الأقسام...";
   const { data, error } = await supabase.from("categories")
-    .select("id,name,sort_order,is_active")
+    .select("id,name,sort_order,is_active,parent_id")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
@@ -917,6 +1080,7 @@ async function loadCategories() {
   cachedCategories = data || [];
   renderCategoryList();
   renderCategoryOptions();
+  renderCategoryParentOptions();
   return true;
 }
 
@@ -927,15 +1091,21 @@ $("categoryForm")?.addEventListener("submit", async event => {
   const name = $("categoryName").value.trim();
   const sort_order = Number($("categoryOrder").value);
   const is_active = $("categoryActive").checked;
+  const parent_id = $("categoryParent").value || null;
 
   if (!name) return setMessage("categoryMsg", "اكتب اسم القسم.", true);
   if (!Number.isInteger(sort_order)) return setMessage("categoryMsg", "ترتيب الظهور يجب أن يكون رقماً صحيحاً.", true);
+  if (parent_id && !getCategoryById(parent_id)) return setMessage("categoryMsg", "القسم الرئيسي المختار غير موجود.", true);
+  if (editingCategoryId !== null && parent_id && getDescendantCategoryIds(editingCategoryId).has(String(parent_id))) {
+    return setMessage("categoryMsg", "لا يمكن نقل القسم إلى نفسه أو إلى أحد أقسامه الفرعية.", true);
+  }
 
   const duplicate = cachedCategories.find(category =>
     category.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase() &&
-    category.id !== editingCategoryId
+    String(category.parent_id || "") === String(parent_id || "") &&
+    String(category.id) !== String(editingCategoryId)
   );
-  if (duplicate) return setMessage("categoryMsg", "يوجد قسم بهذا الاسم بالفعل.", true);
+  if (duplicate) return setMessage("categoryMsg", "يوجد قسم بهذا الاسم تحت نفس القسم الرئيسي بالفعل.", true);
 
   const saveButton = $("saveCategory");
   saveButton.disabled = true;
@@ -943,31 +1113,28 @@ $("categoryForm")?.addEventListener("submit", async event => {
 
   try {
     if (editingCategoryId !== null) {
-      const oldCategory = cachedCategories.find(category => category.id === editingCategoryId);
+      const oldCategory = cachedCategories.find(category => String(category.id) === String(editingCategoryId));
       if (!oldCategory) throw new Error("لم يتم العثور على القسم المطلوب تعديله.");
 
       const { error: categoryError } = await supabase.from("categories")
-        .update({ name, sort_order, is_active }).eq("id", editingCategoryId);
+        .update({ name, sort_order, is_active, parent_id }).eq("id", editingCategoryId);
       if (categoryError) throw categoryError;
 
-      if (oldCategory.name !== name) {
+      // Keep the legacy products.category field synchronized when a root category is renamed.
+      if (!oldCategory.parent_id && !parent_id && oldCategory.name !== name) {
         const { error: productsError } = await supabase.from("products")
           .update({ category: name }).eq("category", oldCategory.name);
-
         if (productsError) {
           const { error: rollbackError } = await supabase.from("categories")
-            .update({ name: oldCategory.name }).eq("id", editingCategoryId);
-          if (rollbackError) {
-            console.error("ASTRO category rename rollback failed:", rollbackError);
-            throw new Error(`تم تغيير اسم القسم، لكن تعذر تحديث المنتجات والتراجع تلقائياً. اسم القسم الحالي: "${name}". خطأ المنتجات: ${productsError.message}`);
-          }
-          throw new Error(`تعذر تحديث المنتجات المرتبطة: ${productsError.message}`);
+            .update({ name: oldCategory.name, parent_id: oldCategory.parent_id }).eq("id", editingCategoryId);
+          if (rollbackError) console.error("ASTRO category rename rollback failed:", rollbackError);
+          throw new Error(`تعذر تحديث اسم القسم في المنتجات: ${productsError.message}`);
         }
       }
       setMessage("categoryMsg", "تم تعديل القسم بنجاح.");
     } else {
       const { error } = await supabase.from("categories")
-        .insert({ name, sort_order, is_active });
+        .insert({ name, sort_order, is_active, parent_id });
       if (error) throw error;
       setMessage("categoryMsg", "تمت إضافة القسم بنجاح.");
     }
@@ -983,6 +1150,11 @@ $("categoryForm")?.addEventListener("submit", async event => {
 });
 
 $("cancelCategoryEdit")?.addEventListener("click", resetCategoryForm);
+
+$("category")?.addEventListener("change", () => {
+  renderProductSubcategoryOptions("");
+});
+
 
 // ========================================
 // تحميل المنتجات
@@ -1029,16 +1201,18 @@ async function loadProducts() {
       ? product.colors.join("، ")
       : "";
 
+    const subcategoryName = getCategoryById(product.subcategory_id)?.name;
     info.textContent =
-      `${product.name} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
+      `${product.name} — ${product.category || "بدون قسم"}${subcategoryName ? ` / ${subcategoryName}` : ""} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
     const edit = makeButton("تعديل", () => {
       resetForm();
 
       $("pid").value = product.id;
       $("name").value = product.name || "";
-      renderCategoryOptions(product.category || "");
+      renderCategoryOptions(product.category || "", product.subcategory_id || "");
       $("category").value = product.category || "";
+      renderProductSubcategoryOptions(product.subcategory_id || "");
       $("price").value = product.price ?? 0;
       $("stock").value = product.stock ?? 0;
       $("description").value = product.description || "";
