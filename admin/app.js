@@ -247,6 +247,7 @@ async function showSession(session) {
     createBrowserNotificationButton();
 
     await Promise.all([
+      loadCategories(),
       loadProducts(),
       loadOrders()
     ]);
@@ -351,6 +352,7 @@ document.querySelectorAll("nav button").forEach(button => {
 
     const views = [
       "products",
+      "categories",
       "orders",
       "bank",
       "notifications",
@@ -370,6 +372,10 @@ document.querySelectorAll("nav button").forEach(button => {
 
     if (button.dataset.view === "products") {
       await loadProducts();
+    }
+
+    if (button.dataset.view === "categories") {
+      await loadCategories();
     }
 
     if (button.dataset.view === "orders") {
@@ -489,8 +495,10 @@ function resetForm() {
 // إضافة منتج
 // ========================================
 
-$("add")?.addEventListener("click", () => {
+$("add")?.addEventListener("click", async () => {
+  await loadCategories();
   resetForm();
+  renderCategoryOptions();
   $("form")?.classList.remove("hide");
 });
 
@@ -776,6 +784,207 @@ function makeButton(label, action) {
 }
 
 // ========================================
+// إدارة أقسام المتجر
+// ========================================
+
+let cachedCategories = [];
+let editingCategoryId = null;
+
+function renderCategoryOptions(selectedValue = $("category")?.value || "") {
+  const select = $("category");
+  if (!select) return;
+  select.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = cachedCategories.some(item => item.is_active)
+    ? "اختر القسم"
+    : "لا توجد أقسام نشطة؛ أضف أو فعّل قسماً أولاً";
+  select.append(placeholder);
+
+  cachedCategories.filter(category => category.is_active).forEach(category => {
+    const option = document.createElement("option");
+    option.value = category.name;
+    option.textContent = category.name;
+    select.append(option);
+  });
+
+  if (selectedValue && !Array.from(select.options).some(option => option.value === selectedValue)) {
+    const legacyOption = document.createElement("option");
+    legacyOption.value = selectedValue;
+    legacyOption.textContent = `${selectedValue} (قديم/متوقف)`;
+    select.append(legacyOption);
+  }
+  if (selectedValue) select.value = selectedValue;
+}
+
+function resetCategoryForm() {
+  editingCategoryId = null;
+  $("categoryForm")?.reset();
+  if ($("categoryOrder")) $("categoryOrder").value = "0";
+  if ($("categoryActive")) $("categoryActive").checked = true;
+  if ($("saveCategory")) $("saveCategory").textContent = "إضافة القسم";
+  $("cancelCategoryEdit")?.classList.add("hide");
+  setMessage("categoryMsg", "");
+}
+
+function renderCategoryList() {
+  const container = $("categoryList");
+  if (!container) return;
+  container.replaceChildren();
+
+  if (!cachedCategories.length) {
+    container.textContent = "لا توجد أقسام حالياً. أضف أول قسم من النموذج أعلاه.";
+    return;
+  }
+
+  cachedCategories.forEach(category => {
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const info = document.createElement("div");
+    info.className = "info";
+    info.textContent = `${category.name} — الترتيب: ${category.sort_order ?? 0} — ${category.is_active ? "نشط" : "متوقف"}`;
+
+    const editButton = makeButton("تعديل", () => {
+      editingCategoryId = category.id;
+      $("categoryName").value = category.name;
+      $("categoryOrder").value = category.sort_order ?? 0;
+      $("categoryActive").checked = category.is_active !== false;
+      $("saveCategory").textContent = "حفظ التعديلات";
+      $("cancelCategoryEdit").classList.remove("hide");
+      setMessage("categoryMsg", "عدّل البيانات ثم اضغط حفظ التعديلات.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    const toggleButton = makeButton(category.is_active ? "إيقاف" : "تفعيل", async () => {
+      toggleButton.disabled = true;
+      const { error } = await supabase.from("categories")
+        .update({ is_active: !category.is_active }).eq("id", category.id);
+      if (error) {
+        alert(`تعذر تغيير حالة القسم: ${error.message}`);
+        toggleButton.disabled = false;
+        return;
+      }
+       await loadCategories();
+      renderCategoryOptions();
+    });
+
+    const deleteButton = makeButton("حذف", async () => {
+      const { count, error: countError } = await supabase.from("products")
+        .select("id", { count: "exact", head: true }).eq("category", category.name);
+      if (countError) {
+        alert(`تعذر التحقق من المنتجات المرتبطة: ${countError.message}`);
+        return;
+      }
+      if ((count || 0) > 0) {
+        alert(`لا يمكن حذف القسم "${category.name}" لأنه مرتبط بـ ${count} منتج. انقل المنتجات إلى قسم آخر أولاً، أو أوقف القسم بدلاً من حذفه.`);
+        return;
+      }
+      if (!confirm(`هل تريد حذف قسم "${category.name}" نهائياً؟`)) return;
+      deleteButton.disabled = true;
+      const { error } = await supabase.from("categories").delete().eq("id", category.id);
+      if (error) {
+        alert(`تعذر حذف القسم: ${error.message}`);
+        deleteButton.disabled = false;
+        return;
+      }
+      if (editingCategoryId === category.id) resetCategoryForm();
+      await loadCategories();
+      renderCategoryOptions();
+    });
+
+    row.append(info, editButton, toggleButton, deleteButton);
+    container.append(row);
+  });
+}
+
+async function loadCategories() {
+  const container = $("categoryList");
+  if (container) container.textContent = "جارٍ تحميل الأقسام...";
+  const { data, error } = await supabase.from("categories")
+    .select("id,name,sort_order,is_active")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    if (container) container.textContent = `تعذر تحميل الأقسام: ${error.message}`;
+    setMessage("categoryMsg", error.message, true);
+    console.error("ASTRO categories load error:", error);
+    return false;
+  }
+
+  cachedCategories = data || [];
+  renderCategoryList();
+  renderCategoryOptions();
+  return true;
+}
+
+$("categoryForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser) return setMessage("categoryMsg", "انتهت جلسة المدير. سجّل الدخول مجدداً.", true);
+
+  const name = $("categoryName").value.trim();
+  const sort_order = Number($("categoryOrder").value);
+  const is_active = $("categoryActive").checked;
+
+  if (!name) return setMessage("categoryMsg", "اكتب اسم القسم.", true);
+  if (!Number.isInteger(sort_order)) return setMessage("categoryMsg", "ترتيب الظهور يجب أن يكون رقماً صحيحاً.", true);
+
+  const duplicate = cachedCategories.find(category =>
+    category.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase() &&
+    category.id !== editingCategoryId
+  );
+  if (duplicate) return setMessage("categoryMsg", "يوجد قسم بهذا الاسم بالفعل.", true);
+
+  const saveButton = $("saveCategory");
+  saveButton.disabled = true;
+  setMessage("categoryMsg", "جارٍ حفظ القسم...");
+
+  try {
+    if (editingCategoryId !== null) {
+      const oldCategory = cachedCategories.find(category => category.id === editingCategoryId);
+      if (!oldCategory) throw new Error("لم يتم العثور على القسم المطلوب تعديله.");
+
+      const { error: categoryError } = await supabase.from("categories")
+        .update({ name, sort_order, is_active }).eq("id", editingCategoryId);
+      if (categoryError) throw categoryError;
+
+      if (oldCategory.name !== name) {
+        const { error: productsError } = await supabase.from("products")
+          .update({ category: name }).eq("category", oldCategory.name);
+
+        if (productsError) {
+          const { error: rollbackError } = await supabase.from("categories")
+            .update({ name: oldCategory.name }).eq("id", editingCategoryId);
+          if (rollbackError) {
+            console.error("ASTRO category rename rollback failed:", rollbackError);
+            throw new Error(`تم تغيير اسم القسم، لكن تعذر تحديث المنتجات والتراجع تلقائياً. اسم القسم الحالي: "${name}". خطأ المنتجات: ${productsError.message}`);
+          }
+          throw new Error(`تعذر تحديث المنتجات المرتبطة: ${productsError.message}`);
+        }
+      }
+      setMessage("categoryMsg", "تم تعديل القسم بنجاح.");
+    } else {
+      const { error } = await supabase.from("categories")
+        .insert({ name, sort_order, is_active });
+      if (error) throw error;
+      setMessage("categoryMsg", "تمت إضافة القسم بنجاح.");
+    }
+
+    resetCategoryForm();
+    await loadCategories();
+    await loadProducts();
+  } catch (error) {
+    setMessage("categoryMsg", error.message || "حدث خطأ أثناء حفظ القسم.", true);
+  } finally {
+    saveButton.disabled = false;
+  }
+});
+
+$("cancelCategoryEdit")?.addEventListener("click", resetCategoryForm);
+
+// ========================================
 // تحميل المنتجات
 // ========================================
 
@@ -828,7 +1037,8 @@ async function loadProducts() {
 
       $("pid").value = product.id;
       $("name").value = product.name || "";
-      $("category").value = product.category || "هواتف";
+      renderCategoryOptions(product.category || "");
+      $("category").value = product.category || "";
       $("price").value = product.price ?? 0;
       $("stock").value = product.stock ?? 0;
       $("description").value = product.description || "";
@@ -1134,4 +1344,4 @@ if (initialError) {
   );
 } else {
   await showSession(initial.session);
-                                    }
+}
