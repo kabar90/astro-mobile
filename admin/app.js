@@ -485,6 +485,9 @@ function resetForm() {
 
   $("active").checked = true;
 
+  if ($("rewardEnabled")) $("rewardEnabled").checked = false;
+  if ($("rewardPoints")) $("rewardPoints").value = "0";
+
   $("uploadMsg").textContent =
     "اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.";
 
@@ -708,12 +711,21 @@ $("form")?.addEventListener("submit", async (event) => {
       .map(color => color.trim())
       .filter(Boolean);
 
+    const rewardEnabled = $("rewardEnabled")?.checked === true;
+    const rewardPointsInput = $("rewardPoints")?.value ?? "0";
+    const rewardPoints = rewardEnabled ? Number(rewardPointsInput) : 0;
+
+    if (!Number.isInteger(rewardPoints) || rewardPoints < 0) {
+      throw new Error("أدخل عدداً صحيحاً من نقاط المكافآت لا يقل عن صفر.");
+    }
+
     const record = {
       name: $("name").value.trim(),
       category: $("category").value,
       subcategory_id: $("subcategory").value || null,
       price: Number($("price").value),
       stock: Number($("stock").value),
+      reward_points: rewardPoints,
       description: $("description").value.trim(),
       colors: colors,
       image_url: imageUrl || null,
@@ -858,7 +870,7 @@ function renderProductSubcategoryOptions(selectedSubcategoryId = $("subcategory"
   );
 
   select.replaceChildren();
-  const placeholder = document.createElement("option");
+    const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.textContent = parent ? "بدون قسم فرعي" : "اختر القسم الرئيسي أولاً";
   select.append(placeholder);
@@ -1203,7 +1215,7 @@ async function loadProducts() {
 
     const subcategoryName = getCategoryById(product.subcategory_id)?.name;
     info.textContent =
-      `${product.name} — ${product.category || "بدون قسم"}${subcategoryName ? ` / ${subcategoryName}` : ""} — ${product.price} د.ل — المخزون: ${product.stock} — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
+      `${product.name} — ${product.category || "بدون قسم"}${subcategoryName ? ` / ${subcategoryName}` : ""} — ${product.price} د.ل — المخزون: ${product.stock} — نقاط المكافآت: ${Number(product.reward_points ?? 0)} لكل قطعة — الألوان: ${colorsText || "غير محددة"} — ${product.is_active ? "ظاهر" : "مخفي"}`;
 
     const edit = makeButton("تعديل", () => {
       resetForm();
@@ -1215,6 +1227,8 @@ async function loadProducts() {
       renderProductSubcategoryOptions(product.subcategory_id || "");
       $("price").value = product.price ?? 0;
       $("stock").value = product.stock ?? 0;
+      if ($("rewardPoints")) $("rewardPoints").value = String(product.reward_points ?? 0);
+      if ($("rewardEnabled")) $("rewardEnabled").checked = Number(product.reward_points ?? 0) > 0;
       $("description").value = product.description || "";
 
       $("colors").value = Array.isArray(product.colors)
