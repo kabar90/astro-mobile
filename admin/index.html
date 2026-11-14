@@ -84,6 +84,26 @@
           step="1" value="1" required>
       </label>
 
+      <!-- إعداد نقاط المكافآت للمنتج -->
+      <fieldset class="reward-settings">
+        <legend>نظام مكافآت المنتج</legend>
+
+        <label>
+          <input id="rewardEnabled" type="checkbox">
+          هذا المنتج يمنح نقاط مكافآت
+        </label>
+
+        <label>عدد النقاط لكل قطعة
+          <input id="rewardPoints" type="number"
+            min="0" step="1" value="0" inputmode="numeric">
+        </label>
+
+        <small>
+          فعّل الخيار وحدد عدد النقاط التي يحصل عليها الزبون عن كل قطعة.
+          اترك النقاط بصفر إذا كنت لا تريد منح مكافآت لهذا المنتج.
+        </small>
+      </fieldset>
+
       <label>الوصف
         <textarea id="description"></textarea>
       </label>
