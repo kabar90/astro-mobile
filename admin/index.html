@@ -44,6 +44,7 @@
 
   <nav>
     <button data-view="products">المنتجات</button>
+    <button data-view="categories">إدارة الأقسام</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
     <button data-view="notifications">إرسال إشعار للعملاء</button>
@@ -62,12 +63,8 @@
       </label>
 
       <label>القسم
-        <select id="category">
-          <option>هواتف</option>
-          <option>كماليات</option>
-          <option>مستعمل</option>
-          <option>أجهزة لوحية</option>
-          <option>أخرى</option>
+        <select id="category" required>
+          <option value="">جارٍ تحميل الأقسام...</option>
         </select>
       </label>
 
@@ -120,6 +117,28 @@
     </form>
 
     <div id="productList">جارٍ تحميل المنتجات...</div>
+  </section>
+
+  <!-- إدارة الأقسام -->
+  <section id="categories" class="card hide">
+    <h2>إدارة أقسام المتجر</h2>
+    <p>أضف الأقسام وعدّل أسماءها ورتّب ظهورها. يمكنك إيقاف القسم دون حذف المنتجات المرتبطة به.</p>
+    <form id="categoryForm">
+      <label>اسم القسم
+        <input id="categoryName" type="text" maxlength="60" placeholder="مثال: هواتف" required>
+      </label>
+      <label>ترتيب الظهور
+        <input id="categoryOrder" type="number" step="1" value="0" required>
+      </label>
+      <label>
+        <input id="categoryActive" type="checkbox" checked>
+        قسم نشط ويظهر ضمن الأقسام المتاحة
+      </label>
+      <button id="saveCategory" type="submit">إضافة القسم</button>
+      <button id="cancelCategoryEdit" type="button" class="hide">إلغاء التعديل</button>
+      <p id="categoryMsg" role="status"></p>
+    </form>
+    <div id="categoryList">جارٍ تحميل الأقسام...</div>
   </section>
 
   <!-- الطلبات -->
