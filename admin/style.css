@@ -1,4 +1,4 @@
-/* ASTRO MOBILE admin theme — blue & white */
+/* ASTRO MOBILE admin theme — branded navy header */
 :root{
   --astro-navy:#082C5C;
   --astro-blue:#087FE5;
@@ -11,8 +11,35 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--astro-bg);color:var(--astro-text);font-family:Arial,Tahoma,sans-serif}
 .wrap{max-width:900px;margin:auto;padding:16px}
-header{color:var(--astro-white);display:flex;justify-content:space-between;align-items:center;padding:15px 4px 25px;font-size:24px}
-header span{color:var(--astro-sky)}
+.astro-header{
+  min-height:104px;
+  background:linear-gradient(120deg,#061F43 0%,#082C5C 58%,#0A4C8F 100%);
+  color:var(--astro-white);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  padding:16px 20px;
+  margin:0 0 18px;
+  border-radius:18px;
+  box-shadow:0 8px 22px rgba(8,44,92,.18);
+}
+.astro-brand{display:flex;align-items:center;gap:14px;min-width:0}
+.astro-logo{
+  display:block;
+  width:72px;
+  height:72px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:14px;
+  padding:4px;
+  flex:0 0 auto;
+}
+.astro-brand-text{display:flex;flex-direction:column;gap:5px;min-width:0}
+.astro-name{font-size:clamp(19px,4vw,27px);font-weight:900;letter-spacing:.5px;white-space:nowrap}
+.astro-name span{color:var(--astro-sky)}
+.astro-subtitle{font-size:13px;color:#D6E9FA;font-weight:600}
+.astro-header #logout{background:#fff;color:var(--astro-navy);margin:0;white-space:nowrap}
 .card{background:var(--astro-white);border:1px solid var(--astro-border);border-radius:18px;padding:22px;margin:14px 0;box-shadow:0 5px 18px rgba(8,44,92,.06)}
 #login{max-width:520px;margin:35px auto}
 label{display:block;margin:14px 0;font-weight:bold;color:var(--astro-navy)}
@@ -33,4 +60,20 @@ footer{text-align:center;color:#66809A;padding:20px}
 #form{background:#F0F7FD;padding:15px;border:1px solid var(--astro-border);border-radius:12px}
 #formMsg,#loginMsg{overflow-wrap:anywhere}
 #uploadMsg{color:#596579;font-size:14px}
-@media(max-width:600px){.wrap{padding:10px}header{font-size:20px;padding:12px 4px 18px}.card{padding:16px}nav{gap:5px}button{padding:11px 13px}}
+@media(max-width:600px){
+  .wrap{padding:10px}
+  .astro-header{min-height:88px;padding:12px;gap:8px;border-radius:14px}
+  .astro-brand{gap:10px}
+  .astro-logo{width:58px;height:58px;border-radius:11px}
+  .astro-name{font-size:19px}
+  .astro-subtitle{font-size:11px}
+  .astro-header #logout{font-size:12px;padding:10px}
+  .card{padding:16px}
+  nav{gap:5px}
+  button{padding:11px 13px}
+}
+@media(max-width:380px){
+  .astro-logo{width:50px;height:50px}
+  .astro-name{font-size:16px}
+  .astro-header #logout{font-size:11px;padding:8px}
+}
