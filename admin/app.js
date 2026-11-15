@@ -249,7 +249,8 @@ async function showSession(session) {
     await Promise.all([
       loadCategories(),
       loadProducts(),
-      loadOrders()
+      loadOrders(),
+      loadDeliveryCities()
     ]);
 
     if (window.ASTRONotifications?.refresh) {
@@ -354,6 +355,7 @@ document.querySelectorAll("nav button").forEach(button => {
       "products",
       "categories",
       "orders",
+      "delivery",
       "bank",
       "notifications",
       "history"
@@ -380,6 +382,10 @@ document.querySelectorAll("nav button").forEach(button => {
 
     if (button.dataset.view === "orders") {
       await loadOrders();
+    }
+
+    if (button.dataset.view === "delivery") {
+      await loadDeliveryCities();
     }
 
     if (
@@ -487,7 +493,6 @@ function resetForm() {
 
   if ($("rewardEnabled")) $("rewardEnabled").checked = false;
   if ($("rewardPoints")) $("rewardPoints").value = "0";
-  if ($("allowPointsPayment")) $("allowPointsPayment").checked = false;
 
   $("uploadMsg").textContent =
     "اختر صورة من هاتفك، وسيتم رفعها إلى Supabase عند حفظ المنتج.";
@@ -727,7 +732,6 @@ $("form")?.addEventListener("submit", async (event) => {
       price: Number($("price").value),
       stock: Number($("stock").value),
       reward_points: rewardPoints,
-      allow_points_payment: $("allowPointsPayment")?.checked === true,
       description: $("description").value.trim(),
       colors: colors,
       image_url: imageUrl || null,
@@ -868,7 +872,7 @@ function renderProductSubcategoryOptions(selectedSubcategoryId = $("subcategory"
   if (!select || !parentSelect) return;
 
   const parent = cachedCategories.find(category =>
-    !category.parent_id && category.name === parentSelect.value
+      !category.parent_id && category.name === parentSelect.value
   );
 
   select.replaceChildren();
@@ -1231,7 +1235,6 @@ async function loadProducts() {
       $("stock").value = product.stock ?? 0;
       if ($("rewardPoints")) $("rewardPoints").value = String(product.reward_points ?? 0);
       if ($("rewardEnabled")) $("rewardEnabled").checked = Number(product.reward_points ?? 0) > 0;
-      if ($("allowPointsPayment")) $("allowPointsPayment").checked = product.allow_points_payment === true;
       $("description").value = product.description || "";
 
       $("colors").value = Array.isArray(product.colors)
@@ -1416,6 +1419,11 @@ async function loadOrders() {
     addOrderField(card, "الهاتف", order.phone);
     addOrderField(card, "العنوان", order.address || "غير محدد");
     addOrderField(card, "طريقة الاستلام", order.delivery_method === "pickup" ? "استلام من المتجر" : order.delivery_method === "delivery" ? "توصيل" : order.delivery_method);
+    if (order.delivery_method === "delivery") {
+      addOrderField(card, "مدينة التوصيل", order.delivery_city || "غير محددة");
+      addOrderField(card, "رسوم التوصيل", `${Number(order.delivery_fee || 0).toFixed(2)} د.ل`);
+      addOrderField(card, "مدة الوصول عند الطلب", order.delivery_estimate || "غير محددة");
+    }
     addOrderField(card, "طريقة الدفع", order.payment_method === "cash" ? "نقداً عند الاستلام" : order.payment_method === "transfer" ? "تحويل مصرفي" : order.payment_method);
 
     const productTitle = document.createElement("h4");
@@ -1518,6 +1526,109 @@ async function loadOrders() {
     container.append(card);
   }
 }
+
+// ========================================
+// إدارة مدن التوصيل ورسومها ومدد الوصول
+// ========================================
+
+function resetDeliveryCityForm() {
+  $("deliveryCityForm")?.reset();
+  $("deliveryCityId").value = "";
+  $("deliveryCityActive").checked = true;
+  $("saveDeliveryCity").textContent = "حفظ المدينة";
+  $("cancelDeliveryCity").classList.add("hide");
+}
+
+async function loadDeliveryCities() {
+  const container = $("deliveryCityList");
+  if (!container) return;
+  container.textContent = "جارٍ تحميل المدن...";
+  const { data, error } = await supabase
+    .from("delivery_cities")
+    .select("id,city_name,delivery_fee,estimated_delivery,is_active")
+    .order("city_name", { ascending: true });
+  if (error) {
+    container.textContent = `تعذر تحميل المدن: ${error.message}. تأكد من تنفيذ ملف delivery_setup.sql.`;
+    return;
+  }
+  container.replaceChildren();
+  if (!data?.length) {
+    container.textContent = "لا توجد مدن مضافة. استخدم النموذج لإضافة أول مدينة.";
+    return;
+  }
+  data.forEach(city => {
+    const card = document.createElement("article");
+    card.className = "item";
+    card.style.cssText = "display:block;background:#fff;color:#172033;border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0;";
+    const title = document.createElement("h3");
+    title.textContent = city.city_name;
+    card.append(title);
+    addOrderField(card, "رسوم التوصيل", `${Number(city.delivery_fee).toFixed(2)} د.ل`);
+    addOrderField(card, "مدة الوصول", city.estimated_delivery);
+    addOrderField(card, "الحالة", city.is_active ? "متاحة للزبائن" : "متوقفة مؤقتاً");
+    const edit = makeButton("تعديل", () => {
+      $("deliveryCityId").value = String(city.id);
+      $("deliveryCityName").value = city.city_name;
+      $("deliveryCityFee").value = String(city.delivery_fee);
+      $("deliveryCityEta").value = city.estimated_delivery;
+      $("deliveryCityActive").checked = city.is_active;
+      $("saveDeliveryCity").textContent = "حفظ التعديلات";
+      $("cancelDeliveryCity").classList.remove("hide");
+      $("deliveryCityForm").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    const toggle = makeButton(city.is_active ? "تعطيل المدينة" : "تفعيل المدينة", async () => {
+      const { error: updateError } = await supabase.from("delivery_cities")
+        .update({ is_active: !city.is_active, updated_at: new Date().toISOString() })
+        .eq("id", city.id);
+      if (updateError) return setMessage("deliveryCityMsg", `تعذر تغيير الحالة: ${updateError.message}`, true);
+      setMessage("deliveryCityMsg", "تم تحديث حالة المدينة.");
+      await loadDeliveryCities();
+    });
+    const del = makeButton("حذف", async () => {
+      if (!confirm(`هل تريد حذف مدينة ${city.city_name}؟`)) return;
+      const { error: deleteError } = await supabase.from("delivery_cities").delete().eq("id", city.id);
+      if (deleteError) return setMessage("deliveryCityMsg", `تعذر حذف المدينة: ${deleteError.message}`, true);
+      setMessage("deliveryCityMsg", "تم حذف المدينة.");
+      await loadDeliveryCities();
+    });
+    card.append(edit, toggle, del);
+    container.append(card);
+  });
+}
+
+$("deliveryCityForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser) return setMessage("deliveryCityMsg", "يرجى تسجيل الدخول مجدداً.", true);
+  const id = $("deliveryCityId").value;
+  const payload = {
+    city_name: $("deliveryCityName").value.trim(),
+    delivery_fee: Number($("deliveryCityFee").value),
+    estimated_delivery: $("deliveryCityEta").value.trim(),
+    is_active: $("deliveryCityActive").checked,
+    updated_at: new Date().toISOString()
+  };
+  if (!payload.city_name || !payload.estimated_delivery || !Number.isFinite(payload.delivery_fee) || payload.delivery_fee < 0) {
+    return setMessage("deliveryCityMsg", "تحقق من اسم المدينة والرسوم ومدة الوصول.", true);
+  }
+  const button = $("saveDeliveryCity");
+  button.disabled = true;
+  try {
+    const query = id
+      ? supabase.from("delivery_cities").update(payload).eq("id", id)
+      : supabase.from("delivery_cities").insert(payload);
+    const { error } = await query;
+    if (error) throw error;
+    setMessage("deliveryCityMsg", id ? "تم تعديل بيانات المدينة بنجاح." : "تمت إضافة المدينة بنجاح.");
+    resetDeliveryCityForm();
+    await loadDeliveryCities();
+  } catch (error) {
+    setMessage("deliveryCityMsg", `تعذر حفظ المدينة: ${error.message || error}`, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$("cancelDeliveryCity")?.addEventListener("click", resetDeliveryCityForm);
 
 // ========================================
 // استعادة جلسة المدير عند فتح الصفحة
