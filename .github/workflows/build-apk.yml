@@ -1,10 +1,11 @@
+
 name: Build ASTRO MOBILE APK
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'ASTRO_MOBILE_AUTH_REFRESH_FIXED.zip'
+      - 'ASTRO_MOBILE_POINTS_PAYMENT_UI.zip'
       - 'google-services.json'
       - '.github/workflows/build-apk.yml'
 
@@ -24,7 +25,7 @@ jobs:
           set -e
           rm -rf astro_mobile extracted_project
           mkdir -p extracted_project
-          unzip -o ASTRO_MOBILE_AUTH_REFRESH_FIXED.zip -d extracted_project
+          unzip -o ASTRO_MOBILE_POINTS_PAYMENT_UI.zip -d extracted_project
 
           PROJECT_DIR="$(find extracted_project -type f -name pubspec.yaml -print -quit | xargs -r dirname)"
           if [ -z "$PROJECT_DIR" ]; then
