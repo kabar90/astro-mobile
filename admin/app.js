@@ -1415,9 +1415,9 @@ async function loadOrders() {
     heading.style.cssText = "margin:0 0 14px;font-size:18px;";
     card.append(heading);
 
-    addOrderField(card, "العميل", order.customer_name);
-    addOrderField(card, "الهاتف", order.phone);
-    addOrderField(card, "العنوان", order.address || "غير محدد");
+        addOrderField(card, "العميل", order.customer_name || order.name || "غير محدد");
+    addOrderField(card, "الهاتف", order.customer_phone || order.phone || "غير محدد");
+    addOrderField(card, "العنوان", order.customer_address || order.address || "غير محدد");
     addOrderField(card, "طريقة الاستلام", order.delivery_method === "pickup" ? "استلام من المتجر" : order.delivery_method === "delivery" ? "توصيل" : order.delivery_method);
     if (order.delivery_method === "delivery") {
       addOrderField(card, "مدينة التوصيل", order.delivery_city || "غير محددة");
