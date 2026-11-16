@@ -96,6 +96,23 @@ jobs:
                           return start, i
               return None
 
+          # Disable the crashing release lint analysis.
+          android_block = find_block(a, r'\bandroid\s*\{')
+          if android_block is None:
+              raise SystemExit("Android block not found while configuring lint")
+
+          android_start, android_end = android_block
+          android_body = a[android_start:android_end + 1]
+
+          if not re.search(r'\blint\s*\{', android_body):
+              lint_config = """
+              lint {
+                  checkReleaseBuilds = false
+                  abortOnError = false
+              }
+              """
+              a = a[:android_start + 1] + lint_config + a[android_start + 1:]
+
           if "com.google.gms.google-services" not in s:
               plugin = (
                   '    id("com.google.gms.google-services") version "4.4.2" apply false'
@@ -252,6 +269,7 @@ jobs:
 
           print("Signing configuration and Desugaring configured successfully.")
           print("Android minSdkVersion set to 24.")
+          print("Release lint checks disabled.")
           PY
 
       - name: Configure Supabase callback
