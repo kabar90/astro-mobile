@@ -102,27 +102,51 @@ function setTypeFields() {
     "hide",
     type !== "bundle"
   );
+
+  // الحقول المخفية لا تمنع إرسال النموذج.
+  $("offerProduct").required = type === "product";
+  $("offerCategory").required = type === "category";
+  $("discountValue").required = type !== "bundle";
+  $("bundlePrice").required = type === "bundle";
 }
 
 function setDiscountFields() {
   const type = $("offerType").value;
-  const discountType = $("discountType").value;
 
-  $("discountValueLabel").textContent =
+  if (type === "category") {
+    $("discountType").value = "percentage";
+    $("discountType").disabled = true;
+  } else {
+    $("discountType").disabled = false;
+  }
+
+  const discountType = $("discountType").value;
+  const label = $("discountValueLabel");
+  const input = $("discountValue");
+
+  // في HTML القديم كان النص داخل label نفسه؛ ننشئ span للنص
+  // ونحافظ على حقل الإدخال الموجود بداخله.
+  let labelText = $("discountValueText");
+
+  if (!labelText) {
+    labelText = document.createElement("span");
+    labelText.id = "discountValueText";
+
+    Array.from(label.childNodes).forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        node.textContent = "";
+      }
+    });
+
+    label.insertBefore(labelText, input);
+  }
+
+  labelText.textContent =
     discountType === "percentage"
       ? "نسبة الخصم (%)"
       : "سعر القطعة بعد الخصم بالدينار";
 
-  $("discountValue").max =
-    discountType === "percentage" ? "100" : "";
-  
-  if (type === "category") {
-    $("discountType").value = "percentage";
-    $("discountType").disabled = true;
-    $("discountValueLabel").textContent = "نسبة الخصم (%)";
-  } else {
-    $("discountType").disabled = false;
-  }
+  input.max = discountType === "percentage" ? "100" : "";
 }
 
 function resetForm() {
