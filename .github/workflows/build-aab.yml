@@ -77,72 +77,102 @@ jobs:
           a = app.read_text()
           kotlin = app.suffix == ".kts"
 
+          def find_block(text, pattern):
+              match = re.search(pattern, text)
+              if not match:
+                  return None
+
+              start = text.find("{", match.start())
+              if start < 0:
+                  return None
+
+              depth = 0
+              for i in range(start, len(text)):
+                  if text[i] == "{":
+                      depth += 1
+                  elif text[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          return start, i
+              return None
+
           if "com.google.gms.google-services" not in s:
               plugin = (
                   '    id("com.google.gms.google-services") version "4.4.2" apply false'
                   if settings.suffix == ".kts"
                   else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
               )
-              s = re.sub(
-                  r'plugins\s*\{',
-                  lambda m: m.group(0) + "\n" + plugin,
-                  s,
-                  count=1
-              )
-              settings.write_text(s)
+              if re.search(r'plugins\s*\{', s):
+                  s = re.sub(
+                      r'plugins\s*\{',
+                      lambda m: m.group(0) + "\n" + plugin,
+                      s,
+                      count=1
+                  )
+              else:
+                  raise SystemExit("Gradle settings plugins block not found")
 
           if "com.google.gms.google-services" not in a:
               plugin = (
                   '    id("com.google.gms.google-services")'
                   if kotlin else "    id 'com.google.gms.google-services'"
               )
-              a = re.sub(
-                  r'plugins\s*\{',
-                  lambda m: m.group(0) + "\n" + plugin,
-                  a,
-                  count=1
-              )
+              if re.search(r'plugins\s*\{', a):
+                  a = re.sub(
+                      r'plugins\s*\{',
+                      lambda m: m.group(0) + "\n" + plugin,
+                      a,
+                      count=1
+                  )
+              else:
+                  raise SystemExit("App plugins block not found")
 
           if kotlin:
-              if "signingConfigs" not in a:
-                  signing_block = """
-          signingConfigs {
+              signing_entry = """
               create("release") {
                   keyAlias = "astro-mobile-upload"
                   keyPassword = System.getenv("KEY_PASSWORD")
                   storeFile = file("astro-upload-key.jks")
                   storePassword = System.getenv("KEYSTORE_PASSWORD")
               }
-          }
           """
-                  a = re.sub(
-                      r'buildTypes\s*\{',
-                      lambda m: signing_block + "\n" + m.group(0),
-                      a,
-                      count=1
-                  )
-              elif 'create("release")' not in a:
-                  a = re.sub(
-                      r'signingConfigs\s*\{',
-                      lambda m: m.group(0) + """
-              create("release") {
-                  keyAlias = "astro-mobile-upload"
-                  keyPassword = System.getenv("KEY_PASSWORD")
-                  storeFile = file("astro-upload-key.jks")
-                  storePassword = System.getenv("KEYSTORE_PASSWORD")
+              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+
+          else:
+              signing_entry = """
+              release {
+                  keyAlias 'astro-mobile-upload'
+                  keyPassword System.getenv('KEY_PASSWORD')
+                  storeFile file('astro-upload-key.jks')
+                  storePassword System.getenv('KEYSTORE_PASSWORD')
               }
-          """,
-                      a,
-                      count=1
-                  )
+          """
+              dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
 
-              a = re.sub(
-                  r'(buildTypes\s*\{\s*release\s*\{)',
-                  r'\1\n            signingConfig = signingConfigs.getByName("release")',
-                  a,
-                  count=1
-              ) if 'signingConfig = signingConfigs.getByName("release")' not in a else a
+          signing_block = find_block(a, r'\bsigningConfigs\s*\{')
 
+          if signing_block is None:
+              android_block = find_block(a, r'\bandroid\s*\{')
+              if android_block is None:
+                  raise SystemExit("Android block not found")
+
+              insert_at = android_block[0] + 1
+              a = a[:insert_at] + "\n    signingConfigs {\n" + signing_entry + "\n    }\n" + a[insert_at:]
+
+          else:
+              start, end = signing_block
+              current_signing = a[start:end + 1]
+
+              has_release = (
+                  re.search(r'create\s*\(\s*["\']release["\']\s*\)', current_signing)
+                  if kotlin
+                  else re.search(r'\brelease\s*\{', current_signing)
+              )
+
+              if not has_release:
+                  a = a[:start + 1] + "\n" + signing_entry + a[start + 1:]
+
+          if kotlin:
               if "isCoreLibraryDesugaringEnabled" not in a:
                   a = re.sub(
                       r'compileOptions\s*\{',
@@ -157,49 +187,24 @@ jobs:
                   a
               )
 
-              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+              release_pattern = r'(buildTypes\s*\{\s*release\s*\{)'
+              if not re.search(release_pattern, a):
+                  raise SystemExit("Release build type not found")
+
+              a = re.sub(
+                  r'signingConfig\s*=\s*signingConfigs\.getByName\(["\'](?:debug|release)["\']\)',
+                  '',
+                  a
+              )
+
+              a = re.sub(
+                  release_pattern,
+                  r'\1\n            signingConfig = signingConfigs.getByName("release")',
+                  a,
+                  count=1
+              )
 
           else:
-              if "signingConfigs" not in a:
-                  signing_block = """
-          signingConfigs {
-              release {
-                  keyAlias 'astro-mobile-upload'
-                  keyPassword System.getenv('KEY_PASSWORD')
-                  storeFile file('astro-upload-key.jks')
-                  storePassword System.getenv('KEYSTORE_PASSWORD')
-              }
-          }
-          """
-                  a = re.sub(
-                      r'buildTypes\s*\{',
-                      lambda m: signing_block + "\n" + m.group(0),
-                      a,
-                      count=1
-                  )
-              elif not re.search(r'\brelease\s*\{', a[a.find('signingConfigs'):]):
-                  a = re.sub(
-                      r'signingConfigs\s*\{',
-                      lambda m: m.group(0) + """
-              release {
-                  keyAlias 'astro-mobile-upload'
-                  keyPassword System.getenv('KEY_PASSWORD')
-                  storeFile file('astro-upload-key.jks')
-                  storePassword System.getenv('KEYSTORE_PASSWORD')
-              }
-          """,
-                      a,
-                      count=1
-                  )
-
-              if "signingConfig signingConfigs.release" not in a:
-                  a = re.sub(
-                      r'(buildTypes\s*\{\s*release\s*\{)',
-                      r'\1\n            signingConfig signingConfigs.release',
-                      a,
-                      count=1
-                  )
-
               if "coreLibraryDesugaringEnabled true" not in a:
                   a = re.sub(
                       r'compileOptions\s*\{',
@@ -214,7 +219,22 @@ jobs:
                   a
               )
 
-              dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+              release_pattern = r'(buildTypes\s*\{\s*release\s*\{)'
+              if not re.search(release_pattern, a):
+                  raise SystemExit("Release build type not found")
+
+              a = re.sub(
+                  r'signingConfig\s+signingConfigs\.(?:debug|release)',
+                  '',
+                  a
+              )
+
+              a = re.sub(
+                  release_pattern,
+                  r'\1\n            signingConfig signingConfigs.release',
+                  a,
+                  count=1
+              )
 
           if "desugar_jdk_libs" not in a:
               if re.search(r'dependencies\s*\{', a):
@@ -229,7 +249,8 @@ jobs:
 
           app.write_text(a)
           settings.write_text(s)
-          print("Signing, Firebase and Desugaring configuration completed.")
+
+          print("Signing configuration and Desugaring configured successfully.")
           PY
 
       - name: Configure Supabase callback
