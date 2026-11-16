@@ -83,7 +83,12 @@ jobs:
                   if settings.suffix == ".kts"
                   else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
               )
-              s = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, s, count=1)
+              s = re.sub(
+                  r'plugins\s*\{',
+                  lambda m: m.group(0) + "\n" + plugin,
+                  s,
+                  count=1
+              )
               settings.write_text(s)
 
           if "com.google.gms.google-services" not in a:
@@ -91,9 +96,31 @@ jobs:
                   '    id("com.google.gms.google-services")'
                   if kotlin else "    id 'com.google.gms.google-services'"
               )
-              a = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, a, count=1)
+              a = re.sub(
+                  r'plugins\s*\{',
+                  lambda m: m.group(0) + "\n" + plugin,
+                  a,
+                  count=1
+              )
 
-          signing = """
+          if kotlin:
+              release_signing = """
+              create("release") {
+                  keyAlias = "astro-mobile-upload"
+                  keyPassword = System.getenv("KEY_PASSWORD")
+                  storeFile = file("astro-upload-key.jks")
+                  storePassword = System.getenv("KEYSTORE_PASSWORD")
+              }
+          """
+
+              signing_match = re.search(r'signingConfigs\s*\{', a)
+
+              if signing_match:
+                  if not re.search(r'create\s*\(\s*["\']release["\']\s*\)', a):
+                      pos = signing_match.end()
+                      a = a[:pos] + "\n" + release_signing + a[pos:]
+              else:
+                  signing_block = """
           signingConfigs {
               create("release") {
                   keyAlias = "astro-mobile-upload"
@@ -102,10 +129,73 @@ jobs:
                   storePassword = System.getenv("KEYSTORE_PASSWORD")
               }
           }
+
+          """
+                  if not re.search(r'buildTypes\s*\{', a):
+                      raise SystemExit("buildTypes block not found")
+                  a = re.sub(
+                      r'buildTypes\s*\{',
+                      lambda m: signing_block + m.group(0),
+                      a,
+                      count=1
+                  )
+
+              a = re.sub(
+                  r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
+                  'signingConfig = signingConfigs.getByName("release")',
+                  a
+              )
+
+              if "signingConfig = signingConfigs.getByName(\"release\")" not in a:
+                  a = re.sub(
+                      r'(buildTypes\s*\{\s*release\s*\{)',
+                      r'\1\n        signingConfig = signingConfigs.getByName("release")',
+                      a,
+                      count=1
+                  )
+
+              if "isCoreLibraryDesugaringEnabled" not in a:
+                  a = re.sub(
+                      r'compileOptions\s*\{',
+                      'compileOptions {\n        isCoreLibraryDesugaringEnabled = true',
+                      a,
+                      count=1
+                  )
+
+              a = re.sub(
+                  r'minSdk\s*=\s*flutter\.minSdkVersion',
+                  'minSdk = 23',
+                  a
+              )
+
+              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+              if "desugar_jdk_libs" not in a:
+                  a = re.sub(
+                      r'dependencies\s*\{',
+                      lambda m: m.group(0) + "\n" + dependency,
+                      a,
+                      count=1
+                  )
+
+          else:
+              release_signing = """
+              release {
+                  keyAlias 'astro-mobile-upload'
+                  keyPassword System.getenv('KEY_PASSWORD')
+                  storeFile file('astro-upload-key.jks')
+                  storePassword System.getenv('KEYSTORE_PASSWORD')
+              }
           """
 
-          if not kotlin:
-              signing = """
+              signing_match = re.search(r'signingConfigs\s*\{', a)
+
+              if signing_match:
+                  signing_section = a[signing_match.start():]
+                  if not re.search(r'\brelease\s*\{', signing_section):
+                      pos = signing_match.end()
+                      a = a[:pos] + "\n" + release_signing + a[pos:]
+              else:
+                  signing_block = """
           signingConfigs {
               release {
                   keyAlias 'astro-mobile-upload'
@@ -114,43 +204,53 @@ jobs:
                   storePassword System.getenv('KEYSTORE_PASSWORD')
               }
           }
+
           """
-
-          if "signingConfigs" not in a:
-              a = re.sub(r'buildTypes\s*\{', signing + "\nbuildTypes {", a, count=1)
-
-          if kotlin:
-              a = re.sub(
-                  r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
-                  'signingConfig = signingConfigs.getByName("release")',
-                  a
-              )
-              if "isCoreLibraryDesugaringEnabled" not in a:
+                  if not re.search(r'buildTypes\s*\{', a):
+                      raise SystemExit("buildTypes block not found")
                   a = re.sub(
-                      r'compileOptions\s*\{',
-                      'compileOptions {\n        isCoreLibraryDesugaringEnabled = true',
-                      a, count=1
+                      r'buildTypes\s*\{',
+                      lambda m: signing_block + m.group(0),
+                      a,
+                      count=1
                   )
-              a = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', a)
-              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-              if "desugar_jdk_libs" not in a:
-                  a = re.sub(r'dependencies\s*\{', lambda m: m.group(0) + "\n" + dependency, a, count=1)
-          else:
+
               a = re.sub(
                   r'signingConfig\s+signingConfigs\.debug',
                   'signingConfig signingConfigs.release',
                   a
               )
+
+              if "signingConfig signingConfigs.release" not in a:
+                  a = re.sub(
+                      r'(buildTypes\s*\{\s*release\s*\{)',
+                      r'\1\n            signingConfig signingConfigs.release',
+                      a,
+                      count=1
+                  )
+
               if "coreLibraryDesugaringEnabled true" not in a:
                   a = re.sub(
                       r'compileOptions\s*\{',
                       'compileOptions {\n        coreLibraryDesugaringEnabled true',
-                      a, count=1
+                      a,
+                      count=1
                   )
-              a = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', a)
+
+              a = re.sub(
+                  r'minSdkVersion\s+flutter\.minSdkVersion',
+                  'minSdkVersion 23',
+                  a
+              )
+
               dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
               if "desugar_jdk_libs" not in a:
-                  a = re.sub(r'dependencies\s*\{', lambda m: m.group(0) + "\n" + dependency, a, count=1)
+                  a = re.sub(
+                      r'dependencies\s*\{',
+                      lambda m: m.group(0) + "\n" + dependency,
+                      a,
+                      count=1
+                  )
 
           app.write_text(a)
           print("Signing and Firebase configuration completed.")
@@ -207,4 +307,3 @@ jobs:
         with:
           name: ASTRO-MOBILE-GOOGLE-PLAY-AAB
           path: astro_mobile/build/app/outputs/bundle/release/app-release.aab
-          
