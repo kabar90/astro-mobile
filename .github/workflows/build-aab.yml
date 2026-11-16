@@ -183,7 +183,7 @@ jobs:
 
               a = re.sub(
                   r'minSdk\s*=\s*flutter\.minSdkVersion',
-                  'minSdk = 23',
+                  'minSdk = 24',
                   a
               )
 
@@ -215,7 +215,7 @@ jobs:
 
               a = re.sub(
                   r'minSdkVersion\s+flutter\.minSdkVersion',
-                  'minSdkVersion 23',
+                  'minSdkVersion 24',
                   a
               )
 
@@ -251,6 +251,7 @@ jobs:
           settings.write_text(s)
 
           print("Signing configuration and Desugaring configured successfully.")
+          print("Android minSdkVersion set to 24.")
           PY
 
       - name: Configure Supabase callback
