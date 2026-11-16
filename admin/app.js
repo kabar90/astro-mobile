@@ -354,6 +354,7 @@ document.querySelectorAll("nav button").forEach(button => {
     const views = [
       "products",
       "categories",
+      "offers",
       "orders",
       "delivery",
       "bank",
@@ -871,7 +872,7 @@ function renderProductSubcategoryOptions(selectedSubcategoryId = $("subcategory"
   const parentSelect = $("category");
   if (!select || !parentSelect) return;
 
-  const parent = cachedCategories.find(category =>
+    const parent = cachedCategories.find(category =>
       !category.parent_id && category.name === parentSelect.value
   );
 
