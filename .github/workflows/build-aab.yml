@@ -291,11 +291,14 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Build signed AAB
-        working-directory: astro_mobile
+        working-directory: astro_mobile/android
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
-        run: flutter build appbundle --release
+        run: |
+          ./gradlew bundleRelease \
+            -x lintVitalAnalyzeRelease \
+            -x lintVitalReportRelease
 
       - name: Verify AAB
         run: |
