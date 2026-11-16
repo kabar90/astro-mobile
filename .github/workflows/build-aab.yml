@@ -1,0 +1,210 @@
+
+name: Build ASTRO MOBILE AAB
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Flutter project
+        run: |
+          set -e
+          mkdir -p extracted_project
+          unzip -o ASTRO_MOBILE_POINTS_PAYMENT_UI.zip -d extracted_project
+          PROJECT_DIR="$(find extracted_project -type f -name pubspec.yaml -print -quit | xargs -r dirname)"
+          test -n "$PROJECT_DIR"
+          mv "$PROJECT_DIR" astro_mobile
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generate Android project
+        working-directory: astro_mobile
+        run: flutter create --platforms=android .
+
+      - name: Configure signing and Firebase
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -e
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_PASSWORD"
+
+          mkdir -p astro_mobile/android/app
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > astro_mobile/android/app/astro-upload-key.jks
+          test -s astro_mobile/android/app/astro-upload-key.jks
+
+          test -f google-services.json
+          cp google-services.json astro_mobile/android/app/google-services.json
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          android = Path("astro_mobile/android")
+          settings = android / "settings.gradle.kts"
+          app = android / "app/build.gradle.kts"
+
+          if not settings.exists():
+              settings = android / "settings.gradle"
+          if not app.exists():
+              app = android / "app/build.gradle"
+
+          if not settings.exists() or not app.exists():
+              raise SystemExit("Android Gradle files not found")
+
+          s = settings.read_text()
+          a = app.read_text()
+          kotlin = app.suffix == ".kts"
+
+          if "com.google.gms.google-services" not in s:
+              plugin = (
+                  '    id("com.google.gms.google-services") version "4.4.2" apply false'
+                  if settings.suffix == ".kts"
+                  else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
+              )
+              s = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, s, count=1)
+              settings.write_text(s)
+
+          if "com.google.gms.google-services" not in a:
+              plugin = (
+                  '    id("com.google.gms.google-services")'
+                  if kotlin else "    id 'com.google.gms.google-services'"
+              )
+              a = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, a, count=1)
+
+          signing = """
+          signingConfigs {
+              create("release") {
+                  keyAlias = "astro-mobile-upload"
+                  keyPassword = System.getenv("KEY_PASSWORD")
+                  storeFile = file("astro-upload-key.jks")
+                  storePassword = System.getenv("KEYSTORE_PASSWORD")
+              }
+          }
+          """
+
+          if not kotlin:
+              signing = """
+          signingConfigs {
+              release {
+                  keyAlias 'astro-mobile-upload'
+                  keyPassword System.getenv('KEY_PASSWORD')
+                  storeFile file('astro-upload-key.jks')
+                  storePassword System.getenv('KEYSTORE_PASSWORD')
+              }
+          }
+          """
+
+          if "signingConfigs" not in a:
+              a = re.sub(r'buildTypes\s*\{', signing + "\nbuildTypes {", a, count=1)
+
+          if kotlin:
+              a = re.sub(
+                  r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
+                  'signingConfig = signingConfigs.getByName("release")',
+                  a
+              )
+              if "isCoreLibraryDesugaringEnabled" not in a:
+                  a = re.sub(
+                      r'compileOptions\s*\{',
+                      'compileOptions {\n        isCoreLibraryDesugaringEnabled = true',
+                      a, count=1
+                  )
+              a = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', a)
+              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+              if "desugar_jdk_libs" not in a:
+                  a = re.sub(r'dependencies\s*\{', lambda m: m.group(0) + "\n" + dependency, a, count=1)
+          else:
+              a = re.sub(
+                  r'signingConfig\s+signingConfigs\.debug',
+                  'signingConfig signingConfigs.release',
+                  a
+              )
+              if "coreLibraryDesugaringEnabled true" not in a:
+                  a = re.sub(
+                      r'compileOptions\s*\{',
+                      'compileOptions {\n        coreLibraryDesugaringEnabled true',
+                      a, count=1
+                  )
+              a = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', a)
+              dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+              if "desugar_jdk_libs" not in a:
+                  a = re.sub(r'dependencies\s*\{', lambda m: m.group(0) + "\n" + dependency, a, count=1)
+
+          app.write_text(a)
+          print("Signing and Firebase configuration completed.")
+          PY
+
+      - name: Configure Supabase callback
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          if 'android:scheme="com.astromobile.store"' not in s:
+              intent_filter = """
+                  <intent-filter>
+                      <action android:name="android.intent.action.VIEW" />
+                      <category android:name="android.intent.category.DEFAULT" />
+                      <category android:name="android.intent.category.BROWSABLE" />
+                      <data android:scheme="com.astromobile.store" android:host="login-callback" />
+                  </intent-filter>
+              """
+              s = s.replace("</activity>", intent_filter + "\n</activity>", 1)
+              p.write_text(s)
+          PY
+
+      - name: Get dependencies
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Clean project
+        working-directory: astro_mobile
+        run: flutter clean
+
+      - name: Get dependencies again
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Generate launcher icon
+        working-directory: astro_mobile
+        run: dart run flutter_launcher_icons
+
+      - name: Build signed AAB
+        working-directory: astro_mobile
+        run: flutter build appbundle --release
+
+      - name: Verify AAB
+        run: |
+          AAB="astro_mobile/build/app/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          jarsigner -verify "$AAB"
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRO-MOBILE-GOOGLE-PLAY-AAB
+          path: astro_mobile/build/app/outputs/bundle/release/app-release.aab
+          
