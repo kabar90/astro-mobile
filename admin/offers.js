@@ -103,7 +103,6 @@ function setTypeFields() {
     type !== "bundle"
   );
 
-  // الحقول المخفية لا تمنع إرسال النموذج.
   $("offerProduct").required = type === "product";
   $("offerCategory").required = type === "category";
   $("discountValue").required = type !== "bundle";
@@ -124,8 +123,6 @@ function setDiscountFields() {
   const label = $("discountValueLabel");
   const input = $("discountValue");
 
-  // في HTML القديم كان النص داخل label نفسه؛ ننشئ span للنص
-  // ونحافظ على حقل الإدخال الموجود بداخله.
   let labelText = $("discountValueText");
 
   if (!labelText) {
@@ -164,6 +161,7 @@ function resetForm() {
   $("offerCancel").classList.add("hide");
 
   productOptions($("offerProduct"));
+
   $("offerCategory").replaceChildren();
   addOption($("offerCategory"), "", "اختر القسم");
 
@@ -367,8 +365,12 @@ async function editOffer(offer) {
     $("offerDescription").value = offer.description || "";
 
     $("offerType").value = offer.offer_type;
+
+    // تحويل قيمة قاعدة البيانات إلى قيمة قائمة الاختيار في HTML
     $("discountType").value =
-      offer.discount_type || "percentage";
+      offer.discount_type === "fixed_price"
+        ? "fixed"
+        : "percentage";
 
     $("discountValue").value =
       offer.discount_value ?? "";
@@ -458,8 +460,8 @@ function validateForm() {
       if (value <= 0 || value > 100) {
         throw new Error("نسبة الخصم يجب أن تكون أكبر من صفر وحتى 100.");
       }
-    } else if (value >= Number(product.price)) {
-      throw new Error("سعر العرض يجب أن يكون أقل من السعر الأصلي.");
+    } else if (value <= 0 || value >= Number(product.price)) {
+      throw new Error("سعر العرض يجب أن يكون أكبر من صفر وأقل من السعر الأصلي.");
     }
   }
 
@@ -511,6 +513,13 @@ function validateForm() {
 
 function buildPayload() {
   const type = $("offerType").value;
+  const selectedDiscountType = $("discountType").value;
+
+  // قاعدة البيانات تقبل percentage أو fixed_price
+  const databaseDiscountType =
+    selectedDiscountType === "fixed"
+      ? "fixed_price"
+      : "percentage";
 
   const payload = {
     name: $("offerName").value.trim(),
@@ -530,7 +539,7 @@ function buildPayload() {
     discount_type:
       type === "bundle"
         ? null
-        : $("discountType").value,
+        : databaseDiscountType,
 
     discount_value:
       type === "bundle"
@@ -786,4 +795,3 @@ supabase.auth.onAuthStateChange((_event, session) => {
 });
 
 initializeOffers();
-    
