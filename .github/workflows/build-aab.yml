@@ -104,22 +104,7 @@ jobs:
               )
 
           if kotlin:
-              release_signing = """
-              create("release") {
-                  keyAlias = "astro-mobile-upload"
-                  keyPassword = System.getenv("KEY_PASSWORD")
-                  storeFile = file("astro-upload-key.jks")
-                  storePassword = System.getenv("KEYSTORE_PASSWORD")
-              }
-          """
-
-              signing_match = re.search(r'signingConfigs\s*\{', a)
-
-              if signing_match:
-                  if not re.search(r'create\s*\(\s*["\']release["\']\s*\)', a):
-                      pos = signing_match.end()
-                      a = a[:pos] + "\n" + release_signing + a[pos:]
-              else:
+              if "signingConfigs" not in a:
                   signing_block = """
           signingConfigs {
               create("release") {
@@ -129,30 +114,34 @@ jobs:
                   storePassword = System.getenv("KEYSTORE_PASSWORD")
               }
           }
-
           """
-                  if not re.search(r'buildTypes\s*\{', a):
-                      raise SystemExit("buildTypes block not found")
                   a = re.sub(
                       r'buildTypes\s*\{',
-                      lambda m: signing_block + m.group(0),
+                      lambda m: signing_block + "\n" + m.group(0),
+                      a,
+                      count=1
+                  )
+              elif 'create("release")' not in a:
+                  a = re.sub(
+                      r'signingConfigs\s*\{',
+                      lambda m: m.group(0) + """
+              create("release") {
+                  keyAlias = "astro-mobile-upload"
+                  keyPassword = System.getenv("KEY_PASSWORD")
+                  storeFile = file("astro-upload-key.jks")
+                  storePassword = System.getenv("KEYSTORE_PASSWORD")
+              }
+          """,
                       a,
                       count=1
                   )
 
               a = re.sub(
-                  r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
-                  'signingConfig = signingConfigs.getByName("release")',
-                  a
-              )
-
-              if "signingConfig = signingConfigs.getByName(\"release\")" not in a:
-                  a = re.sub(
-                      r'(buildTypes\s*\{\s*release\s*\{)',
-                      r'\1\n        signingConfig = signingConfigs.getByName("release")',
-                      a,
-                      count=1
-                  )
+                  r'(buildTypes\s*\{\s*release\s*\{)',
+                  r'\1\n            signingConfig = signingConfigs.getByName("release")',
+                  a,
+                  count=1
+              ) if 'signingConfig = signingConfigs.getByName("release")' not in a else a
 
               if "isCoreLibraryDesugaringEnabled" not in a:
                   a = re.sub(
@@ -169,32 +158,9 @@ jobs:
               )
 
               dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-              if "desugar_jdk_libs" not in a:
-                  a = re.sub(
-                      r'dependencies\s*\{',
-                      lambda m: m.group(0) + "\n" + dependency,
-                      a,
-                      count=1
-                  )
 
           else:
-              release_signing = """
-              release {
-                  keyAlias 'astro-mobile-upload'
-                  keyPassword System.getenv('KEY_PASSWORD')
-                  storeFile file('astro-upload-key.jks')
-                  storePassword System.getenv('KEYSTORE_PASSWORD')
-              }
-          """
-
-              signing_match = re.search(r'signingConfigs\s*\{', a)
-
-              if signing_match:
-                  signing_section = a[signing_match.start():]
-                  if not re.search(r'\brelease\s*\{', signing_section):
-                      pos = signing_match.end()
-                      a = a[:pos] + "\n" + release_signing + a[pos:]
-              else:
+              if "signingConfigs" not in a:
                   signing_block = """
           signingConfigs {
               release {
@@ -204,22 +170,27 @@ jobs:
                   storePassword System.getenv('KEYSTORE_PASSWORD')
               }
           }
-
           """
-                  if not re.search(r'buildTypes\s*\{', a):
-                      raise SystemExit("buildTypes block not found")
                   a = re.sub(
                       r'buildTypes\s*\{',
-                      lambda m: signing_block + m.group(0),
+                      lambda m: signing_block + "\n" + m.group(0),
                       a,
                       count=1
                   )
-
-              a = re.sub(
-                  r'signingConfig\s+signingConfigs\.debug',
-                  'signingConfig signingConfigs.release',
-                  a
-              )
+              elif not re.search(r'\brelease\s*\{', a[a.find('signingConfigs'):]):
+                  a = re.sub(
+                      r'signingConfigs\s*\{',
+                      lambda m: m.group(0) + """
+              release {
+                  keyAlias 'astro-mobile-upload'
+                  keyPassword System.getenv('KEY_PASSWORD')
+                  storeFile file('astro-upload-key.jks')
+                  storePassword System.getenv('KEYSTORE_PASSWORD')
+              }
+          """,
+                      a,
+                      count=1
+                  )
 
               if "signingConfig signingConfigs.release" not in a:
                   a = re.sub(
@@ -244,16 +215,21 @@ jobs:
               )
 
               dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-              if "desugar_jdk_libs" not in a:
+
+          if "desugar_jdk_libs" not in a:
+              if re.search(r'dependencies\s*\{', a):
                   a = re.sub(
                       r'dependencies\s*\{',
                       lambda m: m.group(0) + "\n" + dependency,
                       a,
                       count=1
                   )
+              else:
+                  a += "\n\ndependencies {\n" + dependency + "\n}\n"
 
           app.write_text(a)
-          print("Signing and Firebase configuration completed.")
+          settings.write_text(s)
+          print("Signing, Firebase and Desugaring configuration completed.")
           PY
 
       - name: Configure Supabase callback
@@ -263,6 +239,7 @@ jobs:
 
           p = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
+
           if 'android:scheme="com.astromobile.store"' not in s:
               intent_filter = """
                   <intent-filter>
@@ -294,6 +271,9 @@ jobs:
 
       - name: Build signed AAB
         working-directory: astro_mobile
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
         run: flutter build appbundle --release
 
       - name: Verify AAB
