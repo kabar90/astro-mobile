@@ -297,9 +297,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
         run: |
-          ./gradlew bundleRelease \
-            -x lintVitalAnalyzeRelease \
-            -x lintVitalReportRelease
+          ./gradlew bundleRelease
 
       - name: Verify AAB
         run: |
