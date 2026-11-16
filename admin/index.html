@@ -45,6 +45,7 @@
   <nav>
     <button data-view="products">المنتجات</button>
     <button data-view="categories">إدارة الأقسام</button>
+    <button data-view="offers">إدارة العروض</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="delivery">مدن ورسوم التوصيل</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
@@ -85,7 +86,6 @@
           step="1" value="1" required>
       </label>
 
-      <!-- إعداد نقاط المكافآت للمنتج -->
       <fieldset class="reward-settings">
         <legend>نظام مكافآت المنتج</legend>
 
@@ -150,28 +150,170 @@
   <section id="categories" class="card hide">
     <h2>إدارة أقسام المتجر</h2>
     <p>أنشئ أقساماً رئيسية وفرعية، وعدّل أسماءها وترتيبها وحالتها من هنا دون الحاجة إلى تعديل الكود.</p>
+
     <form id="categoryForm">
       <label>اسم القسم
-        <input id="categoryName" type="text" maxlength="60" placeholder="مثال: هواتف أو آيفون" required>
+        <input id="categoryName" type="text" maxlength="60"
+          placeholder="مثال: هواتف أو آيفون" required>
       </label>
+
       <label>يتبع القسم الرئيسي
         <select id="categoryParent">
           <option value="">قسم رئيسي (بدون قسم أب)</option>
         </select>
       </label>
+
       <small>اتركه على "قسم رئيسي" لإنشاء قسم رئيسي، أو اختر قسماً رئيسياً لإنشاء قسم فرعي تحته.</small>
+
       <label>ترتيب الظهور
         <input id="categoryOrder" type="number" step="1" value="0" required>
       </label>
+
       <label>
         <input id="categoryActive" type="checkbox" checked>
         قسم نشط ويظهر ضمن الأقسام المتاحة
       </label>
+
       <button id="saveCategory" type="submit">إضافة القسم</button>
       <button id="cancelCategoryEdit" type="button" class="hide">إلغاء التعديل</button>
       <p id="categoryMsg" role="status"></p>
     </form>
+
     <div id="categoryList">جارٍ تحميل الأقسام...</div>
+  </section>
+
+  <!-- إدارة العروض -->
+  <section id="offers" class="card hide">
+    <h2>إدارة العروض والخصومات</h2>
+
+    <p>
+      أنشئ عروض المنتجات والأقسام والباقات المجمعة،
+      وحدد مدة العرض وسعره.
+    </p>
+
+    <button id="offerAdd" type="button">
+      ＋ إنشاء عرض جديد
+    </button>
+
+    <button id="refreshOffers" type="button">
+      تحديث العروض
+    </button>
+
+    <form id="offerForm" class="hide">
+
+      <input id="offerId" type="hidden">
+
+      <h3>بيانات العرض</h3>
+
+      <label>اسم العرض
+        <input id="offerName" type="text"
+          maxlength="150" required
+          placeholder="مثال: عرض نهاية الأسبوع">
+      </label>
+
+      <label>وصف العرض
+        <textarea id="offerDescription"
+          placeholder="تفاصيل العرض"></textarea>
+      </label>
+
+      <label>نوع العرض
+        <select id="offerType" required>
+          <option value="product">خصم على منتج</option>
+          <option value="category">خصم على قسم كامل</option>
+          <option value="bundle">باقة منتجات بسعر خاص</option>
+        </select>
+      </label>
+
+      <div id="productOfferFields">
+        <label>اختر المنتج
+          <select id="offerProduct" required>
+            <option value="">اختر المنتج</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="categoryOfferFields" class="hide">
+        <label>اختر القسم
+          <select id="offerCategory">
+            <option value="">اختر القسم</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="discountFields">
+        <label>نوع الخصم
+          <select id="discountType">
+            <option value="percentage">نسبة مئوية</option>
+            <option value="fixed">سعر محدد بعد الخصم</option>
+          </select>
+        </label>
+
+        <label id="discountValueLabel">
+          نسبة الخصم (%)
+          <input id="discountValue"
+            type="number" min="0"
+            step="0.01" required>
+        </label>
+      </div>
+
+      <div id="bundleOfferFields" class="hide">
+        <h3>منتجات الباقة</h3>
+
+        <p>
+          اختر المنتجات والكميات التي تتكون منها الباقة.
+          سيتم التعامل مع مخزون كل منتج بشكل مستقل.
+        </p>
+
+        <div id="bundleItems"></div>
+
+        <button id="addBundleItem" type="button">
+          ＋ إضافة منتج للباقة
+        </button>
+
+        <label>السعر الإجمالي للباقة بالدينار الليبي
+          <input id="bundlePrice"
+            type="number" min="0"
+            step="0.01">
+        </label>
+      </div>
+
+      <hr>
+
+      <h3>مدة العرض</h3>
+
+      <label>تاريخ ووقت بداية العرض
+        <input id="offerStart"
+          type="datetime-local" required>
+      </label>
+
+      <label>تاريخ ووقت نهاية العرض
+        <input id="offerEnd"
+          type="datetime-local" required>
+      </label>
+
+      <label>
+        <input id="offerActive" type="checkbox">
+        تفعيل العرض
+      </label>
+
+      <button id="offerSave" type="submit">
+        إنشاء العرض
+      </button>
+
+      <button id="offerCancel" type="button" class="hide">
+        إلغاء
+      </button>
+
+      <p id="offerMsg" role="status"></p>
+    </form>
+
+    <hr>
+
+    <h3>العروض المسجلة</h3>
+
+    <div id="offerList">
+      جارٍ تحميل العروض...
+    </div>
   </section>
 
   <!-- الطلبات -->
@@ -184,16 +326,35 @@
   <section id="delivery" class="card hide">
     <h2>إدارة مدن التوصيل</h2>
     <p>أضف المدن وحدد رسوم التوصيل ومدة الوصول المتوقعة. المدن غير النشطة لن تظهر للزبائن.</p>
+
     <form id="deliveryCityForm">
       <input id="deliveryCityId" type="hidden">
-      <label>اسم المدينة<input id="deliveryCityName" maxlength="100" required placeholder="مثال: طرابلس"></label>
-      <label>رسوم التوصيل بالدينار الليبي<input id="deliveryCityFee" type="number" min="0" step="0.01" required placeholder="0.00"></label>
-      <label>مدة الوصول المتوقعة<input id="deliveryCityEta" maxlength="100" required placeholder="مثال: من يوم إلى يومين"></label>
-      <label><input id="deliveryCityActive" type="checkbox" checked> المدينة متاحة للطلب</label>
+
+      <label>اسم المدينة
+        <input id="deliveryCityName" maxlength="100"
+          required placeholder="مثال: طرابلس">
+      </label>
+
+      <label>رسوم التوصيل بالدينار الليبي
+        <input id="deliveryCityFee" type="number"
+          min="0" step="0.01" required placeholder="0.00">
+      </label>
+
+      <label>مدة الوصول المتوقعة
+        <input id="deliveryCityEta" maxlength="100"
+          required placeholder="مثال: من يوم إلى يومين">
+      </label>
+
+      <label>
+        <input id="deliveryCityActive" type="checkbox" checked>
+        المدينة متاحة للطلب
+      </label>
+
       <button id="saveDeliveryCity" type="submit">حفظ المدينة</button>
       <button id="cancelDeliveryCity" type="button" class="hide">إلغاء التعديل</button>
       <p id="deliveryCityMsg" role="status"></p>
     </form>
+
     <div id="deliveryCityList">جارٍ تحميل المدن...</div>
   </section>
 
@@ -238,7 +399,6 @@
 
   <!-- إرسال الإشعارات -->
   <section id="notifications" class="card hide">
-
     <h2>إرسال إشعار للعملاء</h2>
 
     <p>
@@ -247,23 +407,16 @@
     </p>
 
     <form id="promoForm">
-
       <label>عنوان الإشعار
-        <input
-          id="promoTitle"
-          type="text"
+        <input id="promoTitle" type="text"
           placeholder="مثال: عروض ASTRO MOBILE"
-          maxlength="100"
-          required>
+          maxlength="100" required>
       </label>
 
       <label>نص الرسالة
-        <textarea
-          id="promoBody"
+        <textarea id="promoBody"
           placeholder="اكتب نص الإشعار هنا..."
-          rows="4"
-          maxlength="500"
-          required></textarea>
+          rows="4" maxlength="500" required></textarea>
       </label>
 
       <button id="sendPromo" type="submit">
@@ -271,7 +424,6 @@
       </button>
 
       <p id="promoMsg" role="status"></p>
-
     </form>
 
     <hr>
@@ -279,7 +431,6 @@
     <h2>إحصائيات الإشعارات</h2>
 
     <div class="notification-stats">
-
       <div class="stat-card">
         <span>إجمالي الأجهزة</span>
         <strong id="notifyTotal">—</strong>
@@ -294,16 +445,13 @@
         <span>الإشعارات الفاشلة</span>
         <strong id="notifyFailed">—</strong>
       </div>
-
     </div>
 
     <p id="notificationMsg" role="status"></p>
-
   </section>
 
   <!-- سجل الإشعارات -->
   <section id="history" class="card hide">
-
     <h2>سجل الإشعارات</h2>
 
     <button id="refreshHistory" type="button">
@@ -313,7 +461,6 @@
     <div id="notificationHistory">
       جارٍ تحميل سجل الإشعارات...
     </div>
-
   </section>
 
 </section>
@@ -323,7 +470,9 @@
 </main>
 
 <script type="module" src="app.js"></script>
+<script type="module" src="offers.js"></script>
 <script type="module" src="notifications.js"></script>
 <script type="module" src="password-reset.js"></script>
+
 </body>
 </html>
