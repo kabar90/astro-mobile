@@ -144,6 +144,16 @@
       <p id="formMsg" role="status"></p>
     </form>
 
+    <div class="product-tools" style="display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr) auto;gap:8px;margin:14px 0;align-items:center">
+      <input id="productSearch" type="search" placeholder="ابحث باسم المنتج..." aria-label="البحث عن منتج">
+      <select id="productStatusFilter" aria-label="تصفية حالة المنتج">
+        <option value="all">كل المنتجات</option>
+        <option value="active">الظاهرة في المتجر</option>
+        <option value="inactive">المخفية</option>
+      </select>
+      <button id="refreshProducts" type="button">تحديث</button>
+    </div>
+    <p id="productFilterMsg" role="status" class="muted"></p>
     <div id="productList">جارٍ تحميل المنتجات...</div>
   </section>
 
