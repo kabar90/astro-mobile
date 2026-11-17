@@ -44,10 +44,43 @@ jobs:
         run: |
           set -e
           patch --batch --forward --fuzz=3 -p1 -d astro_mobile < patches/category-display-controls.patch
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path("astro_mobile/lib/services/product_repository.dart")
+          content = source.read_text()
+
+          if "final String imageUrl;" not in content:
+              anchors = [
+                  ("  final bool isActive;", "  final bool isActive;\\n  final String imageUrl;"),
+                  ("    required this.isActive,", "    required this.isActive,\\n    required this.imageUrl,"),
+                  ("      isActive: row['is_active'] is bool ? row['is_active'] as bool : true,", "      isActive: row['is_active'] is bool ? row['is_active'] as bool : true,\\n      imageUrl: (row['image_url'] ?? '').toString().trim(),"),
+              ]
+              for old, new in anchors:
+                  if old not in content:
+                      raise SystemExit(f"Could not find expected StoreCategory source anchor: {old}")
+                  content = content.replace(old, new, 1)
+
+          if "watchDisplaySettings()" not in content:
+              anchor = "  static Stream<List<Product>> watchProducts() {"
+              if anchor not in content:
+                  raise SystemExit("Could not find watchProducts insertion point")
+              method = """  static Stream<List<Map<String, dynamic>>> watchDisplaySettings() {
+              return _db
+                  .from('store_display_settings')
+                  .stream(primaryKey: ['id'])
+                  .eq('id', 1);
+            }
+
+          """
+              content = content.replace(anchor, method + anchor, 1)
+
+          source.write_text(content)
+          print("Store category image URLs and display settings stream added.")
+          PY
           grep -q "watchDisplaySettings" astro_mobile/lib/services/product_repository.dart
           grep -q "_productListTile" astro_mobile/lib/screens/home_screen.dart
           echo "Category images and product layout controls applied."
-
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
