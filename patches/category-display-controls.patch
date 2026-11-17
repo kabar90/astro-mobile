@@ -331,7 +331,7 @@
  
    factory StoreCategory.fromMap(Map<String, dynamic> row) {
 @@ -28,6 +30,7 @@
-       parentId: asInt(row['id']) ?? 0,
+       id: asInt(row['id']) ?? 0,
        name: (row['name'] ?? '').toString(),
        parentId: asInt(row['parent_id']),
        sortOrder: asInt(row['sort_order']) ?? 0,
