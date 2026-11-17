@@ -40,6 +40,13 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
+      - name: Apply category image and display settings
+        run: |
+          set -e
+          patch --batch --forward -p1 < patches/category-display-controls-live.patch
+          git diff --check
+          echo "Category images and display controls patch applied."
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
