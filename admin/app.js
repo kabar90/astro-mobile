@@ -1188,10 +1188,44 @@ async function loadProducts() {
 
   const search = $("productSearch")?.value.trim() || "";
   const status = $("productStatusFilter")?.value || "all";
+  const categoryName = $("productCategoryFilter")?.value || "";
+  const subcategoryId = $("productSubcategoryFilter")?.value || "";
   const bindFilters = () => {
     const searchInput = $("productSearch");
     const statusSelect = $("productStatusFilter");
     const refreshButton = $("refreshProducts");
+    const categoryFilter = $("productCategoryFilter");
+    const subcategoryFilter = $("productSubcategoryFilter");
+    if (categoryFilter && !categoryFilter.dataset.initialized) {
+      const selectedRoot = categoryFilter.value;
+      categoryFilter.replaceChildren(new Option("كل الأقسام", ""));
+      cachedCategories.filter(c => !c.parent_id).forEach(c => categoryFilter.add(new Option(c.name, c.name)));
+      categoryFilter.value = selectedRoot;
+      categoryFilter.dataset.initialized = "1";
+    }
+    const refreshSubcategories = () => {
+      if (!subcategoryFilter) return;
+      const selected = subcategoryFilter.value;
+      subcategoryFilter.replaceChildren(new Option("كل الأقسام الفرعية", ""));
+      const root = cachedCategories.find(c => !c.parent_id && c.name === categoryFilter?.value);
+      const children = root ? cachedCategories.filter(c => String(c.parent_id) === String(root.id)) : [];
+      children.forEach(c => subcategoryFilter.add(new Option(c.name, String(c.id))));
+      subcategoryFilter.disabled = !root || !children.length;
+      if (children.some(c => String(c.id) === selected)) subcategoryFilter.value = selected;
+    };
+    refreshSubcategories();
+    if (categoryFilter && !categoryFilter.dataset.bound) {
+      categoryFilter.dataset.bound = "1";
+      categoryFilter.addEventListener("change", () => {
+        if (subcategoryFilter) subcategoryFilter.value = "";
+        refreshSubcategories();
+        loadProducts();
+      });
+    }
+    if (subcategoryFilter && !subcategoryFilter.dataset.bound) {
+      subcategoryFilter.dataset.bound = "1";
+      subcategoryFilter.addEventListener("change", loadProducts);
+    }
     if (searchInput && !searchInput.dataset.bound) {
       searchInput.dataset.bound = "1";
       searchInput.addEventListener("keydown", event => {
@@ -1216,6 +1250,8 @@ async function loadProducts() {
   if (search) productsQuery = productsQuery.ilike("name", `%${search.replace(/[,%()]/g, " ")}%`);
   if (status === "active") productsQuery = productsQuery.eq("is_active", true);
   if (status === "inactive") productsQuery = productsQuery.eq("is_active", false);
+  if (categoryName) productsQuery = productsQuery.eq("category", categoryName);
+  if (subcategoryId) productsQuery = productsQuery.eq("subcategory_id", subcategoryId);
   const { data, error } = await productsQuery;
 
   if (error) {
