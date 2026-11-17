@@ -1186,10 +1186,37 @@ async function loadProducts() {
 
   container.textContent = "جارٍ تحميل المنتجات...";
 
-  const { data, error } = await supabase
+  const search = $("productSearch")?.value.trim() || "";
+  const status = $("productStatusFilter")?.value || "all";
+  const bindFilters = () => {
+    const searchInput = $("productSearch");
+    const statusSelect = $("productStatusFilter");
+    const refreshButton = $("refreshProducts");
+    if (searchInput && !searchInput.dataset.bound) {
+      searchInput.dataset.bound = "1";
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") { event.preventDefault(); loadProducts(); }
+      });
+    }
+    if (statusSelect && !statusSelect.dataset.bound) {
+      statusSelect.dataset.bound = "1";
+      statusSelect.addEventListener("change", loadProducts);
+    }
+    if (refreshButton && !refreshButton.dataset.bound) {
+      refreshButton.dataset.bound = "1";
+      refreshButton.addEventListener("click", loadProducts);
+    }
+  };
+  bindFilters();
+
+  let productsQuery = supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
+  if (search) productsQuery = productsQuery.ilike("name", `%${search.replace(/[,%()]/g, " ")}%`);
+  if (status === "active") productsQuery = productsQuery.eq("is_active", true);
+  if (status === "inactive") productsQuery = productsQuery.eq("is_active", false);
+  const { data, error } = await productsQuery;
 
   if (error) {
     container.textContent =
@@ -1200,9 +1227,11 @@ async function loadProducts() {
   container.replaceChildren();
 
   if (!data?.length) {
-    container.textContent = "لا توجد منتجات بعد.";
+    container.textContent = search || status !== "all" ? "لا توجد نتائج مطابقة لخيارات البحث." : "لا توجد منتجات بعد.";
+    if ($("productFilterMsg")) $("productFilterMsg").textContent = "عدد النتائج: 0";
     return;
   }
+  if ($("productFilterMsg")) $("productFilterMsg").textContent = `عدد النتائج: ${data.length} منتج`;
 
   data.forEach(product => {
     const item = document.createElement("div");
