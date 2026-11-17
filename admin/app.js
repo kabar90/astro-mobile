@@ -814,6 +814,8 @@ function makeButton(label, action) {
 
 let cachedCategories = [];
 let editingCategoryId = null;
+let currentCategoryImageUrl = "";
+let categoryImagePreviewObjectUrl = "";
 
 function getCategoryById(id) {
   return cachedCategories.find(category => String(category.id) === String(id));
@@ -938,15 +940,93 @@ function renderCategoryParentOptions(selectedParentId = "") {
   if (selectedParentId) select.value = String(selectedParentId);
 }
 
+function setCategoryImagePreview(url = "") {
+  const preview = $("categoryImagePreview");
+  if (!preview) return;
+  if (url) {
+    preview.src = url;
+    preview.classList.remove("hide");
+  } else {
+    preview.removeAttribute("src");
+    preview.classList.add("hide");
+  }
+}
+
+function resetCategoryImageSelection() {
+  currentCategoryImageUrl = "";
+  if ($("categoryImageFile")) $("categoryImageFile").value = "";
+  if (categoryImagePreviewObjectUrl) {
+    URL.revokeObjectURL(categoryImagePreviewObjectUrl);
+    categoryImagePreviewObjectUrl = "";
+  }
+  setCategoryImagePreview("");
+  $("clearCategoryImage")?.classList.add("hide");
+  setMessage("categoryImageMsg", "اختر صورة للقسم الرئيسي أو الفرعي.");
+}
+
 function resetCategoryForm() {
   editingCategoryId = null;
   $("categoryForm")?.reset();
+  resetCategoryImageSelection();
   if ($("categoryOrder")) $("categoryOrder").value = "0";
   if ($("categoryActive")) $("categoryActive").checked = true;
   renderCategoryParentOptions();
   if ($("saveCategory")) $("saveCategory").textContent = "إضافة القسم";
   $("cancelCategoryEdit")?.classList.add("hide");
   setMessage("categoryMsg", "");
+}
+
+// اختيار ومعاينة صورة القسم قبل رفعها
+$("categoryImageFile")?.addEventListener("change", () => {
+  const file = $("categoryImageFile").files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    $("categoryImageFile").value = "";
+    return setMessage("categoryImageMsg", "اختر ملف صورة صالحاً.", true);
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    $("categoryImageFile").value = "";
+    return setMessage("categoryImageMsg", "حجم الصورة أكبر من 5 ميغابايت. اختر صورة أصغر.", true);
+  }
+
+  if (categoryImagePreviewObjectUrl) URL.revokeObjectURL(categoryImagePreviewObjectUrl);
+  categoryImagePreviewObjectUrl = URL.createObjectURL(file);
+  setCategoryImagePreview(categoryImagePreviewObjectUrl);
+  $("clearCategoryImage")?.classList.remove("hide");
+  setMessage("categoryImageMsg", `تم اختيار ${file.name}؛ سترفع عند حفظ القسم.`);
+});
+
+$("clearCategoryImage")?.addEventListener("click", () => {
+  resetCategoryImageSelection();
+  setMessage("categoryImageMsg", "ستُحفظ بيانات القسم بدون صورة عند الضغط على حفظ.");
+});
+
+// رفع صورة القسم داخل مجلد categories في bucket المنتجات الحالي
+async function uploadCategoryImage(file) {
+  const extFromType = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif"
+  }[file.type];
+  const extFromName = (file.name.split(".").pop() || "jpg")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+  const ext = extFromType || extFromName || "jpg";
+  const path = `categories/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("products")
+    .upload(path, file, {
+      contentType: file.type || "image/jpeg",
+      cacheControl: "3600",
+      upsert: false
+    });
+  if (error) throw new Error(`تعذر رفع صورة القسم: ${error.message}`);
+
+  const { data } = supabase.storage.from("products").getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("تم رفع الصورة لكن تعذر استخراج رابطها.");
+  return data.publicUrl;
 }
 
 function renderCategoryList() {
@@ -981,6 +1061,15 @@ function renderCategoryList() {
     const parentInfo = document.createElement("div");
     parentInfo.className = "info";
     parentInfo.textContent = `📁 ${parent.name} — قسم رئيسي — الترتيب: ${parent.sort_order ?? 0} — ${parent.is_active ? "نشط" : "متوقف"}`;
+    if (parent.image_url) {
+      const image = document.createElement("img");
+      image.src = parent.image_url;
+      image.alt = `صورة ${parent.name}`;
+      image.loading = "lazy";
+      image.style.cssText = "width:64px;height:64px;object-fit:cover;border-radius:8px;margin-inline-start:8px;";
+      image.onerror = () => image.remove();
+      parentRow.append(image);
+    }
 
     const parentEdit = makeButton("تعديل", () => beginCategoryEdit(parent));
     const parentToggle = makeButton(parent.is_active ? "إيقاف" : "تفعيل", async () => {
@@ -1009,6 +1098,15 @@ function renderCategoryList() {
       const childInfo = document.createElement("div");
       childInfo.className = "info";
       childInfo.textContent = `↳ ${child.name} — فرعي من ${parent.name} — الترتيب: ${child.sort_order ?? 0} — ${child.is_active ? "نشط" : "متوقف"}`;
+      if (child.image_url) {
+        const image = document.createElement("img");
+        image.src = child.image_url;
+        image.alt = `صورة ${child.name}`;
+        image.loading = "lazy";
+        image.style.cssText = "width:56px;height:56px;object-fit:cover;border-radius:8px;margin-inline-start:8px;";
+        image.onerror = () => image.remove();
+        childRow.append(image);
+      }
 
       const childEdit = makeButton("تعديل", () => beginCategoryEdit(child));
       const childToggle = makeButton(child.is_active ? "إيقاف" : "تفعيل", async () => {
@@ -1045,6 +1143,11 @@ function beginCategoryEdit(category) {
   $("categoryName").value = category.name;
   $("categoryOrder").value = category.sort_order ?? 0;
   $("categoryActive").checked = category.is_active !== false;
+  currentCategoryImageUrl = category.image_url || "";
+  if ($("categoryImageFile")) $("categoryImageFile").value = "";
+  setCategoryImagePreview(currentCategoryImageUrl);
+  if ($("clearCategoryImage")) $("clearCategoryImage").classList.toggle("hide", !currentCategoryImageUrl);
+  setMessage("categoryImageMsg", currentCategoryImageUrl ? "الصورة الحالية محفوظة. اختر صورة جديدة لاستبدالها أو أزلها." : "لا توجد صورة حالية لهذا القسم.");
   renderCategoryParentOptions(category.parent_id || "");
   $("saveCategory").textContent = "حفظ التعديلات";
   $("cancelCategoryEdit").classList.remove("hide");
@@ -1099,7 +1202,7 @@ async function loadCategories() {
   const container = $("categoryList");
   if (container) container.textContent = "جارٍ تحميل الأقسام...";
   const { data, error } = await supabase.from("categories")
-    .select("id,name,sort_order,is_active,parent_id")
+    .select("id,name,sort_order,is_active,parent_id,image_url")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
@@ -1142,15 +1245,25 @@ $("categoryForm")?.addEventListener("submit", async event => {
 
   const saveButton = $("saveCategory");
   saveButton.disabled = true;
-  setMessage("categoryMsg", "جارٍ حفظ القسم...");
 
   try {
+    let image_url = currentCategoryImageUrl || null;
+    const imageFile = $("categoryImageFile")?.files?.[0];
+    if (imageFile) {
+      setMessage("categoryImageMsg", "جارٍ رفع صورة القسم إلى Supabase...");
+      image_url = await uploadCategoryImage(imageFile);
+    } else if (editingCategoryId !== null && !currentCategoryImageUrl) {
+      image_url = null;
+    }
+
+    setMessage("categoryMsg", "جارٍ حفظ القسم...");
+
     if (editingCategoryId !== null) {
       const oldCategory = cachedCategories.find(category => String(category.id) === String(editingCategoryId));
       if (!oldCategory) throw new Error("لم يتم العثور على القسم المطلوب تعديله.");
 
       const { error: categoryError } = await supabase.from("categories")
-        .update({ name, sort_order, is_active, parent_id }).eq("id", editingCategoryId);
+        .update({ name, sort_order, is_active, parent_id, image_url }).eq("id", editingCategoryId);
       if (categoryError) throw categoryError;
 
       // Keep the legacy products.category field synchronized when a root category is renamed.
@@ -1165,11 +1278,13 @@ $("categoryForm")?.addEventListener("submit", async event => {
         }
       }
       setMessage("categoryMsg", "تم تعديل القسم بنجاح.");
+    setMessage("categoryImageMsg", "تم حفظ صورة القسم بنجاح.");
     } else {
       const { error } = await supabase.from("categories")
-        .insert({ name, sort_order, is_active, parent_id });
+        .insert({ name, sort_order, is_active, parent_id, image_url });
       if (error) throw error;
       setMessage("categoryMsg", "تمت إضافة القسم بنجاح.");
+      setMessage("categoryImageMsg", "تم حفظ صورة القسم بنجاح.");
     }
 
     resetCategoryForm();
