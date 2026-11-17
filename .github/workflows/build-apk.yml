@@ -39,6 +39,14 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
+      - name: Apply category images and product layout update
+        run: |
+          set -e
+          patch --batch --forward --fuzz=3 -p1 -d astro_mobile < patches/category-display-controls.patch
+          grep -q "watchDisplaySettings" astro_mobile/lib/services/product_repository.dart
+          grep -q "_productListTile" astro_mobile/lib/screens/home_screen.dart
+          echo "Category images and product layout controls applied."
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
