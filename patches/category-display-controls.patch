@@ -1,0 +1,371 @@
+--- a/lib/screens/home_screen.dart
++++ b/lib/screens/home_screen.dart
+@@ -27,6 +27,7 @@
+   int? categoryPageRootId;
+   int? categoryPageSubcategoryId;
+   int nav = 0;
+   String _categorySort = 'الأحدث';
++  String? _categoryLayoutOverride;
+   String? _activeHomeSectionTitle;
+   List<Product>? _activeHomeSectionProducts;
+ 
+@@ -350,15 +351,29 @@
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: [
+                                   Expanded(
+-                                    child: Image.asset(
+-                                      categoryAsset,
+-                                      fit: BoxFit.contain,
+-                                      errorBuilder: (_, __, ___) => Icon(
+-                                        _categoryIcon(item.name),
+-                                        color: astroBlue,
+-                                        size: 42,
+-                                      ),
+-                                    ),
++                                    child: item.imageUrl.isNotEmpty
++                                        ? Image.network(
++                                            item.imageUrl,
++                                            fit: BoxFit.contain,
++                                            errorBuilder: (_, __, ___) => Image.asset(
++                                              categoryAsset,
++                                              fit: BoxFit.contain,
++                                              errorBuilder: (_, __, ___) => Icon(
++                                                _categoryIcon(item.name),
++                                                color: astroBlue,
++                                                size: 42,
++                                              ),
++                                            ),
++                                          )
++                                        : Image.asset(
++                                            categoryAsset,
++                                            fit: BoxFit.contain,
++                                            errorBuilder: (_, __, ___) => Icon(
++                                              _categoryIcon(item.name),
++                                              color: astroBlue,
++                                              size: 42,
++                                            ),
++                                          ),
+                                   ),
+                                   const SizedBox(height: 6),
+                                   Text(
+@@ -1053,6 +1068,81 @@
+                       ],
+                     ),
+                   ],
++                ),
++              ),
++            ],
++          ),
++        ),
++      ),
++    );
++  }
++
++
++  Widget _productListTile(Product p) {
++    return Material(
++      color: Colors.white,
++      borderRadius: BorderRadius.circular(17),
++      child: InkWell(
++        borderRadius: BorderRadius.circular(17),
++        onTap: () => Navigator.push(
++          context,
++          MaterialPageRoute(builder: (_) => ProductDetailScreen(product: p)),
++        ),
++        child: Container(
++          height: 142,
++          padding: const EdgeInsets.all(9),
++          decoration: BoxDecoration(
++            borderRadius: BorderRadius.circular(17),
++            border: Border.all(color: const Color(0xFFE0EAF5)),
++          ),
++          child: Row(
++            children: [
++              SizedBox(
++                width: 116,
++                height: 124,
++                child: ClipRRect(
++                  borderRadius: BorderRadius.circular(12),
++                  child: p.imageUrl.isEmpty
++                      ? _placeholder(p.category, false)
++                      : Image.network(
++                          p.imageUrl,
++                          fit: BoxFit.contain,
++                          loadingBuilder: (context, child, progress) =>
++                              progress == null ? child : _placeholder(p.category, true),
++                          errorBuilder: (_, __, ___) => _placeholder(p.category, false),
++                        ),
++                ),
++              ),
++              const SizedBox(width: 12),
++              Expanded(
++                child: Column(
++                  crossAxisAlignment: CrossAxisAlignment.start,
++                  mainAxisAlignment: MainAxisAlignment.center,
++                  children: [
++                    Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis,
++                        style: const TextStyle(color: astroNavy, fontSize: 14, fontWeight: FontWeight.w900)),
++                    const SizedBox(height: 7),
++                    Text('${p.price.toStringAsFixed(0)} د.ل',
++                        style: const TextStyle(color: astroNavy, fontSize: 16, fontWeight: FontWeight.w900)),
++                    const SizedBox(height: 6),
++                    Text('نقاط المكافأة: ${p.rewardPoints} نقطة',
++                        maxLines: 1, overflow: TextOverflow.ellipsis,
++                        style: const TextStyle(color: Color(0xFF8A6416), fontSize: 11, fontWeight: FontWeight.w800)),
++                  ],
++                ),
++              ),
++              const SizedBox(width: 6),
++              Material(
++                color: astroBlue,
++                borderRadius: BorderRadius.circular(10),
++                child: InkWell(
++                  borderRadius: BorderRadius.circular(10),
++                  onTap: () {
++                    if (p.colors.isNotEmpty) {
++                      Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: p)));
++                    } else {
++                      CartService.instance.add(p, null);
++                      message('تمت إضافة ${p.name} إلى السلة');
++                    }
++                  },
++                  child: const SizedBox(
++                    width: 38, height: 38,
++                    child: Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 19),
++                  ),
++                ),
++              ),
++            ],
++          ),
++        ),
++      ),
++    );
++  }
++
+@@ -1258,7 +1336,29 @@
+ 
+   Widget _phoneBrandLogo(String name) {
+     final key = _phoneBrandKey(name);
+-    if (key == null) return Icon(_subcategoryIcon(name), color: astroBlue, size: 40);
++    if (key == null) {
++      final initials = name.trim().isEmpty ? '?' : name.trim().substring(0, 1).toUpperCase();
++      return Center(
++        child: Column(
++          mainAxisSize: MainAxisSize.min,
++          children: [
++            Container(
++              width: 48,
++              height: 48,
++              alignment: Alignment.center,
++              decoration: BoxDecoration(
++                color: const Color(0xFFE8F3FF),
++                borderRadius: BorderRadius.circular(14),
++                border: Border.all(color: astroBlue.withOpacity(.22)),
++              ),
++              child: Text(initials, style: const TextStyle(color: astroBlue, fontSize: 25, fontWeight: FontWeight.w900)),
++            ),
++            const SizedBox(height: 4),
++            Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: astroNavy, fontSize: 12, fontWeight: FontWeight.w900)),
++          ],
++        ),
++      );
++    }
+ 
+     Color color;
+     String wordmark;
+@@ -1342,12 +1442,14 @@
+     required List<Product> products,
+     required bool selected,
+     bool used = false,
++    bool phoneBrand = false,
+     required VoidCallback onTap,
+   }) {
+     // Dedicated category photography: never borrow a customer's product image.
+     final name = item.name.trim();
+     final brandKey = _phoneBrandKey(name);
+-    final photoAsset = brandKey == null ? _subcategoryPhotoAsset(name) : null;
++    final showBrandLogo = brandKey != null || phoneBrand;
++    final photoAsset = showBrandLogo ? null : _subcategoryPhotoAsset(name);
+     final isEuropean = name.contains('أوروبي') || name.toLowerCase().contains('europe');
+     final isLocal = name.contains('محلي') || name.contains('ليبي');
+ 
+@@ -1381,7 +1483,25 @@
+                 child: Stack(
+                   alignment: Alignment.center,
+                   children: [
+-                    if (brandKey != null)
++                    if (item.imageUrl.isNotEmpty)
++                      Positioned.fill(
++                        child: Padding(
++                          padding: const EdgeInsets.all(8),
++                          child: ClipRRect(
++                            borderRadius: BorderRadius.circular(12),
++                            child: Image.network(
++                              item.imageUrl,
++                              fit: BoxFit.contain,
++                              errorBuilder: (_, __, ___) => showBrandLogo
++                                  ? _phoneBrandLogo(name)
++                                  : (photoAsset != null
++                                      ? Image.asset(photoAsset, fit: BoxFit.contain)
++                                      : Icon(_subcategoryIcon(name), color: astroBlue, size: 40)),
++                            ),
++                          ),
++                        ),
++                      )
++                    else if (showBrandLogo)
+                       _phoneBrandLogo(name)
+                     else if (photoAsset != null)
+                       Positioned.fill(
+@@ -1595,7 +1725,20 @@
+             }
+           }));
+ 
+-    return CustomScrollView(
++    return StreamBuilder<List<Map<String, dynamic>>>(
++      stream: ProductRepository.watchDisplaySettings(),
++      builder: (context, displaySnapshot) {
++        final display = displaySnapshot.data?.isNotEmpty == true
++            ? displaySnapshot.data!.first
++            : <String, dynamic>{};
++        final defaultLayout = (display['product_layout'] ?? 'grid').toString();
++        final allowCustomerToggle = display['allow_customer_toggle'] == true;
++        final layout = allowCustomerToggle
++            ? (_categoryLayoutOverride ?? defaultLayout)
++            : defaultLayout;
++        final columnsRaw = display['grid_columns'];
++        final columns = columnsRaw is num ? columnsRaw.toInt().clamp(2, 3).toInt() : 2;
++        return CustomScrollView(
+       slivers: [
+         SliverToBoxAdapter(
+           child: Padding(
+@@ -1883,6 +2026,13 @@
+                           item: item,
+                           products: products,
+                           selected: categoryPageSubcategoryId == item.id,
++                          phoneBrand: selectedRoot != null && (
++                            selectedRoot.name.contains('هواتف') ||
++                            selectedRoot.name.contains('هاتف') ||
++                            selectedRoot.name.contains('موبايل') ||
++                            selectedRoot.name.contains('جوال') ||
++                            selectedRoot.name.toLowerCase().contains('phone')
++                          ),
+                           onTap: () => setState(() => categoryPageSubcategoryId = item.id),
+                         ),
+                       );
+@@ -1934,6 +2084,17 @@
+                         ),
+                       ),
+                     ),
++                    if (allowCustomerToggle)
++                      IconButton(
++                        tooltip: layout == 'list' ? 'عرض شبكي' : 'عرض أفقي',
++                        onPressed: () => setState(() {
++                          _categoryLayoutOverride = layout == 'list' ? 'grid' : 'list';
++                        }),
++                        icon: Icon(
++                          layout == 'list' ? Icons.grid_view_rounded : Icons.view_agenda_rounded,
++                          color: astroNavy,
++                        ),
++                      ),
+                   ],
+                 ),
+               ),
+@@ -1974,6 +2145,19 @@
+                 ),
+               ),
+             )
++          else if (layout == 'list')
++            SliverPadding(
++              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
++              sliver: SliverList(
++                delegate: SliverChildBuilderDelegate(
++                  (context, index) => Padding(
++                    padding: const EdgeInsets.only(bottom: 12),
++                    child: _productListTile(visibleProducts[index]),
++                  ),
++                  childCount: visibleProducts.length,
++                ),
++              ),
++            )
+           else
+             SliverPadding(
+               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+@@ -1982,16 +2166,18 @@
+                   (context, index) => _product(visibleProducts[index]),
+                   childCount: visibleProducts.length,
+                 ),
+-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+-                  crossAxisCount: 2,
++                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
++                  crossAxisCount: columns,
+                   mainAxisSpacing: 14,
+                   crossAxisSpacing: 14,
+-                  childAspectRatio: .72,
++                  childAspectRatio: columns == 3 ? .58 : .72,
+                 ),
+               ),
+             ),
+         ],
+       ],
++        );
++      },
+     );
+   }
+ 
+--- a/lib/services/product_repository.dart
++++ b/lib/services/product_repository.dart
+@@ -7,6 +7,7 @@
+   final int? parentId;
+   final int sortOrder;
+   final bool isActive;
++  final String imageUrl;
+ 
+   const StoreCategory({
+     required this.id,
+@@ -14,6 +15,7 @@
+     required this.parentId,
+     required this.sortOrder,
+     required this.isActive,
++    required this.imageUrl,
+   });
+ 
+   factory StoreCategory.fromMap(Map<String, dynamic> row) {
+@@ -28,6 +30,7 @@
+       parentId: asInt(row['id']) ?? 0,
+       name: (row['name'] ?? '').toString(),
+       parentId: asInt(row['parent_id']),
+       sortOrder: asInt(row['sort_order']) ?? 0,
+       isActive: row['is_active'] is bool ? row['is_active'] as bool : true,
++      imageUrl: (row['image_url'] ?? '').toString().trim(),
+     );
+   }
+ }
+ 
+ class ProductRepository {
+   ProductRepository._();
+ 
+   static final SupabaseClient _db = Supabase.instance.client;
+ 
+   static Stream<List<StoreCategory>> watchCategories() {
+     return _db
+         .from('categories')
+         .stream(primaryKey: ['id'])
+         .map((rows) => rows
+             .map(StoreCategory.fromMap)
+             .where((category) => category.id > 0 && category.name.isNotEmpty)
+             .toList()
+           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)));
+   }
+ 
++  static Stream<List<Map<String, dynamic>>> watchDisplaySettings() {
++    return _db
++        .from('store_display_settings')
++        .stream(primaryKey: ['id'])
++        .eq('id', 1);
++  }
++
+   static Stream<List<Product>> watchProducts() {
+     return _db
+         .from('products')
+         .stream(primaryKey: ['id'])
+         .eq('is_active', true)
