@@ -43,8 +43,8 @@ jobs:
       - name: Apply category image and display settings
         run: |
           set -e
-          patch --batch --forward -p1 < patches/category-display-controls-live.patch
-          git diff --check
+          (cd astro_mobile && git apply --recount ../patches/category-display-controls-live.patch)
+          git -C astro_mobile diff --check
           echo "Category images and display controls patch applied."
 
       - name: Setup Java
