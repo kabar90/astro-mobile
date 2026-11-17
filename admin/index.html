@@ -152,6 +152,12 @@
         <option value="inactive">المخفية</option>
       </select>
       <button id="refreshProducts" type="button">تحديث</button>
+      <select id="productCategoryFilter" aria-label="تصفية القسم الرئيسي" style="grid-column:1">
+        <option value="">كل الأقسام</option>
+      </select>
+      <select id="productSubcategoryFilter" aria-label="تصفية القسم الفرعي" style="grid-column:2" disabled>
+        <option value="">كل الأقسام الفرعية</option>
+      </select>
     </div>
     <p id="productFilterMsg" role="status" class="muted"></p>
     <div id="productList">جارٍ تحميل المنتجات...</div>
