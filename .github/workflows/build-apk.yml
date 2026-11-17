@@ -43,7 +43,12 @@ jobs:
       - name: Apply category images and product layout update
         run: |
           set -e
-          patch --batch --forward --fuzz=3 -p1 -d astro_mobile < patches/category-display-controls.patch
+          patch --batch --forward --fuzz=3 -p1 -d astro_mobile < patches/category-display-controls.patch || true
+          echo "===== CATEGORY IMAGE / BRAND SOURCE ====="
+          grep -n -A45 -B5 "Widget _phoneBrandLogo" astro_mobile/lib/screens/home_screen.dart || true
+          grep -n -A75 -B8 "Widget _categoryItem" astro_mobile/lib/screens/home_screen.dart || true
+          echo "===== PRODUCT REPOSITORY SOURCE ====="
+          sed -n '1,100p' astro_mobile/lib/services/product_repository.dart
           python3 - <<'PY'
           from pathlib import Path
 
