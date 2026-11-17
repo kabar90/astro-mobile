@@ -186,6 +186,14 @@
         <input id="categoryOrder" type="number" step="1" value="0" required>
       </label>
 
+      <label>صورة القسم (اختياري)
+        <input id="categoryImageFile" type="file" accept="image/*">
+      </label>
+      <p id="categoryImageMsg" role="status">اختر صورة للقسم الرئيسي أو الفرعي.</p>
+      <img id="categoryImagePreview" class="preview hide"
+        alt="معاينة صورة القسم">
+      <button id="clearCategoryImage" type="button" class="hide">إزالة صورة القسم</button>
+
       <label>
         <input id="categoryActive" type="checkbox" checked>
         قسم نشط ويظهر ضمن الأقسام المتاحة
