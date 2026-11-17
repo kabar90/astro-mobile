@@ -8,7 +8,7 @@ on:
       - 'ASTRO_MOBILE_POINTS_PAYMENT_UI.zip'
       - 'google-services.json'
       - '.github/workflows/build-apk.yml'
-      - 'patches/**'
+      - 'patches/**'\n      - 'scripts/**'
 
 permissions:
   contents: read
@@ -43,9 +43,9 @@ jobs:
       - name: Apply category image and display settings
         run: |
           set -e
-          (cd astro_mobile && git apply --recount ../patches/category-display-controls-live.patch)
-          git -C astro_mobile diff --check
-          echo "Category images and display controls patch applied."
+          python3 scripts/apply_category_controls.py astro_mobile
+          test -n "$(git -C astro_mobile diff --name-only)"
+          echo "Category images and display settings integrated into Flutter source."
 
       - name: Setup Java
         uses: actions/setup-java@v5
