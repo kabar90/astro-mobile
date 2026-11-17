@@ -8,6 +8,7 @@ on:
       - 'ASTRO_MOBILE_POINTS_PAYMENT_UI.zip'
       - 'google-services.json'
       - '.github/workflows/build-apk.yml'
+      - 'patches/**'
 
 permissions:
   contents: read
