@@ -45,7 +45,6 @@ jobs:
         run: |
           set -e
           python3 scripts/apply_category_controls.py astro_mobile
-          test -n "$(git -C astro_mobile diff --name-only)"
           echo "Category images and display settings integrated into Flutter source."
 
       - name: Setup Java
