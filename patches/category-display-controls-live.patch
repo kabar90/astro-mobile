@@ -1,0 +1,215 @@
+--- a/lib/screens/home_screen.dart
++++ b/lib/screens/home_screen.dart
+@@ -24,6 +24,7 @@
+   int? selectedCategoryId;
+   int? selectedSubcategoryId;
+   int? categoryPageRootId;
++  String? _categoryLayoutOverride;
+   int? categoryPageSubcategoryId;
+   int nav = 0;
+   String _categorySort = 'الأحدث';
+@@ -1619,7 +1620,12 @@
+             }
+           }));
+ 
+-    return CustomScrollView(
++    return StreamBuilder<StoreDisplaySettings>(
++      stream: ProductRepository.watchDisplaySettings(),
++      builder: (context, settingsSnapshot) {
++        final settings = settingsSnapshot.data ?? const StoreDisplaySettings();
++        final useList = (_categoryLayoutOverride ?? settings.productLayout) == 'list';
++        return CustomScrollView(
+       slivers: [
+         SliverToBoxAdapter(
+           child: Padding(
+@@ -1678,6 +1684,7 @@
+                       onTap: () => setState(() {
+                         categoryPageRootId = item.id;
+                         categoryPageSubcategoryId = null;
++                        _categoryLayoutOverride = null;
+                       }),
+                       child: Ink(
+                         decoration: BoxDecoration(
+@@ -1718,15 +1725,21 @@
+                               ),
+                               child: ClipRRect(
+                                 borderRadius: BorderRadius.circular(13),
+-                                child: Image.asset(
+-                                  categoryAsset,
+-                                  fit: BoxFit.cover,
+-                                  errorBuilder: (_, __, ___) => Icon(
+-                                    categoryIcon,
+-                                    color: astroBlue,
+-                                    size: 34,
+-                                  ),
+-                                ),
++                                child: item.imageUrl.isNotEmpty
++                                    ? Image.network(
++                                        item.imageUrl,
++                                        fit: BoxFit.cover,
++                                        errorBuilder: (_, __, ___) => Image.asset(
++                                          categoryAsset,
++                                          fit: BoxFit.cover,
++                                          errorBuilder: (_, __, ___) => Icon(categoryIcon, color: astroBlue, size: 34),
++                                        ),
++                                      )
++                                    : Image.asset(
++                                        categoryAsset,
++                                        fit: BoxFit.cover,
++                                        errorBuilder: (_, __, ___) => Icon(categoryIcon, color: astroBlue, size: 34),
++                                      ),
+                               ),
+                             ),
+                             const SizedBox(height: 12),
+@@ -1984,6 +1997,15 @@
+                       ),
+                     ),
+                   ),
++                  if (settings.allowCustomerToggle)
++                    IconButton(
++                      tooltip: useList ? 'عرض شبكي' : 'عرض أفقي',
++                      visualDensity: VisualDensity.compact,
++                      onPressed: () => setState(() {
++                        _categoryLayoutOverride = useList ? 'grid' : 'list';
++                      }),
++                      icon: Icon(useList ? Icons.grid_view_rounded : Icons.view_agenda_rounded, color: astroBlue),
++                    ),
+                   Text(
+                     '${visibleProducts.length} منتجات',
+                     style: const TextStyle(
+@@ -2005,6 +2027,19 @@
+                 ),
+               ),
+             )
++          else if (useList)
++            SliverPadding(
++              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
++              sliver: SliverList(
++                delegate: SliverChildBuilderDelegate(
++                  (context, index) => Padding(
++                    padding: const EdgeInsets.only(bottom: 10),
++                    child: _productListTile(visibleProducts[index]),
++                  ),
++                  childCount: visibleProducts.length,
++                ),
++              ),
++            )
+           else
+             SliverPadding(
+               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+@@ -2013,8 +2048,8 @@
+                   (context, index) => _product(visibleProducts[index]),
+                   childCount: visibleProducts.length,
+                 ),
+-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+-                  crossAxisCount: 2,
++                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
++                  crossAxisCount: settings.gridColumns,
+                   mainAxisSpacing: 14,
+                   crossAxisSpacing: 14,
+                   childAspectRatio: .72,
+@@ -2024,6 +2059,38 @@
+         ],
+       ],
+     );
++      },
++    );
++  }
++
++  Widget _productListTile(Product p) {
++    return Material(
++      color: Colors.white,
++      borderRadius: BorderRadius.circular(16),
++      child: InkWell(
++        borderRadius: BorderRadius.circular(16),
++        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: p))),
++        child: Container(
++          padding: const EdgeInsets.all(10),
++          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE0EAF5))),
++          child: Row(
++            children: [
++              ClipRRect(
++                borderRadius: BorderRadius.circular(12),
++                child: SizedBox(width: 104, height: 104, child: p.imageUrl.isEmpty ? _placeholder(p.category, false) : Image.network(p.imageUrl, fit: BoxFit.contain, errorBuilder: (_, __, ___) => _placeholder(p.category, false))),
++              ),
++              const SizedBox(width: 12),
++              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
++                Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w800, fontSize: 14)),
++                const SizedBox(height: 8),
++                Text('${p.price.toStringAsFixed(0)} د.ل', style: const TextStyle(color: astroBlue, fontSize: 14, fontWeight: FontWeight.w900)),
++              ])),
++              const Icon(Icons.chevron_left_rounded, color: astroBlue),
++            ],
++          ),
++        ),
++      ),
++    );
+   }
+ 
+   Widget _buildStorePage(List<Product> products) {
+--- a/lib/services/product_repository.dart
++++ b/lib/services/product_repository.dart
+@@ -7,6 +7,7 @@
+   final int? parentId;
+   final int sortOrder;
+   final bool isActive;
++  final String imageUrl;
+ 
+   const StoreCategory({
+     required this.id,
+@@ -14,6 +15,7 @@
+     required this.parentId,
+     required this.sortOrder,
+     required this.isActive,
++    this.imageUrl = '',
+   });
+ 
+   factory StoreCategory.fromMap(Map<String, dynamic> row) {
+@@ -28,6 +30,29 @@
+       parentId: asInt(row['parent_id']) ?? 0,
+       name: (row['name'] ?? '').toString(),
+       parentId: asInt(row['parent_id']),
+       sortOrder: asInt(row['sort_order']) ?? 0,
+       isActive: row['is_active'] is bool ? row['is_active'] as bool : true,
++      imageUrl: (row['image_url'] ?? '').toString().trim(),
++    );
++  }
++}
++
++class StoreDisplaySettings {
++  final String productLayout;
++  final int gridColumns;
++  final bool allowCustomerToggle;
++
++  const StoreDisplaySettings({
++    this.productLayout = 'grid',
++    this.gridColumns = 2,
++    this.allowCustomerToggle = true,
++  });
++
++  factory StoreDisplaySettings.fromMap(Map<String, dynamic> row) {
++    final columns = int.tryParse('${row['grid_columns'] ?? 2}') ?? 2;
++    final layout = row['product_layout']?.toString() == 'list' ? 'list' : 'grid';
++    return StoreDisplaySettings(
++      productLayout: layout,
++      gridColumns: columns == 3 ? 3 : 2,
++      allowCustomerToggle: row['allow_customer_toggle'] != false,
+     );
+   }
+ }
+@@ -48,6 +73,15 @@
+           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)));
+   }
+ 
++  static Stream<StoreDisplaySettings> watchDisplaySettings() {
++    return _db
++        .from('store_display_settings')
++        .stream(primaryKey: ['id'])
++        .map((rows) => rows.isEmpty
++            ? const StoreDisplaySettings()
++            : StoreDisplaySettings.fromMap(rows.first));
++  }
++
+   static Stream<List<Product>> watchProducts() {
+     return _db
+         .from('products')
