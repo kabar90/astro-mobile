@@ -196,6 +196,15 @@
       <p id="categoryMsg" role="status"></p>
     </form>
 
+    <div class="category-tools" style="display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr);gap:8px;margin:14px 0">
+      <input id="categorySearch" type="search" placeholder="ابحث عن قسم أو قسم فرعي..." aria-label="البحث في الأقسام">
+      <select id="categoryStatusFilter" aria-label="تصفية حالة الأقسام">
+        <option value="all">كل الأقسام</option>
+        <option value="active">النشطة فقط</option>
+        <option value="inactive">المتوقفة فقط</option>
+      </select>
+    </div>
+    <p id="categoryFilterStatus" role="status" class="muted"></p>
     <div id="categoryList">جارٍ تحميل الأقسام...</div>
   </section>
 
