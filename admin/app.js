@@ -959,7 +959,18 @@ function renderCategoryList() {
     return;
   }
 
-  const roots = cachedCategories
+  const search = $("categorySearch")?.value.trim().toLocaleLowerCase() || "";
+  const status = $("categoryStatusFilter")?.value || "all";
+  const matches = category => {
+    const text = [category.name, getCategoryById(category.parent_id)?.name || ""].join(" ").toLocaleLowerCase();
+    return (!search || text.includes(search)) &&
+      (status === "all" || (status === "active" ? category.is_active : !category.is_active));
+  };
+  const visible = cachedCategories.filter(matches);
+  const countLabel = $("categoryFilterStatus");
+  if (countLabel) countLabel.textContent = `عدد النتائج: ${visible.length} من أصل ${cachedCategories.length}`;
+
+  const roots = visible
     .filter(category => !category.parent_id)
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"));
 
@@ -987,7 +998,7 @@ function renderCategoryList() {
     parentRow.append(parentInfo, parentEdit, parentToggle, parentDelete);
     container.append(parentRow);
 
-    const children = cachedCategories
+    const children = visible
       .filter(category => String(category.parent_id) === String(parent.id))
       .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "ar"));
 
@@ -1018,7 +1029,7 @@ function renderCategoryList() {
   });
 
   // Keep any orphaned/legacy categories visible so they can be repaired.
-  cachedCategories.filter(category => category.parent_id && !getCategoryById(category.parent_id)).forEach(category => {
+  visible.filter(category => category.parent_id && !getCategoryById(category.parent_id)).forEach(category => {
     const row = document.createElement("div");
     row.className = "item";
     const info = document.createElement("div");
@@ -1080,6 +1091,9 @@ async function deleteCategory(category) {
   if (editingCategoryId === category.id) resetCategoryForm();
   await loadCategories();
 }
+
+$("categorySearch")?.addEventListener("input", renderCategoryList);
+$("categoryStatusFilter")?.addEventListener("change", renderCategoryList);
 
 async function loadCategories() {
   const container = $("categoryList");
