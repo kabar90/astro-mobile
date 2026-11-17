@@ -149,7 +149,7 @@
    Widget _buildStorePage(List<Product> products) {
 --- a/lib/services/product_repository.dart
 +++ b/lib/services/product_repository.dart
-@@ -7,6 +7,7 @@
+@@ -7,6, +7,7 @@
    final int? parentId;
    final int sortOrder;
    final bool isActive;
@@ -166,14 +166,12 @@
  
    factory StoreCategory.fromMap(Map<String, dynamic> row) {
 @@ -28,6 +30,29 @@
-       parentId: asInt(row['parent_id']) ?? 0,
-       name: (row['name'] ?? '').toString(),
        parentId: asInt(row['parent_id']),
        sortOrder: asInt(row['sort_order']) ?? 0,
        isActive: row['is_active'] is bool ? row['is_active'] as bool : true,
 +      imageUrl: (row['image_url'] ?? '').toString().trim(),
-+    );
-+  }
+     );
+  }
 +}
 +
 +class StoreDisplaySettings {
