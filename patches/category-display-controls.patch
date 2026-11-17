@@ -48,7 +48,7 @@
                                    ),
                                    const SizedBox(height: 6),
                                    Text(
-@@ -1053,6 +1068,81 @@
+@@ -1053,6 +1068,87 @@
                        ],
                      ),
                    ],
@@ -142,7 +142,8 @@
 +    );
 +  }
 +
-@@ -1258,7 +1336,29 @@
++
+@@ -1258,7 +1354,20 @@
  
    Widget _phoneBrandLogo(String name) {
      final key = _phoneBrandKey(name);
@@ -173,7 +174,7 @@
  
      Color color;
      String wordmark;
-@@ -1342,12 +1442,14 @@
+@@ -1342,12 +1460,14 @@
      required List<Product> products,
      required bool selected,
      bool used = false,
@@ -189,7 +190,7 @@
      final isEuropean = name.contains('أوروبي') || name.toLowerCase().contains('europe');
      final isLocal = name.contains('محلي') || name.contains('ليبي');
  
-@@ -1381,7 +1483,25 @@
+@@ -1381,7 +1501,25 @@
                  child: Stack(
                    alignment: Alignment.center,
                    children: [
@@ -216,7 +217,7 @@
                        _phoneBrandLogo(name)
                      else if (photoAsset != null)
                        Positioned.fill(
-@@ -1595,7 +1725,20 @@
+@@ -1595,7 +1733,20 @@
              }
            }));
  
@@ -238,7 +239,7 @@
        slivers: [
          SliverToBoxAdapter(
            child: Padding(
-@@ -1883,6 +2026,13 @@
+@@ -1883,6 +2034,13 @@
                            item: item,
                            products: products,
                            selected: categoryPageSubcategoryId == item.id,
@@ -252,7 +253,7 @@
                            onTap: () => setState(() => categoryPageSubcategoryId = item.id),
                          ),
                        );
-@@ -1934,6 +2084,17 @@
+@@ -1934,6 +2092,17 @@
                          ),
                        ),
                      ),
@@ -270,7 +271,7 @@
                    ],
                  ),
                ),
-@@ -1974,6 +2145,19 @@
+@@ -1974,6 +2143,19 @@
                  ),
                ),
              )
@@ -290,7 +291,7 @@
            else
              SliverPadding(
                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-@@ -1982,16 +2166,18 @@
+@@ -1982,16 +2164,18 @@
                    (context, index) => _product(visibleProducts[index]),
                    childCount: visibleProducts.length,
                  ),
