@@ -446,6 +446,62 @@ $("saveCategoryDisplaySettings")?.addEventListener("click", saveCategoryDisplayS
 $("refreshCategoryDisplaySettings")?.addEventListener("click", loadCategoryDisplaySettings);
 
 // ========================================
+// إعدادات صفحة تواصل معنا
+// ========================================
+const CONTACT_DEFAULT_ADDRESS = "طرابلس، أبوسليم، شارع أم درمان الرئيسي، بالقرب من شارع السلام";
+
+async function loadStoreContact() {
+  setMessage("storeContactMsg", "جارٍ تحميل بيانات التواصل...");
+  try {
+    const { data, error } = await supabase.from("store_contact_settings")
+      .select("id,address,phone,whatsapp,facebook_url,instagram_url,tiktok_url,working_hours")
+      .eq("id", 1).maybeSingle();
+    if (error) throw error;
+    const row = data || {};
+    $("contactAddress").value = row.address || CONTACT_DEFAULT_ADDRESS;
+    $("contactPhone").value = row.phone || "";
+    $("contactWhatsapp").value = row.whatsapp || "";
+    $("contactFacebook").value = row.facebook_url || "";
+    $("contactInstagram").value = row.instagram_url || "";
+    $("contactTiktok").value = row.tiktok_url || "";
+    $("contactHours").value = row.working_hours || "";
+    setMessage("storeContactMsg", "تم تحميل بيانات التواصل.");
+  } catch (error) {
+    console.error("ASTRO contact settings load error:", error);
+    setMessage("storeContactMsg", `تعذر تحميل البيانات: ${error.message || error}`, true);
+  }
+}
+
+async function saveStoreContact() {
+  if (!currentUser) return setMessage("storeContactMsg", "سجّل الدخول مجدداً.", true);
+  const button = $("saveStoreContact");
+  button.disabled = true;
+  setMessage("storeContactMsg", "جارٍ حفظ البيانات...");
+  try {
+    const payload = {
+      id: 1,
+      address: $("contactAddress").value.trim(),
+      phone: $("contactPhone").value.trim(),
+      whatsapp: $("contactWhatsapp").value.trim(),
+      facebook_url: $("contactFacebook").value.trim(),
+      instagram_url: $("contactInstagram").value.trim(),
+      tiktok_url: $("contactTiktok").value.trim(),
+      working_hours: $("contactHours").value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabase.from("store_contact_settings").upsert(payload, { onConflict: "id" });
+    if (error) throw error;
+    setMessage("storeContactMsg", "تم حفظ بيانات التواصل بنجاح.");
+  } catch (error) {
+    console.error("ASTRO contact settings save error:", error);
+    setMessage("storeContactMsg", `تعذر حفظ البيانات: ${error.message || error}`, true);
+  } finally { button.disabled = false; }
+}
+
+$("saveStoreContact")?.addEventListener("click", saveStoreContact);
+$("refreshStoreContact")?.addEventListener("click", loadStoreContact);
+
+// ========================================
 // التنقل بين أقسام لوحة التحكم
 // ========================================
 
@@ -460,6 +516,7 @@ document.querySelectorAll("nav button").forEach(button => {
       "delivery",
       "bank",
       "categoryDisplaySettings",
+      "storeContact",
       "notifications",
       "history"
     ];
@@ -493,6 +550,10 @@ document.querySelectorAll("nav button").forEach(button => {
 
     if (button.dataset.view === "categoryDisplaySettings") {
       await loadCategoryDisplaySettings();
+    }
+
+    if (button.dataset.view === "storeContact") {
+      await loadStoreContact();
     }
 
     if (
