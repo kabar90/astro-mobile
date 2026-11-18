@@ -344,6 +344,107 @@ supabase.auth.onAuthStateChange((_event, session) => {
   }, 0);
 });
 
+
+// ========================================
+// إعدادات طريقة عرض الأقسام
+// ========================================
+
+const CATEGORY_DISPLAY_DEFAULTS = {
+  id: 1,
+  main_layout: "grid_2",
+  subcategory_layout: "grid"
+};
+
+async function loadCategoryDisplaySettings() {
+  const mainSelect = $("mainCategoryLayout");
+  const subSelect = $("subcategoryLayout");
+  if (!mainSelect || !subSelect) return;
+
+  setMessage("categoryDisplaySettingsMsg", "جارٍ تحميل إعدادات عرض الأقسام...");
+
+  try {
+    const { data, error } = await supabase
+      .from("category_display_settings")
+      .select("id,main_layout,subcategory_layout")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const settings = data || CATEGORY_DISPLAY_DEFAULTS;
+    mainSelect.value = ["grid_2", "grid_3", "horizontal"].includes(settings.main_layout)
+      ? settings.main_layout
+      : CATEGORY_DISPLAY_DEFAULTS.main_layout;
+    subSelect.value = ["grid", "horizontal"].includes(settings.subcategory_layout)
+      ? settings.subcategory_layout
+      : CATEGORY_DISPLAY_DEFAULTS.subcategory_layout;
+
+    setMessage(
+      "categoryDisplaySettingsMsg",
+      data ? "تم تحميل إعدادات عرض الأقسام." : "لم تُحفظ إعدادات بعد؛ يتم عرض القيم الافتراضية."
+    );
+  } catch (error) {
+    console.error("ASTRO category display settings load error:", error);
+    setMessage(
+      "categoryDisplaySettingsMsg",
+      `تعذر تحميل الإعدادات: ${error.message || error}`,
+      true
+    );
+  }
+}
+
+async function saveCategoryDisplaySettings() {
+  if (!currentUser) {
+    return setMessage(
+      "categoryDisplaySettingsMsg",
+      "انتهت جلسة المدير. سجّل الدخول مجدداً.",
+      true
+    );
+  }
+
+  const mainLayout = $("mainCategoryLayout")?.value;
+  const subcategoryLayout = $("subcategoryLayout")?.value;
+
+  if (!["grid_2", "grid_3", "horizontal"].includes(mainLayout)) {
+    return setMessage("categoryDisplaySettingsMsg", "اختر طريقة عرض صحيحة للأقسام الرئيسية.", true);
+  }
+
+  if (!["grid", "horizontal"].includes(subcategoryLayout)) {
+    return setMessage("categoryDisplaySettingsMsg", "اختر طريقة عرض صحيحة للأقسام الفرعية.", true);
+  }
+
+  const button = $("saveCategoryDisplaySettings");
+  if (button) button.disabled = true;
+  setMessage("categoryDisplaySettingsMsg", "جارٍ حفظ إعدادات عرض الأقسام...");
+
+  try {
+    const { error } = await supabase
+      .from("category_display_settings")
+      .upsert({
+        id: 1,
+        main_layout: mainLayout,
+        subcategory_layout: subcategoryLayout,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "id" });
+
+    if (error) throw error;
+
+    setMessage("categoryDisplaySettingsMsg", "تم حفظ إعدادات عرض الأقسام بنجاح.");
+  } catch (error) {
+    console.error("ASTRO category display settings save error:", error);
+    setMessage(
+      "categoryDisplaySettingsMsg",
+      `تعذر حفظ الإعدادات: ${error.message || error}`,
+      true
+    );
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+$("saveCategoryDisplaySettings")?.addEventListener("click", saveCategoryDisplaySettings);
+$("refreshCategoryDisplaySettings")?.addEventListener("click", loadCategoryDisplaySettings);
+
 // ========================================
 // التنقل بين أقسام لوحة التحكم
 // ========================================
@@ -358,6 +459,7 @@ document.querySelectorAll("nav button").forEach(button => {
       "orders",
       "delivery",
       "bank",
+      "categoryDisplaySettings",
       "notifications",
       "history"
     ];
@@ -387,6 +489,10 @@ document.querySelectorAll("nav button").forEach(button => {
 
     if (button.dataset.view === "delivery") {
       await loadDeliveryCities();
+    }
+
+    if (button.dataset.view === "categoryDisplaySettings") {
+      await loadCategoryDisplaySettings();
     }
 
     if (
