@@ -46,6 +46,7 @@
   <nav>
     <button data-view="products">المنتجات</button>
     <button data-view="categories">إدارة الأقسام</button>
+    <button data-view="categoryDisplaySettings">طريقة عرض الأقسام</button>
     <button data-view="offers">إدارة العروض</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="delivery">مدن ورسوم التوصيل</button>
@@ -216,6 +217,67 @@
     <div id="categoryList">جارٍ تحميل الأقسام...</div>
   </section>
 
+  <!-- إعدادات طريقة عرض الأقسام -->
+  <section id="categoryDisplaySettings" class="card hide">
+    <h2>طريقة عرض الأقسام</h2>
+
+    <p>
+      تحكم في طريقة ظهور بطاقات الأقسام الرئيسية والفرعية داخل التطبيق.
+      هذه الإعدادات لا تغيّر طريقة عرض المنتجات.
+    </p>
+
+    <form id="categoryDisplaySettingsForm">
+
+      <fieldset>
+        <legend>الأقسام الرئيسية</legend>
+
+        <label for="mainCategoryLayout">
+          طريقة عرض الأقسام الرئيسية
+        </label>
+
+        <select id="mainCategoryLayout" required>
+          <option value="grid_2">شبكة بعمودين</option>
+          <option value="grid_3">شبكة بثلاثة أعمدة</option>
+          <option value="horizontal">شريط أفقي قابل للسحب</option>
+        </select>
+
+        <small>
+          اختر طريقة ظهور بطاقات الأقسام الرئيسية في التطبيق.
+        </small>
+      </fieldset>
+
+      <fieldset>
+        <legend>الأقسام الفرعية</legend>
+
+        <label for="subcategoryLayout">
+          طريقة عرض الأقسام الفرعية
+        </label>
+
+        <select id="subcategoryLayout" required>
+          <option value="grid">شبكة</option>
+          <option value="horizontal">شريط أفقي قابل للسحب</option>
+        </select>
+
+        <small>
+          اختر طريقة ظهور الأقسام الفرعية داخل القسم الرئيسي.
+        </small>
+      </fieldset>
+
+      <button id="saveCategoryDisplaySettings" type="submit">
+        حفظ إعدادات عرض الأقسام
+      </button>
+
+      <button id="refreshCategoryDisplaySettings" type="button">
+        إعادة تحميل الإعدادات
+      </button>
+
+      <p id="categoryDisplaySettingsMsg" role="status">
+        ستظهر حالة الإعدادات هنا.
+      </p>
+
+    </form>
+  </section>
+
   <!-- إدارة العروض -->
   <section id="offers" class="card hide">
     <h2>إدارة العروض والخصومات</h2>
@@ -282,7 +344,6 @@
           </select>
         </label>
 
-        <!-- تم إصلاح تسمية حقل الخصم -->
         <label id="discountValueLabel">
           <span id="discountValueText">نسبة الخصم (%)</span>
           <input id="discountValue"
