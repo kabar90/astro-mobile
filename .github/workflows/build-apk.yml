@@ -71,7 +71,7 @@ jobs:
               raise SystemExit("Gradle settings file not found")
 
           source = settings.read_text()
-          match = re.search(r'(?m)^\\s*pluginManagement\\s*\\{', source)
+          match = re.search(r'(?m)^\s*pluginManagement\s*\{', source)
           if not match:
               raise SystemExit("pluginManagement block not found")
           start = source.find("{", match.start())
@@ -89,7 +89,7 @@ jobs:
               raise SystemExit("Unclosed pluginManagement block")
 
           block = source[start:end + 1]
-          repos = re.search(r'(?m)^\\s*repositories\\s*\\{', block)
+          repos = re.search(r'(?m)^\s*repositories\s*\{', block)
           required = ["google()", "mavenCentral()", "gradlePluginPortal()"]
           if repos:
               rstart = block.find("{", repos.start())
@@ -108,9 +108,9 @@ jobs:
               existing = block[rstart + 1:rend]
               missing = [item for item in required if item not in existing]
               if missing:
-                  block = block[:rend] + "\\n" + "\\n".join("        " + item for item in missing) + "\\n    " + block[rend:]
+                  block = block[:rend] + "\n" + "\n".join("        " + item for item in missing) + "\n    " + block[rend:]
           else:
-              block = block[:1] + "\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n" + block[1:]
+              block = block[:1] + "\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n" + block[1:]
 
           settings.write_text(source[:start] + block + source[end + 1:])
           print("Configured Gradle plugin repositories: Google, Maven Central, Gradle Plugin Portal")
