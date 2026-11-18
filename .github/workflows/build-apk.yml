@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'ASTRO_MOBILE_POINTS_PAYMENT_UI.zip'
+      - '.github/workflows/build-apk.yml'
       - 'google-services.json'
       - '.github/workflows/build-apk.yml'
       - 'patches/**'
@@ -40,12 +41,6 @@ jobs:
           rm -rf extracted_project
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
-
-      - name: Apply category image and display settings
-        run: |
-          set -e
-          python3 scripts/apply_category_controls.py astro_mobile
-          echo "Category images and display settings integrated into Flutter source."
 
       - name: Setup Java
         uses: actions/setup-java@v5
