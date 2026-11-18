@@ -47,6 +47,7 @@
     <button data-view="products">المنتجات</button>
     <button data-view="categories">إدارة الأقسام</button>
     <button data-view="categoryDisplaySettings">طريقة عرض الأقسام</button>
+    <button data-view="storeContact">تواصل معنا</button>
     <button data-view="offers">إدارة العروض</button>
     <button data-view="orders">الطلبات</button>
     <button data-view="delivery">مدن ورسوم التوصيل</button>
@@ -218,6 +219,20 @@
   </section>
 
   <!-- إعدادات طريقة عرض الأقسام -->
+  <section id="storeContact" class="card hide">
+    <h2>بيانات صفحة تواصل معنا</h2>
+    <p>عدّل بيانات التواصل والعنوان التي تظهر مباشرة في تطبيق ASTRO MOBILE. اترك الحقول غير المستخدمة فارغة.</p>
+    <label>عنوان المتجر<input id="contactAddress" type="text"></label>
+    <label>رقم الهاتف<input id="contactPhone" type="tel" placeholder="مثال: 0912345678"></label>
+    <label>رقم واتساب<input id="contactWhatsapp" type="tel" placeholder="مثال: 218912345678"></label>
+    <label>رابط Facebook<input id="contactFacebook" type="url" placeholder="https://..."></label>
+    <label>رابط Instagram<input id="contactInstagram" type="url" placeholder="https://..."></label>
+    <label>رابط TikTok<input id="contactTiktok" type="url" placeholder="https://..."></label>
+    <label>أوقات العمل<input id="contactHours" type="text" placeholder="مثال: يومياً من 10 صباحاً إلى 10 مساءً"></label>
+    <div class="actions"><button id="saveStoreContact">حفظ بيانات التواصل</button><button id="refreshStoreContact" type="button">إعادة تحميل</button></div>
+    <p id="storeContactMsg" role="status"></p>
+  </section>
+
   <section id="categoryDisplaySettings" class="card hide">
     <h2>طريقة عرض الأقسام</h2>
 
