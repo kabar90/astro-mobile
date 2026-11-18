@@ -39,6 +39,65 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
+
+      - name: Ensure Gradle plugin repositories
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+
+          android = Path("astro_mobile/android")
+          candidates = [android / "settings.gradle.kts", android / "settings.gradle"]
+          settings = next((p for p in candidates if p.exists()), None)
+          if settings is None:
+              raise SystemExit("Gradle settings file not found")
+
+          source = settings.read_text()
+          match = re.search(r'(?m)^\\s*pluginManagement\\s*\\{', source)
+          if not match:
+              raise SystemExit("pluginManagement block not found")
+          start = source.find("{", match.start())
+          depth = 0
+          end = None
+          for i in range(start, len(source)):
+              if source[i] == "{":
+                  depth += 1
+              elif source[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = i
+                      break
+          if end is None:
+              raise SystemExit("Unclosed pluginManagement block")
+
+          block = source[start:end + 1]
+          repos = re.search(r'(?m)^\\s*repositories\\s*\\{', block)
+          required = ["google()", "mavenCentral()", "gradlePluginPortal()"]
+          if repos:
+              rstart = block.find("{", repos.start())
+              rdepth = 0
+              rend = None
+              for i in range(rstart, len(block)):
+                  if block[i] == "{":
+                      rdepth += 1
+                  elif block[i] == "}":
+                      rdepth -= 1
+                      if rdepth == 0:
+                          rend = i
+                          break
+              if rend is None:
+                  raise SystemExit("Unclosed repositories block")
+              existing = block[rstart + 1:rend]
+              missing = [item for item in required if item not in existing]
+              if missing:
+                  block = block[:rend] + "\\n" + "\\n".join("        " + item for item in missing) + "\\n    " + block[rend:]
+          else:
+              block = block[:1] + "\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n" + block[1:]
+
+          settings.write_text(source[:start] + block + source[end + 1:])
+          print("Configured Gradle plugin repositories: Google, Maven Central, Gradle Plugin Portal")
+          PYCODE
+
       - name: Configure signing and Firebase
         env:
           KEYSTORE_BASE64: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
