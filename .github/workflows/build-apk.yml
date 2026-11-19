@@ -123,6 +123,19 @@ jobs:
           else:
               block = block[:1] + "\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n" + block[1:]
 
+          mirror_repo = (
+              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
+              if settings.suffix == ".kts"
+              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
+          )
+          if "maven-central.storage-download.googleapis.com" not in block:
+              block = re.sub(
+                  r'(repositories\\s*\\{)',
+                  lambda m: m.group(1) + "\\n        " + mirror_repo,
+                  block,
+                  count=1
+              )
+
           settings.write_text(source[:start] + block + source[end + 1:])
           print("Configured Gradle plugin repositories: Google, Maven Central, Gradle Plugin Portal")
           PYCODE
