@@ -130,8 +130,8 @@ jobs:
           )
           if "maven-central.storage-download.googleapis.com" not in block:
               block = re.sub(
-                  r'(repositories\\s*\\{)',
-                  lambda m: m.group(1) + "\\n        " + mirror_repo,
+                  r'(repositories\s*\{)',
+                  lambda m: m.group(1) + "\n        " + mirror_repo,
                   block,
                   count=1
               )
