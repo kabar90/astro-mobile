@@ -42,6 +42,15 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
+      - name: Fix duplicate image downloads and enable persistent cache
+        run: |
+          set -e
+          python3 scripts/patch_image_cache.py
+          grep -q "CachedNetworkImage(" astro_mobile/lib/widgets/astro_cached_image.dart
+          grep -q "maxNrOfCacheObjects: 500" astro_mobile/lib/widgets/astro_cached_image.dart
+          echo "Single-request persistent image cache patch applied."
+
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
