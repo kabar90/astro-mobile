@@ -42,6 +42,14 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
+      - name: Upload extracted Flutter source for safe inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRO-MOBILE-FLUTTER-SOURCE-INSPECTION
+          path: astro_mobile/
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
