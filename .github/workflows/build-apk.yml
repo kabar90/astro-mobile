@@ -48,6 +48,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-astro-mobile-v1
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -90,7 +101,7 @@ jobs:
 
           block = source[start:end + 1]
           repos = re.search(r'(?m)^\s*repositories\s*\{', block)
-          required = ["google()", "mavenCentral()", "gradlePluginPortal()"]
+          required = ["google()", "gradlePluginPortal()", "mavenCentral()"]
           if repos:
               rstart = block.find("{", repos.start())
               rdepth = 0
@@ -242,9 +253,23 @@ jobs:
         working-directory: astro_mobile
         run: dart run flutter_launcher_icons
 
-      - name: Build APK
+      - name: Build APK (retry transient repository rate limits)
         working-directory: astro_mobile
-        run: flutter build apk --release
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "APK build attempt ${attempt}/3"
+            if flutter build apk --release; then
+              exit 0
+            fi
+            if [ "${attempt}" -lt 3 ]; then
+              wait_seconds=$((attempt * 30))
+              echo "Build failed; waiting ${wait_seconds}s before retry (helps with Maven HTTP 429 rate limits)."
+              sleep "${wait_seconds}"
+            fi
+          done
+          echo "APK build failed after 3 attempts."
+          exit 1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
