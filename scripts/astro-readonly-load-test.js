@@ -6,7 +6,7 @@ const failures = new Rate('catalogue_failures');
 const productsLatency = new Trend('products_latency');
 const categoriesLatency = new Trend('categories_latency');
 
-const baseUrl = (__ENV.SUPABASE_URL || '').replace(/\\/$/, '');
+const baseUrl = (__ENV.SUPABASE_URL || '').replace(/\/$/, '');
 const anonKey = __ENV.SUPABASE_ANON_KEY || '';
 const headers = {
   apikey: anonKey,
