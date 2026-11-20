@@ -2119,43 +2119,54 @@ async function testSingleImageWebP() {
   }
   button.disabled = true;
   if (links) links.replaceChildren();
-  setMessage("imageOptimizationMsg", "جارٍ اختبار ثلاث صور، والتحقق من صيغة WebP وإعادة قراءتها...");
+  setMessage("imageOptimizationMsg", "جارٍ تحويل الصور الثلاث، صورة واحدة في كل طلب لتجنب حد وقت التنفيذ...");
+  const passed = [];
+  const failed = [];
   try {
-    const { data, error } = await supabase.functions.invoke("optimize-product-image", { body: { test: true } });
-    if (error) throw new Error(error.message || "تعذر تشغيل اختبار WebP.");
-    if (!data?.results || !Array.isArray(data.results)) {
-      throw new Error(data?.error || "استجابة الاختبار غير مكتملة.");
-    }
-
-    const passed = data.results.filter(item => item.validated && item.publicUrl);
-    const failed = data.results.filter(item => !item.validated);
-    if (links) {
-      for (const item of passed) {
+    for (let imageIndex = 0; imageIndex < 3; imageIndex++) {
+      setMessage("imageOptimizationMsg", `جارٍ تحويل الصورة ${imageIndex + 1} من 3...`);
+      const { data, error } = await supabase.functions.invoke("optimize-product-image", {
+        body: { imageIndex }
+      });
+      if (error) {
+        failed.push(`الصورة ${imageIndex + 1}: ${error.message || "فشل الطلب"}`);
+        break;
+      }
+      if (!data?.success || !data?.validated || !data?.publicUrl) {
+        failed.push(`الصورة ${imageIndex + 1}: ${data?.error || "فشل التحقق"}`);
+        break;
+      }
+      passed.push(data);
+      if (links) {
         const a = document.createElement("a");
-        a.href = item.publicUrl + "?validation=" + Date.now();
+        a.href = data.publicUrl + "?validation=" + Date.now();
         a.target = "_blank";
         a.rel = "noopener";
-        a.textContent = `فتح صورة الاختبار (${item.webpBytes} بايت، توفير ${item.savedPercent}%)`;
+        a.textContent = `فتح الصورة ${imageIndex + 1} (${data.webpBytes} بايت، توفير ${data.savedPercent}%)`;
         links.appendChild(a);
       }
     }
 
-    const summary = passed.map(item => `${item.webpBytes} بايت (${item.savedPercent}%)`).join("، ");
     if (failed.length) {
       setMessage(
         "imageOptimizationMsg",
-        `نجح ${passed.length} من 3 صور، وتعذّر ${failed.length}. ${failed.map(item => item.error).join("؛ ")}. لم يتم تعديل أي منتج.`,
+        `نجح ${passed.length} من 3 صور. ${failed.join("؛ ")}. الصور الأصلية وروابط المنتجات لم تتغير.`,
         true
       );
     } else {
+      const details = passed.map(x => `${x.webpBytes} بايت، توفير ${x.savedPercent}%`).join(" | ");
       setMessage(
         "imageOptimizationMsg",
-        `نجحت الصور الثلاث: ${summary}. تم حفظ نسخ اختبار فقط، ولم تتغير روابط المنتجات أو الصور الأصلية.`
+        `نجحت الصور الثلاث: ${details}. حُفظت نسخ اختبار فقط ولم تتغير روابط المنتجات.`
       );
     }
   } catch (error) {
     console.error("Three-image WebP validation failed:", error);
-    setMessage("imageOptimizationMsg", `فشل الاختبار: ${error.message || error}. لم يتم تعديل المنتجات.`, true);
+    setMessage(
+      "imageOptimizationMsg",
+      `توقف الاختبار بعد نجاح ${passed.length} صور: ${error.message || error}. لم يتم تعديل المنتجات.`,
+      true
+    );
   } finally {
     button.disabled = false;
   }
