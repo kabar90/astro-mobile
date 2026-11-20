@@ -1,0 +1,41 @@
+name: Read-only Supabase Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_vus:
+        description: "Maximum virtual users (production-safe staged test)"
+        required: true
+        type: choice
+        options:
+          - "5"
+          - "10"
+          - "25"
+          - "50"
+        default: "5"
+
+permissions:
+  contents: read
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run read-only catalogue test
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          TARGET_VUS: ${{ inputs.target_vus }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Add SUPABASE_URL and SUPABASE_ANON_KEY as GitHub Actions repository secrets."
+            exit 1
+          fi
+          k6 run --vus "$TARGET_VUS" --duration 60s scripts/astro-readonly-load-test.js
