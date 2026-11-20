@@ -2244,6 +2244,51 @@ if (productWebPBatchButton) {
   window.startProductWebPBatch = optimizeNextProductImagesBatch;
 }
 
+async function cleanupUnusedOriginalProductImages() {
+  const button = $("cleanupOriginalProductImages");
+  if (!currentUser) {
+    setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
+    return;
+  }
+  button.disabled = true;
+  try {
+    setMessage("imageOptimizationMsg", "جارٍ فحص مراجع الصور الأصلية... لم يتم حذف أي ملف.");
+    const preview = await supabase.functions.invoke("cleanup-original-product-images", {
+      body: { confirmDelete: false }
+    });
+    if (preview.error || !preview.data?.success) {
+      throw new Error(preview.error?.message || preview.data?.error || "تعذر فحص الصور");
+    }
+    const p = preview.data;
+    const prompt = `نتيجة الفحص الآمن:\n\nملفات أصلية غير مستخدمة: ${p.safeToDelete}\nملفات أصلية سنحتفظ بها لأنها مستخدمة: ${p.preservedReferenced}\nالمساحة المتوقع توفيرها: ${p.reclaimableMB} MB\n\nلن يتم حذف صور WebP المحسّنة. هل توافق على حذف الملفات غير المستخدمة فقط؟`;
+    if (!window.confirm(prompt)) {
+      setMessage("imageOptimizationMsg", `اكتمل الفحص دون حذف. يمكن حذف ${p.safeToDelete} ملفاً غير مستخدم، مع الاحتفاظ بـ ${p.preservedReferenced} ملف مستخدم.`);
+      return;
+    }
+    setMessage("imageOptimizationMsg", "تم التأكيد. جارٍ إعادة فحص المراجع ثم حذف الملفات غير المستخدمة فقط...");
+    const result = await supabase.functions.invoke("cleanup-original-product-images", {
+      body: { confirmDelete: true }
+    });
+    if (result.error || !result.data?.success) {
+      throw new Error(result.error?.message || result.data?.error || "فشل حذف النسخ غير المستخدمة");
+    }
+    const d = result.data;
+    setMessage(
+      "imageOptimizationMsg",
+      `اكتمل التنظيف: حُذف ${d.deletedFiles} ملفاً أصلياً غير مستخدم، وتم توفير ${d.deletedMB} MB. احتفظنا بـ ${d.preservedReferenced} ملف مستخدم، ولم نلمس صور WebP.`
+    );
+  } catch (error) {
+    console.error("Original image cleanup failed:", error);
+    setMessage("imageOptimizationMsg", `توقف التنظيف: ${error.message || error}. لم تُحذف صور WebP.`, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+const cleanupOriginalImagesButton = $("cleanupOriginalProductImages");
+if (cleanupOriginalImagesButton) cleanupOriginalImagesButton.onclick = cleanupUnusedOriginalProductImages;
+
+
+
 
 
 // ========================================
