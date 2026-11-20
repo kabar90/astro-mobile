@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       target_vus:
-        description: "Maximum virtual users (production-safe staged test)"
+        description: "Maximum virtual users (read-only production test)"
         required: true
         type: choice
         options:
@@ -12,7 +12,8 @@ on:
           - "10"
           - "25"
           - "50"
-        default: "5"
+          - "100"
+        default: "100"
 
 permissions:
   contents: read
@@ -38,4 +39,4 @@ jobs:
             echo "::error::Add SUPABASE_URL and SUPABASE_ANON_KEY as GitHub Actions repository secrets."
             exit 1
           fi
-          k6 run --vus "$TARGET_VUS" --duration 60s scripts/astro-readonly-load-test.js
+          k6 run --vus "$TARGET_VUS" --duration 30s scripts/astro-readonly-load-test.js
