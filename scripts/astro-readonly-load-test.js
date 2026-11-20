@@ -6,7 +6,7 @@ const failures = new Rate('catalogue_failures');
 const productsLatency = new Trend('products_latency');
 const categoriesLatency = new Trend('categories_latency');
 
-const baseUrl = (__ENV.SUPABASE_URL || '').replace(/\/$/, '');
+const baseUrl = (__ENV.SUPABASE_URL || '').replace(/\\/$/, '');
 const anonKey = __ENV.SUPABASE_ANON_KEY || '';
 const headers = {
   apikey: anonKey,
@@ -26,8 +26,9 @@ export const options = {
 };
 
 export default function () {
+  // Match the app's optimized catalogue request: descriptions load on demand.
   const products = http.get(
-    `${baseUrl}/rest/v1/products?select=id,name,price,category,stock,description,image_url,colors,subcategory_id,reward_points,allow_points_payment&is_active=eq.true&order=created_at.desc&limit=100`,
+    `${baseUrl}/rest/v1/products?select=id,name,price,category,stock,image_url,colors,subcategory_id,reward_points,allow_points_payment&is_active=eq.true&order=created_at.desc&limit=100`,
     { headers, tags: { endpoint: 'products' } }
   );
   productsLatency.add(products.timings.duration);
