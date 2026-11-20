@@ -2173,6 +2173,74 @@ async function testSingleImageWebP() {
 }
 $("startImageOptimization")?.addEventListener("click", testSingleImageWebP);
 
+async function optimizeNextProductImagesBatch() {
+  const button = $("startProductWebPBatch");
+  if (!currentUser) {
+    setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
+    return;
+  }
+  button.disabled = true;
+  const done = [];
+  const failed = [];
+  try {
+    const { data: products, error: listError } = await supabase
+      .from("products")
+      .select("id,name,image_url")
+      .not("image_url", "like", "%/optimized/%")
+      .order("id", { ascending: true })
+      .limit(5);
+    if (listError) throw new Error("تعذر قراءة المنتجات: " + listError.message);
+    if (!products || products.length === 0) {
+      setMessage("imageOptimizationMsg", "اكتمل تحسين جميع صور المنتجات التي لها روابط أصلية. لم تُحذف الصور الأصلية.");
+      return;
+    }
+
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
+      setMessage(
+        "imageOptimizationMsg",
+        `جارٍ تحسين ${i + 1} من ${products.length}: ${product.name} (رقم ${product.id})...`
+      );
+      const { data, error } = await supabase.functions.invoke("optimize-product-image", {
+        body: { productId: product.id }
+      });
+      if (error || !data?.success) {
+        failed.push(`${product.name}: ${error?.message || data?.error || "فشل التحويل"}`);
+        break;
+      }
+      done.push(data);
+      await new Promise(resolve => setTimeout(resolve, 350));
+    }
+
+    const { count: remaining, error: countError } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .not("image_url", "like", "%/optimized/%");
+    const remainingText = countError ? "تعذر حساب المتبقي" : `المتبقي: ${remaining} منتج`;
+    const saved = done.reduce((sum, item) => sum + (item.originalBytes - item.webpBytes), 0);
+    if (failed.length) {
+      setMessage(
+        "imageOptimizationMsg",
+        `تم تحسين ${done.length} صور في هذه الدفعة. ${remainingText}. الخطأ: ${failed.join("؛ ")}. الصور الأصلية محفوظة.`,
+        true
+      );
+    } else {
+      setMessage(
+        "imageOptimizationMsg",
+        `نجحت الدفعة: ${done.length} صور. وفّرنا ${(saved / 1024).toFixed(1)} KB في هذه الدفعة. ${remainingText}. اضغط الزر مرة أخرى للدفعة التالية.`
+      );
+    }
+  } catch (error) {
+    console.error("Product WebP batch failed:", error);
+    setMessage("imageOptimizationMsg", `توقفت الدفعة: ${error.message || error}. الصور الأصلية محفوظة.`, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+$("startProductWebPBatch")?.addEventListener("click", optimizeNextProductImagesBatch);
+
+
+
 // ========================================
 // استعادة جلسة المدير عند فتح الصفحة
 // ========================================
