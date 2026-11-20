@@ -2110,7 +2110,38 @@ async function optimizeAllProductImages() {
   }
 }
 
-$("startImageOptimization")?.addEventListener("click", optimizeAllProductImages);
+async function testSingleImageWebP() {
+  const button = $("startImageOptimization");
+  const link = $("webpValidationLink");
+  if (!currentUser) {
+    setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
+    return;
+  }
+  button.disabled = true;
+  if (link) link.style.display = "none";
+  setMessage("imageOptimizationMsg", "جارٍ تحويل صورة اختبار واحدة والتحقق من توقيع WebP وإعادة قراءتها...");
+  try {
+    const { data, error } = await supabase.functions.invoke("optimize-product-image", { body: { test: true } });
+    if (error) throw new Error(error.message || "تعذر تشغيل اختبار WebP.");
+    if (!data?.success || !data?.validated || !data?.publicUrl) {
+      throw new Error(data?.error || "فشل التحقق من ملف WebP.");
+    }
+    setMessage(
+      "imageOptimizationMsg",
+      `نجح التحقق: ${data.originalBytes} بايت أصلية ← ${data.webpBytes} بايت WebP، توفير ${data.savedPercent}%. لم يتغير أي منتج.`
+    );
+    if (link) {
+      link.href = data.publicUrl + "?validation=" + Date.now();
+      link.style.display = "inline-block";
+    }
+  } catch (error) {
+    console.error("Single WebP validation failed:", error);
+    setMessage("imageOptimizationMsg", `فشل الاختبار: ${error.message || error}. لم يتم تعديل المنتجات.`, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+$("startImageOptimization")?.addEventListener("click", testSingleImageWebP);
 
 // ========================================
 // استعادة جلسة المدير عند فتح الصفحة
