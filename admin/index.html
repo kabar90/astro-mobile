@@ -163,10 +163,10 @@
     </div>
     <div style="margin:14px 0;padding:14px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc">
       <h3 style="margin:0 0 8px">تحسين صور المنتجات (WebP)</h3>
-      <p style="margin:0 0 10px;color:#475569">اختبار صورة واحدة فقط بعد إصلاح طريقة نسخ بيانات WebP من الذاكرة. لن تتغير روابط المنتجات ولن تُحذف الصور الأصلية.</p>
-      <button id="startImageOptimization" type="button">اختبار صورة WebP واحدة</button>
+      <p style="margin:0 0 10px;color:#475569">اختبار ثلاث صور فقط إلى WebP وحفظ نسخ منفصلة داخل optimized/batch-test. لن تتغير روابط المنتجات ولن تُحذف الصور الأصلية.</p>
+      <button id="startImageOptimization" type="button">اختبار 3 صور WebP</button>
       <p id="imageOptimizationMsg" role="status" style="margin:10px 0 0"></p>
-      <a id="webpValidationLink" href="#" target="_blank" rel="noopener" style="display:none;margin-top:8px">فتح صورة الاختبار في المتصفح</a>
+      <div id="webpValidationLinks" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
     </div>
     <p id="productFilterMsg" role="status" class="muted"></p>
     <div id="productList">جارٍ تحميل المنتجات...</div>
