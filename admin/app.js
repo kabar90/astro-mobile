@@ -2180,6 +2180,7 @@ async function optimizeNextProductImagesBatch() {
     return;
   }
   button.disabled = true;
+  setMessage("imageOptimizationMsg", "تم استلام الضغط، جارٍ تجهيز أول 5 منتجات...");
   const done = [];
   const failed = [];
   try {
@@ -2237,7 +2238,11 @@ async function optimizeNextProductImagesBatch() {
     button.disabled = false;
   }
 }
-$("startProductWebPBatch")?.addEventListener("click", optimizeNextProductImagesBatch);
+const productWebPBatchButton = $("startProductWebPBatch");
+if (productWebPBatchButton) {
+  productWebPBatchButton.onclick = optimizeNextProductImagesBatch;
+  window.startProductWebPBatch = optimizeNextProductImagesBatch;
+}
 
 
 
