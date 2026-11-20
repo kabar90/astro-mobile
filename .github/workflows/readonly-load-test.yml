@@ -40,4 +40,4 @@ jobs:
             echo "::error::Add SUPABASE_URL and SUPABASE_ANON_KEY as GitHub Actions repository secrets."
             exit 1
           fi
-          k6 run --vus "$TARGET_VUS" --duration 30s scripts/astro-readonly-load-test.js
+          k6 run scripts/astro-readonly-ramp-load-test.js
