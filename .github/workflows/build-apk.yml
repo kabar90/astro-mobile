@@ -66,6 +66,16 @@ jobs:
           grep -q "select('id,name,parent_id,sort_order,is_active,image_url')" astro_mobile/lib/services/product_repository.dart
           echo "Catalogue queries limited to required columns."
 
+      - name: Load product descriptions only on demand
+        run: |
+          set -e
+          python3 scripts/patch_product_detail_lazy_load.py
+          grep -q "select('id,name,price,category,stock,image_url,is_active,colors,subcategory_id,reward_points,allow_points_payment')" astro_mobile/lib/services/product_repository.dart
+          grep -q "getProductDescription" astro_mobile/lib/services/product_repository.dart
+          grep -q "_loadProductDescription" astro_mobile/lib/screens/product_detail_screen.dart
+          echo "Lazy product description loading and offline detail cache applied."
+
+
 
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
