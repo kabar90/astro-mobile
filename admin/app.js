@@ -2136,68 +2136,9 @@ async function optimizeAllProductImages() {
   }
 }
 
-async function testSingleImageWebP() {
-  const button = $("startImageOptimization");
-  const links = $("webpValidationLinks");
-  if (!currentUser) {
-    setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
-    return;
-  }
-  button.disabled = true;
-  if (links) links.replaceChildren();
-  setMessage("imageOptimizationMsg", "جارٍ تحويل الصور الثلاث، صورة واحدة في كل طلب لتجنب حد وقت التنفيذ...");
-  const passed = [];
-  const failed = [];
-  try {
-    for (let imageIndex = 0; imageIndex < 3; imageIndex++) {
-      setMessage("imageOptimizationMsg", `جارٍ تحويل الصورة ${imageIndex + 1} من 3...`);
-      const { data, error } = await supabase.functions.invoke("optimize-product-image", {
-        body: { imageIndex }
-      });
-      if (error) {
-        failed.push(`الصورة ${imageIndex + 1}: ${error.message || "فشل الطلب"}`);
-        break;
-      }
-      if (!data?.success || !data?.validated || !data?.publicUrl) {
-        failed.push(`الصورة ${imageIndex + 1}: ${data?.error || "فشل التحقق"}`);
-        break;
-      }
-      passed.push(data);
-      if (links) {
-        const a = document.createElement("a");
-        a.href = data.publicUrl + "?validation=" + Date.now();
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.textContent = `فتح الصورة ${imageIndex + 1} (${data.webpBytes} بايت، توفير ${data.savedPercent}%)`;
-        links.appendChild(a);
-      }
-    }
 
-    if (failed.length) {
-      setMessage(
-        "imageOptimizationMsg",
-        `نجح ${passed.length} من 3 صور. ${failed.join("؛ ")}. الصور الأصلية وروابط المنتجات لم تتغير.`,
-        true
-      );
-    } else {
-      const details = passed.map(x => `${x.webpBytes} بايت، توفير ${x.savedPercent}%`).join(" | ");
-      setMessage(
-        "imageOptimizationMsg",
-        `نجحت الصور الثلاث: ${details}. حُفظت نسخ اختبار فقط ولم تتغير روابط المنتجات.`
-      );
-    }
-  } catch (error) {
-    console.error("Three-image WebP validation failed:", error);
-    setMessage(
-      "imageOptimizationMsg",
-      `توقف الاختبار بعد نجاح ${passed.length} صور: ${error.message || error}. لم يتم تعديل المنتجات.`,
-      true
-    );
-  } finally {
-    button.disabled = false;
-  }
-}
-$("startImageOptimization")?.addEventListener("click", testSingleImageWebP);
+
+let productWebPBatchRunning = false;
 
 async function optimizeNextProductImagesBatch() {
   const button = $("startProductWebPBatch");
@@ -2205,63 +2146,65 @@ async function optimizeNextProductImagesBatch() {
     setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
     return;
   }
-  button.disabled = true;
-  setMessage("imageOptimizationMsg", "تم استلام الضغط، جارٍ تجهيز أول 5 منتجات...");
+  if (productWebPBatchRunning) return;
+  productWebPBatchRunning = true;
+  if (button) button.disabled = true;
+  setMessage("imageOptimizationMsg", "جارٍ تجهيز الصور الأصلية التي تحتاج إلى التحسين...");
   const done = [];
+  const skipped = [];
   const failed = [];
   try {
     const { data: products, error: listError } = await supabase
       .from("products")
       .select("id,name,image_url")
+      .not("image_url", "is", null)
       .not("image_url", "like", "%/optimized/%")
       .order("id", { ascending: true })
-      .limit(5);
+      .limit(20);
     if (listError) throw new Error("تعذر قراءة المنتجات: " + listError.message);
-    if (!products || products.length === 0) {
-      setMessage("imageOptimizationMsg", "اكتمل تحسين جميع صور المنتجات التي لها روابط أصلية. لم تُحذف الصور الأصلية.");
+
+    const pending = (products || [])
+      .filter(product => getProductsBucketPath(product.image_url))
+      .slice(0, 5);
+    if (!pending.length) {
+      setMessage("imageOptimizationMsg", "لا توجد صور أصلية داخل مخزن المنتجات تحتاج إلى التحسين.");
       return;
     }
 
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      setMessage(
-        "imageOptimizationMsg",
-        `جارٍ تحسين ${i + 1} من ${products.length}: ${product.name} (رقم ${product.id})...`
-      );
+    for (let i = 0; i < pending.length; i++) {
+      const product = pending[i];
+      setMessage("imageOptimizationMsg", `جارٍ تحسين ${i + 1} من ${pending.length}: ${product.name} (رقم ${product.id})...`);
       const { data, error } = await supabase.functions.invoke("optimize-product-image", {
         body: { productId: product.id }
       });
       if (error || !data?.success) {
         failed.push(`${product.name}: ${error?.message || data?.error || "فشل التحويل"}`);
-        break;
+        continue;
       }
-      done.push(data);
-      await new Promise(resolve => setTimeout(resolve, 350));
+      if (data.skipped) skipped.push(product.name);
+      else done.push(data);
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     const { count: remaining, error: countError } = await supabase
       .from("products")
       .select("id", { count: "exact", head: true })
+      .not("image_url", "is", null)
       .not("image_url", "like", "%/optimized/%");
     const remainingText = countError ? "تعذر حساب المتبقي" : `المتبقي: ${remaining} منتج`;
-    const saved = done.reduce((sum, item) => sum + (item.originalBytes - item.webpBytes), 0);
+    const saved = done.reduce((sum, item) => sum + (Number(item.originalBytes || 0) - Number(item.webpBytes || 0)), 0);
+    const summary = `نجح تحسين ${done.length} صور، وتم تجاوز ${skipped.length} صور سبق تحسينها. ${remainingText}.`;
     if (failed.length) {
-      setMessage(
-        "imageOptimizationMsg",
-        `تم تحسين ${done.length} صور في هذه الدفعة. ${remainingText}. الخطأ: ${failed.join("؛ ")}. الصور الأصلية محفوظة.`,
-        true
-      );
+      setMessage("imageOptimizationMsg", `${summary} تعذّر: ${failed.join("؛ ")}. الصور الأصلية محفوظة.`, true);
     } else {
-      setMessage(
-        "imageOptimizationMsg",
-        `نجحت الدفعة: ${done.length} صور. وفّرنا ${(saved / 1024).toFixed(1)} KB في هذه الدفعة. ${remainingText}. اضغط الزر مرة أخرى للدفعة التالية.`
-      );
+      setMessage("imageOptimizationMsg", `${summary} التوفير في هذه الدفعة: ${(saved / 1024).toFixed(1)} KB. الصور الأصلية محفوظة.`);
     }
   } catch (error) {
     console.error("Product WebP batch failed:", error);
     setMessage("imageOptimizationMsg", `توقفت الدفعة: ${error.message || error}. الصور الأصلية محفوظة.`, true);
   } finally {
-    button.disabled = false;
+    productWebPBatchRunning = false;
+    if (button) button.disabled = false;
   }
 }
 const productWebPBatchButton = $("startProductWebPBatch");
