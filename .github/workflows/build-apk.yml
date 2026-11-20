@@ -58,6 +58,14 @@ jobs:
           grep -q "static Stream<List<StoreCategory>> watchCategories()" astro_mobile/lib/services/product_repository.dart
           echo "Offline-first product and category catalogue patch applied."
 
+      - name: Reduce catalogue REST response payload
+        run: |
+          set -e
+          python3 scripts/patch_catalog_select_columns.py
+          grep -q "select('id,name,price,category,stock,description,image_url,is_active,colors,subcategory_id,reward_points,allow_points_payment')" astro_mobile/lib/services/product_repository.dart
+          grep -q "select('id,name,parent_id,sort_order,is_active,image_url')" astro_mobile/lib/services/product_repository.dart
+          echo "Catalogue queries limited to required columns."
+
 
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
