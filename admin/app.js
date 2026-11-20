@@ -1993,6 +1993,126 @@ $("deliveryCityForm")?.addEventListener("submit", async event => {
 $("cancelDeliveryCity")?.addEventListener("click", resetDeliveryCityForm);
 
 // ========================================
+// تحسين صور المنتجات إلى WebP على دفعات
+// ========================================
+
+function getProductsBucketPath(imageUrl) {
+  try {
+    const url = new URL(imageUrl);
+    const marker = "/storage/v1/object/public/products/";
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+    const path = decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+    if (!path || path.startsWith("optimized/") || path.includes("..")) return null;
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+async function optimizeAllProductImages() {
+  const button = $("startImageOptimization");
+  const status = $("imageOptimizationMsg");
+  if (!currentUser) {
+    setMessage("imageOptimizationMsg", "يرجى تسجيل الدخول بحساب المدير.", true);
+    return;
+  }
+  if (!button || !status) return;
+
+  const confirmed = confirm(
+    "سيتم تحويل صور المنتجات إلى WebP وتحديث روابط المنتجات بعد نجاح كل صورة.\n\nستبقى الصور الأصلية محفوظة ولن يتم حذفها. هل تريد البدء؟"
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+  let converted = 0;
+  let failed = 0;
+
+  try {
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id,name,image_url")
+      .order("id", { ascending: true });
+    if (productsError) throw productsError;
+
+    const pending = (products || [])
+      .map(product => ({ ...product, sourcePath: getProductsBucketPath(product.image_url) }))
+      .filter(product => product.sourcePath);
+
+    if (!pending.length) {
+      setMessage("imageOptimizationMsg", "لا توجد صور أصلية تحتاج إلى التحويل.");
+      return;
+    }
+
+    setMessage(
+      "imageOptimizationMsg",
+      `تم العثور على ${pending.length} صورة تحتاج إلى التحسين. بدء المعالجة...`
+    );
+
+    for (let start = 0; start < pending.length; start += 4) {
+      const batch = pending.slice(start, start + 4);
+      const { data, error } = await supabase.functions.invoke(
+        "optimize-product-image",
+        { body: { paths: batch.map(item => item.sourcePath) } }
+      );
+      if (error) throw new Error(error.message || "تعذر تشغيل دالة تحسين الصور.");
+      if (!data?.results || !Array.isArray(data.results)) {
+        throw new Error("استجابة دالة تحسين الصور غير مكتملة.");
+      }
+
+      for (const result of data.results) {
+        const product = batch.find(item => item.sourcePath === result.sourcePath);
+        if (!product) continue;
+        if (result.error || !result.publicUrl) {
+          failed++;
+          console.error("Image optimization failed:", product.id, result.error);
+          continue;
+        }
+
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            image_url: result.publicUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", product.id);
+
+        if (updateError) {
+          failed++;
+          console.error("Product image URL update failed:", product.id, updateError);
+        } else {
+          converted++;
+        }
+      }
+
+      const processed = Math.min(start + batch.length, pending.length);
+      setMessage(
+        "imageOptimizationMsg",
+        `التقدم: ${processed} من ${pending.length} صورة — تم تحديث ${converted}، وتعذّر ${failed}.`
+      );
+    }
+
+    await loadProducts();
+    setMessage(
+      "imageOptimizationMsg",
+      `اكتملت المعالجة. تم تحويل وتحديث ${converted} صورة، وتعذّر ${failed}. الصور الأصلية محفوظة.`,
+      failed > 0
+    );
+  } catch (error) {
+    console.error("ASTRO image optimization:", error);
+    setMessage(
+      "imageOptimizationMsg",
+      `توقفت العملية بعد تحديث ${converted} صورة. السبب: ${error.message || error}. يمكنك الضغط على البدء مجدداً؛ الصور المحسّنة لن يعاد تحويلها.`,
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("startImageOptimization")?.addEventListener("click", optimizeAllProductImages);
+
+// ========================================
 // استعادة جلسة المدير عند فتح الصفحة
 // ========================================
 
