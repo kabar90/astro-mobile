@@ -15,7 +15,8 @@ on:
           - "100"
           - "200"
           - "300"
-        default: "300"
+          - "500"
+        default: "500"
 
 permissions:
   contents: read
