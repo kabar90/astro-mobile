@@ -47,5 +47,8 @@ export default function () {
   });
   failures.add(!categoriesOk);
 
-  sleep(1.5);
+  // Model one real app launch per virtual user: fetch the catalogue once,
+  // then remain idle for the rest of the 30-second test window.
+  // This avoids generating ~190 req/s of artificial repeated polling.
+  sleep(30);
 }
