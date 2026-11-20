@@ -75,6 +75,16 @@ jobs:
           grep -q "_loadProductDescription" astro_mobile/lib/screens/product_detail_screen.dart
           echo "Lazy product description loading and offline detail cache applied."
 
+      - name: Avoid duplicate initial catalogue realtime snapshots
+        run: |
+          set -e
+          python3 scripts/patch_realtime_catalogue_refresh.py
+          grep -q "astro-products-catalogue" astro_mobile/lib/services/product_repository.dart
+          grep -q "astro-categories-catalogue" astro_mobile/lib/services/product_repository.dart
+          grep -q "onPostgresChanges" astro_mobile/lib/services/product_repository.dart
+          echo "Realtime now refreshes only after actual table changes."
+
+
 
 
       - name: Upload extracted Flutter source for safe inspection
