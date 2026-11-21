@@ -488,6 +488,11 @@
       <h3 id="inquiryReplyTitle">الرد على الاستفسار</h3>
       <label>المنتجات المتوفرة والمتوافقة</label>
       <div id="inquiryProducts">اختر المنتجات المناسبة.</div>
+      <label>صور الخيارات المتوفرة (يمكن اختيار أكثر من صورة)
+        <input id="inquiryImageFiles" type="file" accept="image/*" multiple>
+      </label>
+      <p id="inquiryImageMsg" role="status"></p>
+      <div id="inquiryImagePreview" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       <label>رسالة الرد للزبون<textarea id="inquiryReplyText" rows="4" placeholder="اكتب تفاصيل التوفر والأسعار هنا..."></textarea></label>
       <label>حالة الاستفسار<select id="inquiryStatus"><option value="new">جديد</option><option value="in_progress">قيد المراجعة</option><option value="answered">تم الرد</option><option value="closed">مغلق</option></select></label>
       <button id="saveInquiryReply" type="button">حفظ وإرسال الرد</button>
