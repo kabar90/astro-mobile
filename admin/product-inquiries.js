@@ -1,7 +1,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, ADMIN_EMAIL } from "./supabase-config.js";
 
-const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Reuse the exact authenticated client created by app.js.
+const sb = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const $ = id => document.getElementById(id);
 const sectionNames = {17:"الكفرات",34:"لاصقة عدسة الكاميرا",40:"لاصقة الشاشة"};
 let activeInquiry = null;
@@ -21,7 +22,8 @@ async function loadInquiries() {
   const {data,error}=await sb.from("product_inquiries")
     .select("id,user_id,category_id,device_model,customer_note,status,admin_reply,recommended_product_ids,created_at")
     .order("created_at",{ascending:false}).limit(100);
-  if(error){list.textContent="تعذر تحميل الاستفسارات: "+error.message;return;}
+  if(error){list.textContent="تعذر تحميل الاستفسارات: "+error.message;message("خطأ في تحميل الاستفسارات: "+error.message,true);return;}
+  message("تم تحميل "+(data?.length||0)+" استفسار.");
   if(!data?.length){list.textContent="لا توجد استفسارات حتى الآن.";return;}
   list.replaceChildren();
   data.forEach(item=>{
@@ -91,7 +93,12 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
 });
 $("refreshInquiries")?.addEventListener("click",loadInquiries);
 $("closeInquiryReply")?.addEventListener("click",()=>{$("inquiryReplyPanel").classList.add("hide");activeInquiry=null;});
-document.querySelector('nav button[data-view="productInquiries"]')?.addEventListener("click",loadInquiries);
+window.loadProductInquiries = loadInquiries;
+document.addEventListener("click", event => {
+  if (event.target.closest('nav button[data-view="productInquiries"]')) {
+    loadInquiries();
+  }
+});
 sb.auth.getSession().then(({data,error})=>{
   if(error){message(error.message,true);return;}
   const email=data.session?.user?.email?.toLowerCase();
