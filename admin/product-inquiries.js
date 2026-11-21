@@ -157,7 +157,7 @@ async function loadInquiries() {
   if(!list)return;
   list.textContent="جارٍ تحميل الاستفسارات...";
   const {data,error}=await sb.from("product_inquiries")
-    .select("id,user_id,category_id,device_model,customer_note,status,admin_reply,recommended_product_ids,admin_image_urls,created_at")
+    .select("id,user_id,category_id,device_model,customer_note,status,admin_reply,recommended_product_ids,admin_image_urls,admin_image_items,created_at")
     .order("created_at",{ascending:false}).limit(100);
   if(error){list.textContent="تعذر تحميل الاستفسارات: "+error.message;return;}
   if(!data?.length){list.textContent="لا توجد استفسارات حتى الآن.";return;}
