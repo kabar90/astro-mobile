@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 const sectionNames = {17:"الكفرات",34:"لاصقة عدسة الكاميرا",40:"لاصقة الشاشة"};
 let activeInquiry = null;
 let products = [];
+let inquiryImageUrls = [];
 
 function message(text, error=false) {
   const el=$("inquiryAdminMsg");
@@ -14,12 +15,54 @@ function message(text, error=false) {
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+async function optimizeInquiryImage(file) {
+  if(!file || !file.type.startsWith("image/")) throw new Error("ملف الصورة غير صالح.");
+  if(file.type==="image/gif") return {file,converted:false};
+  let bitmap;
+  try{bitmap=await createImageBitmap(file);}catch{throw new Error("تعذر قراءة الصورة. جرّب JPG أو PNG أو WebP.");}
+  try{
+    const maxDimension=1200, scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
+    const width=Math.max(1,Math.round(bitmap.width*scale)), height=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+    const context=canvas.getContext("2d",{alpha:false});if(!context)throw new Error("المتصفح لا يدعم معالجة الصور.");
+    context.fillStyle="#ffffff";context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error("فشل ضغط الصورة.")),"image/webp",0.82));
+    if(blob.type!=="image/webp"||blob.size<16)throw new Error("تعذر تحويل الصورة إلى WebP؛ لم يتم رفعها.");
+    const name=(file.name.replace(/\\.[^.]+$/,"")||"inquiry").replace(/[^a-zA-Z0-9_-]/g,"_")+".webp";
+    const optimized=new File([blob],name,{type:"image/webp",lastModified:Date.now()});
+    return {file:optimized,converted:true,originalBytes:file.size,optimizedBytes:optimized.size,savedPercent:Math.max(0,Math.round((1-optimized.size/file.size)*100))};
+  }finally{bitmap.close?.();}
+}
+async function uploadInquiryImage(file){
+  const ext=file.type==="image/gif"?"gif":"webp";
+  const path="inquiry-replies/"+Date.now()+"-"+crypto.randomUUID()+"."+ext;
+  const {error}=await sb.storage.from("products").upload(path,file,{contentType:file.type,cacheControl:"31536000",upsert:false});
+  if(error)throw new Error("تعذر رفع الصورة: "+error.message);
+  const {data}=sb.storage.from("products").getPublicUrl(path);
+  if(!data?.publicUrl)throw new Error("تم الرفع لكن تعذر استخراج رابط الصورة.");
+  return data.publicUrl;
+}
+function renderInquiryImages(){
+  const host=$("inquiryImagePreview");if(!host)return;host.replaceChildren();
+  inquiryImageUrls.forEach((url,index)=>{
+    const wrap=document.createElement("div");wrap.style.cssText="display:inline-flex;flex-direction:column;gap:5px;margin:6px";
+    const img=document.createElement("img");img.src=url;img.alt="صورة مرفقة";img.style.cssText="width:92px;height:92px;object-fit:cover;border-radius:9px;border:1px solid #ddd";
+    const remove=document.createElement("button");remove.type="button";remove.textContent="حذف";
+    remove.addEventListener("click",()=>{inquiryImageUrls.splice(index,1);renderInquiryImages();});
+    wrap.append(img,remove);host.append(wrap);
+  });
+}
+$("inquiryImageFiles")?.addEventListener("change",()=>{
+  const files=[...($("inquiryImageFiles").files||[])];
+  $("inquiryImageMsg").textContent=files.length?"تم اختيار "+files.length+" صورة؛ ستحسّن وترفع عند حفظ الرد.":"";
+});
+
 async function loadInquiries() {
   const list=$("inquiryAdminList");
   if(!list)return;
   list.textContent="جارٍ تحميل الاستفسارات...";
   const {data,error}=await sb.from("product_inquiries")
-    .select("id,user_id,category_id,device_model,customer_note,status,admin_reply,recommended_product_ids,created_at")
+    .select("id,user_id,category_id,device_model,customer_note,status,admin_reply,recommended_product_ids,admin_image_urls,created_at")
     .order("created_at",{ascending:false}).limit(100);
   if(error){list.textContent="تعذر تحميل الاستفسارات: "+error.message;return;}
   if(!data?.length){list.textContent="لا توجد استفسارات حتى الآن.";return;}
@@ -57,6 +100,10 @@ async function openInquiry(item) {
   $("inquiryReplyPanel").classList.remove("hide");
   $("inquiryReplyTitle").textContent="الرد على الاستفسار #"+item.id+" — "+sectionNames[item.category_id]+" — "+item.device_model;
   $("inquiryReplyText").value=item.admin_reply||"";
+  inquiryImageUrls=Array.isArray(item.admin_image_urls)?[...item.admin_image_urls]:[];
+  renderInquiryImages();
+  $("inquiryImageFiles").value="";
+  $("inquiryImageMsg").textContent="";
   $("inquiryStatus").value=item.status;
   $("inquiryProducts").textContent="جارٍ تحميل المنتجات المتاحة...";
   try{
@@ -80,11 +127,21 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
   const button=$("saveInquiryReply");button.disabled=true;
   try{
     const ids=[...$("inquiryProducts").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
+    const files=[...($("inquiryImageFiles").files||[])];
+    for(let i=0;i<files.length;i++){
+      $("inquiryImageMsg").textContent="جارٍ تحسين ورفع الصورة "+(i+1)+" من "+files.length+"...";
+      const optimized=await optimizeInquiryImage(files[i]);
+      if(optimized.converted) $("inquiryImageMsg").textContent="تم تحسين الصورة وتوفير "+optimized.savedPercent+"%؛ جارٍ الرفع...";
+      inquiryImageUrls.push(await uploadInquiryImage(optimized.file));
+      renderInquiryImages();
+    }
     const status=$("inquiryStatus").value;
-    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids};
+    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageUrls};
     const {error}=await sb.from("product_inquiries").update(payload).eq("id",activeInquiry.id);
     if(error)throw error;
-    message("تم حفظ الرد وتحديث حالة الاستفسار.");
+    $("inquiryImageFiles").value="";
+    $("inquiryImageMsg").textContent="تم حفظ الصور والرد بنجاح.";
+    message("تم حفظ الرد والصور وتحديث حالة الاستفسار.");
     await loadInquiries();
   }catch(e){message("تعذر حفظ الرد: "+e.message,true);}
   finally{button.disabled=false;}
