@@ -95,6 +95,16 @@ jobs:
           grep -q "admin_image_items" astro_mobile/supabase/product_inquiries.sql
           echo "Inline inquiry image prices patch applied."
 
+      - name: Enable mixed inquiry options in cart and checkout
+        run: |
+          set -e
+          python3 scripts/patch_mixed_inquiry_cart.py
+          grep -q "bool get isInquiryOption" astro_mobile/lib/services/cart_service.dart
+          grep -q "astro_create_mixed_order" astro_mobile/lib/screens/checkout_screen.dart
+          grep -q "astro_create_mixed_order" astro_mobile/lib/screens/bank_transfer_screen.dart
+          grep -q "CartService.instance.addInquiryOption" astro_mobile/lib/screens/product_inquiry_inline.dart
+          echo "Mixed inquiry cart and payment integration patch applied."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
