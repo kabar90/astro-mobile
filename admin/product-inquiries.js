@@ -195,7 +195,13 @@ async function openInquiry(item) {
   $("inquiryReplyPanel").classList.remove("hide");
   $("inquiryReplyTitle").textContent="الرد على الاستفسار #"+item.id+" — "+sectionNames[item.category_id]+" — "+item.device_model;
   $("inquiryReplyText").value=item.admin_reply||"";
-  inquiryImageUrls=Array.isArray(item.admin_image_urls)?[...item.admin_image_urls]:[];
+  const savedItems=Array.isArray(item.admin_image_items)?item.admin_image_items:[];
+  inquiryImageItems=savedItems.map(x=>({url:String(x.url||""),price:String(x.price??"")}))
+    .filter(x=>x.url);
+  if(!inquiryImageItems.length && Array.isArray(item.admin_image_urls)){
+    inquiryImageItems=item.admin_image_urls.filter(Boolean).map(url=>({url:String(url),price:""}));
+  }
+  inquiryImageUrls=inquiryImageItems.map(x=>x.url);
   renderInquiryImages();
   $("inquiryImageFiles").value="";
   $("inquiryImageMsg").textContent="";
@@ -227,11 +233,14 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
       $("inquiryImageMsg").textContent="جارٍ تحسين ورفع الصورة "+(i+1)+" من "+files.length+"...";
       const optimized=await optimizeInquiryImage(files[i]);
       if(optimized.converted) $("inquiryImageMsg").textContent="تم تحسين الصورة وتوفير "+optimized.savedPercent+"%؛ جارٍ الرفع...";
-      inquiryImageUrls.push(await uploadInquiryImage(optimized.file));
+      const uploadedUrl=await uploadInquiryImage(optimized.file);
+      inquiryImageItems.push({url:uploadedUrl,price:""});
+      inquiryImageUrls=inquiryImageItems.map(x=>x.url);
       renderInquiryImages();
     }
     const status=$("inquiryStatus").value;
-    const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));\n    if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");\n    if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");\n    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));\n    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageItems.map(x=>x.url),admin_image_items:pricedImages};
+    const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));
+    if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");\n    if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");\n    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));\n    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageItems.map(x=>x.url),admin_image_items:pricedImages};
     const {error}=await sb.from("product_inquiries").update(payload).eq("id",activeInquiry.id);
     if(error)throw error;
     $("inquiryImageFiles").value="";
