@@ -147,9 +147,27 @@ function renderInquiryImages(){
     wrap.append(img,priceWrap,remove);host.append(wrap);
   });
 }
-$("inquiryImageFiles")?.addEventListener("change",()=>{
-  const files=[...($("inquiryImageFiles").files||[])];
-  $("inquiryImageMsg").textContent=files.length?"تم اختيار "+files.length+" صورة؛ ستحسّن وترفع عند حفظ الرد.":"";
+$("inquiryImageFiles")?.addEventListener("change",async()=>{
+  const picker=$("inquiryImageFiles");
+  const files=[...(picker.files||[])];
+  // Clear immediately so a retry cannot re-process the same selection.
+  picker.value="";
+  if(!files.length)return;
+  for(let i=0;i<files.length;i++){
+    try{
+      $("inquiryImageMsg").textContent="جارٍ تحسين ورفع الصورة "+(i+1)+" من "+files.length+"...";
+      const optimized=await optimizeInquiryImage(files[i]);
+      if(optimized.converted) $("inquiryImageMsg").textContent="تم تحسين الصورة وتوفير "+optimized.savedPercent+"%؛ جارٍ الرفع...";
+      const uploadedUrl=await uploadInquiryImage(optimized.file);
+      inquiryImageItems.push({url:uploadedUrl,price:""});
+      inquiryImageUrls=inquiryImageItems.map(x=>x.url);
+      renderInquiryImages();
+      $("inquiryImageMsg").textContent="تم رفع الصورة. أدخل سعرها بجانبها.";
+    }catch(e){
+      $("inquiryImageMsg").textContent="تعذر رفع الصورة: "+e.message;
+      message("تعذر رفع الصورة: "+e.message,true);
+    }
+  }
 });
 
 async function loadInquiries() {
@@ -228,20 +246,6 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
   const button=$("saveInquiryReply");button.disabled=true;
   try{
     const ids=[...$("inquiryProducts").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
-    const files=[...($("inquiryImageFiles").files||[])];
-    // Clear the picker immediately: uploaded images remain in inquiryImageItems.
-    // This prevents the same selected file from being uploaded again if price
-    // validation or the database update fails and the admin presses Save again.
-    $("inquiryImageFiles").value="";
-    for(let i=0;i<files.length;i++){
-      $("inquiryImageMsg").textContent="جارٍ تحسين ورفع الصورة "+(i+1)+" من "+files.length+"...";
-      const optimized=await optimizeInquiryImage(files[i]);
-      if(optimized.converted) $("inquiryImageMsg").textContent="تم تحسين الصورة وتوفير "+optimized.savedPercent+"%؛ جارٍ الرفع...";
-      const uploadedUrl=await uploadInquiryImage(optimized.file);
-      inquiryImageItems.push({url:uploadedUrl,price:""});
-      inquiryImageUrls=inquiryImageItems.map(x=>x.url);
-      renderInquiryImages();
-    }
     const status=$("inquiryStatus").value;
     const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));
     if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");
