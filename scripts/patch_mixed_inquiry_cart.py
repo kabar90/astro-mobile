@@ -95,7 +95,7 @@ if "CartService.instance.addInquiryOption" not in s:
                           onPressed: canAdd ? () {
                             final added=CartService.instance.addInquiryOption(
                               inquiryId:inquiryId,optionId:optionId,imageUrl:url,price:price!,
-                              deviceModel:(item['device_model'] ?? '').toString());
+                              deviceModel:'${widget.categoryName} - ${(item['device_model'] ?? '').toString()}');
                             _message(added ? 'تمت إضافة الخيار إلى السلة' : 'هذا الخيار موجود بالفعل في السلة');
                           } : null,
                           icon: const Icon(Icons.add_shopping_cart,size:14),
