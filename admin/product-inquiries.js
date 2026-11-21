@@ -214,7 +214,7 @@ async function openInquiry(item) {
   $("inquiryReplyTitle").textContent="الرد على الاستفسار #"+item.id+" — "+sectionNames[item.category_id]+" — "+item.device_model;
   $("inquiryReplyText").value=item.admin_reply||"";
   const savedItems=Array.isArray(item.admin_image_items)?item.admin_image_items:[];
-  inquiryImageItems=savedItems.map(x=>({url:String(x.url||""),price:String(x.price??"")}))
+  inquiryImageItems=savedItems.map(x=>({...x,url:String(x.url||""),price:String(x.price??"")}))
     .filter(x=>x.url);
   if(!inquiryImageItems.length && Array.isArray(item.admin_image_urls)){
     inquiryImageItems=item.admin_image_urls.filter(Boolean).map(url=>({url:String(url),price:""}));
@@ -250,8 +250,17 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
     const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));
     if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");
     if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");
-    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));
-    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageItems.map(x=>x.url),admin_image_items:pricedImages};
+    const expiry=status==="answered"||status==="closed"?new Date(Date.now()+48*60*60*1000).toISOString():null;
+    const pricedImages=inquiryImageItems.map(x=>({
+      ...x,
+      url:x.url,
+      price:Number(x.price),
+      selected:x.selected===true,
+      selected_at:x.selected_at||null,
+      order_id:x.order_id||null,
+      expires_at:x.selected===true?null:(x.expires_at||expiry)
+    }));
+    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:pricedImages.map(x=>x.url),admin_image_items:pricedImages};
     const {error}=await sb.from("product_inquiries").update(payload).eq("id",activeInquiry.id);
     if(error)throw error;
     $("inquiryImageFiles").value="";
