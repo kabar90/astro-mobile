@@ -240,7 +240,10 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
     }
     const status=$("inquiryStatus").value;
     const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));
-    if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");\n    if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");\n    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));\n    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageItems.map(x=>x.url),admin_image_items:pricedImages};
+    if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");
+    if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");
+    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));
+    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageItems.map(x=>x.url),admin_image_items:pricedImages};
     const {error}=await sb.from("product_inquiries").update(payload).eq("id",activeInquiry.id);
     if(error)throw error;
     $("inquiryImageFiles").value="";
