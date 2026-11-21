@@ -518,7 +518,8 @@ document.querySelectorAll("nav button").forEach(button => {
       "categoryDisplaySettings",
       "storeContact",
       "notifications",
-      "history"
+      "history",
+      "productInquiries"
     ];
 
     views.forEach(view => {

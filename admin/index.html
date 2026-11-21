@@ -50,6 +50,7 @@
     <button data-view="storeContact">تواصل معنا</button>
     <button data-view="offers">إدارة العروض</button>
     <button data-view="orders">الطلبات</button>
+    <button data-view="productInquiries">استفسارات المنتجات</button>
     <button data-view="delivery">مدن ورسوم التوصيل</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
     <button data-view="notifications">إرسال إشعار للعملاء</button>
@@ -477,6 +478,23 @@
     <div id="deliveryCityList">جارٍ تحميل المدن...</div>
   </section>
 
+  <section id="productInquiries" class="card hide">
+    <h2>استفسارات اللاصقات والكفرات</h2>
+    <p>راجع موديل الجهاز، اختر المنتجات المتوافقة المتوفرة، واكتب الرد للزبون.</p>
+    <button id="refreshInquiries" type="button">تحديث الاستفسارات</button>
+    <p id="inquiryAdminMsg" role="status"></p>
+    <div id="inquiryAdminList">جارٍ تحميل الاستفسارات...</div>
+    <div id="inquiryReplyPanel" class="hide" style="margin-top:18px;padding:14px;border:1px solid #ddd;border-radius:12px">
+      <h3 id="inquiryReplyTitle">الرد على الاستفسار</h3>
+      <label>المنتجات المتوفرة والمتوافقة</label>
+      <div id="inquiryProducts">اختر المنتجات المناسبة.</div>
+      <label>رسالة الرد للزبون<textarea id="inquiryReplyText" rows="4" placeholder="اكتب تفاصيل التوفر والأسعار هنا..."></textarea></label>
+      <label>حالة الاستفسار<select id="inquiryStatus"><option value="new">جديد</option><option value="in_progress">قيد المراجعة</option><option value="answered">تم الرد</option><option value="closed">مغلق</option></select></label>
+      <button id="saveInquiryReply" type="button">حفظ وإرسال الرد</button>
+      <button id="closeInquiryReply" type="button">إغلاق</button>
+    </div>
+  </section>
+
   <!-- التحويل المصرفي -->
   <section id="bank" class="card hide">
     <h2>بيانات التحويل المصرفي</h2>
@@ -593,6 +611,7 @@
 <script type="module" src="offers.js?v=20261116-3"></script>
 <script type="module" src="notifications.js"></script>
 <script type="module" src="password-reset.js"></script>
+<script type="module" src="product-inquiries.js?v=20261121-1"></script>
 
 </body>
 </html>
