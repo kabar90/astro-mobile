@@ -42,7 +42,9 @@ async function loadInquiries() {
   });
 }
 async function loadProductsForCategory(categoryId) {
-  const categoryName=sectionNames[categoryId];
+  const {data:category,error:categoryError}=await sb.from("categories").select("name").eq("id",categoryId).single();
+  if(categoryError)throw categoryError;
+  const categoryName=category.name;
   const {data,error}=await sb.from("products")
     .select("id,name,price,image_url,colors,category,is_active")
     .eq("is_active",true).order("name");
