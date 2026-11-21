@@ -9,7 +9,7 @@ anchor = """    final reply = (item['admin_reply'] ?? '').toString().trim();
 replacement = """    final reply = (item['admin_reply'] ?? '').toString().trim();
     final ids = item['recommended_product_ids'];
     final rawImages = item['admin_image_items'];
-    final List<Map<String, dynamic>> replyImages = rawImages is List
+    final List<Map<String, dynamic>> replyImages = rawImages is List && rawImages.isNotEmpty
         ? rawImages.whereType<Map>().map((e) => Map<String, dynamic>.from(e))
             .where((e) => (e['url'] ?? '').toString().trim().isNotEmpty).toList()
         : (item['admin_image_urls'] is List
