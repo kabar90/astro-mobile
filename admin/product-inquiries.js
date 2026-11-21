@@ -42,14 +42,15 @@ async function loadInquiries() {
   });
 }
 async function loadProductsForCategory(categoryId) {
-  const {data:category,error:categoryError}=await sb.from("categories").select("name").eq("id",categoryId).single();
-  if(categoryError)throw categoryError;
-  const categoryName=category.name;
+  // The inquiry category IDs are the store subcategory IDs (subcategory_id).
+  // Filter by the numeric ID so similarly named categories cannot mix products.
   const {data,error}=await sb.from("products")
-    .select("id,name,price,image_url,colors,category,is_active")
-    .eq("is_active",true).order("name");
+    .select("id,name,price,image_url,colors,category,subcategory_id,is_active")
+    .eq("is_active",true)
+    .eq("subcategory_id",categoryId)
+    .order("name");
   if(error)throw error;
-  return (data||[]).filter(p=>p.category===categoryName);
+  return data||[];
 }
 async function openInquiry(item) {
   activeInquiry=item;
