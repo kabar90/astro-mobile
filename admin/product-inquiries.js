@@ -253,6 +253,8 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
     const expiry=status==="answered"||status==="closed"?new Date(Date.now()+48*60*60*1000).toISOString():null;
     const pricedImages=inquiryImageItems.map(x=>({
       ...x,
+      // Stable identity for each temporary offer; retained across admin edits.
+      option_id:x.option_id||crypto.randomUUID(),
       url:x.url,
       price:Number(x.price),
       selected:x.selected===true,
