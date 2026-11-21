@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 const sectionNames = {17:"الكفرات",34:"لاصقة عدسة الكاميرا",40:"لاصقة الشاشة"};
 let activeInquiry = null;
 let products = [];
+let inquiryImageItems = [];
 let inquiryImageUrls = [];
 
 function message(text, error=false) {
@@ -132,12 +133,18 @@ async function uploadInquiryImage(file) {
 }
 function renderInquiryImages(){
   const host=$("inquiryImagePreview");if(!host)return;host.replaceChildren();
-  inquiryImageUrls.forEach((url,index)=>{
-    const wrap=document.createElement("div");wrap.style.cssText="display:inline-flex;flex-direction:column;gap:5px;margin:6px";
-    const img=document.createElement("img");img.src=url;img.alt="صورة مرفقة";img.style.cssText="width:92px;height:92px;object-fit:cover;border-radius:9px;border:1px solid #ddd";
-    const remove=document.createElement("button");remove.type="button";remove.textContent="حذف";
-    remove.addEventListener("click",()=>{inquiryImageUrls.splice(index,1);renderInquiryImages();});
-    wrap.append(img,remove);host.append(wrap);
+  inquiryImageItems.forEach((item,index)=>{
+    const wrap=document.createElement("div");
+    wrap.style.cssText="display:flex;align-items:center;gap:10px;padding:8px;margin:8px 0;border:1px solid #dbe3ec;border-radius:12px;background:#fff;flex-wrap:wrap";
+    const img=document.createElement("img");img.src=item.url;img.alt="صورة مرفقة";img.style.cssText="width:88px;height:88px;object-fit:cover;border-radius:9px;border:1px solid #ddd";
+    const priceWrap=document.createElement("label");priceWrap.textContent="السعر (د.ل)";
+    priceWrap.style.cssText="display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1";
+    const price=document.createElement("input");price.type="number";price.min="0";price.step="0.01";price.inputMode="decimal";price.placeholder="أدخل السعر";price.value=item.price??"";
+    price.addEventListener("input",()=>{inquiryImageItems[index].price=price.value;});
+    priceWrap.append(price);
+    const remove=document.createElement("button");remove.type="button";remove.textContent="حذف الصورة";
+    remove.addEventListener("click",()=>{inquiryImageItems.splice(index,1);renderInquiryImages();});
+    wrap.append(img,priceWrap,remove);host.append(wrap);
   });
 }
 $("inquiryImageFiles")?.addEventListener("change",()=>{
@@ -224,7 +231,7 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
       renderInquiryImages();
     }
     const status=$("inquiryStatus").value;
-    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageUrls};
+    const invalidPrice=inquiryImageItems.some(x=>x.price!==""&&(!Number.isFinite(Number(x.price))||Number(x.price)<0));\n    if(invalidPrice)throw new Error("تأكد من صحة أسعار الصور المرفقة.");\n    if(inquiryImageItems.some(x=>x.price===""))throw new Error("أدخل سعراً لكل صورة أو احذف الصورة التي لا تريد تسعيرها.");\n    const pricedImages=inquiryImageItems.map(x=>({url:x.url,price:Number(x.price)}));\n    const payload={admin_reply:$("inquiryReplyText").value.trim(),status,recommended_product_ids:ids,admin_image_urls:inquiryImageUrls,admin_image_items:pricedImages};
     const {error}=await sb.from("product_inquiries").update(payload).eq("id",activeInquiry.id);
     if(error)throw error;
     $("inquiryImageFiles").value="";
