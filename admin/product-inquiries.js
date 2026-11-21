@@ -229,6 +229,10 @@ $("saveInquiryReply")?.addEventListener("click",async()=>{
   try{
     const ids=[...$("inquiryProducts").querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value);
     const files=[...($("inquiryImageFiles").files||[])];
+    // Clear the picker immediately: uploaded images remain in inquiryImageItems.
+    // This prevents the same selected file from being uploaded again if price
+    // validation or the database update fails and the admin presses Save again.
+    $("inquiryImageFiles").value="";
     for(let i=0;i<files.length;i++){
       $("inquiryImageMsg").textContent="جارٍ تحسين ورفع الصورة "+(i+1)+" من "+files.length+"...";
       const optimized=await optimizeInquiryImage(files[i]);
