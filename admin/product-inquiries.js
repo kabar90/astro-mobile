@@ -16,30 +16,118 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 async function optimizeInquiryImage(file) {
-  if(!file || !file.type.startsWith("image/")) throw new Error("ملف الصورة غير صالح.");
-  if(file.type==="image/gif") return {file,converted:false};
+  if (!file || !file.type.startsWith("image/")) {
+    throw new Error("ملف الصورة غير صالح.");
+  }
+
+  // نحافظ على GIF المتحرك دون تحويله إلى صورة ثابتة.
+  if (file.type === "image/gif") {
+    return { file, converted: false, reason: "GIF" };
+  }
+
   let bitmap;
-  try{bitmap=await createImageBitmap(file);}catch{throw new Error("تعذر قراءة الصورة. جرّب JPG أو PNG أو WebP.");}
-  try{
-    const maxDimension=1200, scale=Math.min(1,maxDimension/Math.max(bitmap.width,bitmap.height));
-    const width=Math.max(1,Math.round(bitmap.width*scale)), height=Math.max(1,Math.round(bitmap.height*scale));
-    const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
-    const context=canvas.getContext("2d",{alpha:false});if(!context)throw new Error("المتصفح لا يدعم معالجة الصور.");
-    context.fillStyle="#ffffff";context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(new Error("فشل ضغط الصورة.")),"image/webp",0.82));
-    if(blob.type!=="image/webp"||blob.size<16)throw new Error("تعذر تحويل الصورة إلى WebP؛ لم يتم رفعها.");
-    const name=(file.name.replace(/\\.[^.]+$/,"")||"inquiry").replace(/[^a-zA-Z0-9_-]/g,"_")+".webp";
-    const optimized=new File([blob],name,{type:"image/webp",lastModified:Date.now()});
-    return {file:optimized,converted:true,originalBytes:file.size,optimizedBytes:optimized.size,savedPercent:Math.max(0,Math.round((1-optimized.size/file.size)*100))};
-  }finally{bitmap.close?.();}
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("تعذر قراءة الصورة. جرّب صورة JPG أو PNG أو WebP.");
+  }
+
+  try {
+    const maxDimension = 1200;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("المتصفح لا يدعم معالجة الصور.");
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(bitmap, 0, 0, width, height);
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        result => result ? resolve(result) : reject(new Error("فشل إنشاء صورة WebP.")),
+        "image/webp",
+        0.82
+      );
+    });
+
+    if (blob.type !== "image/webp" || blob.size < 16) {
+      throw new Error("هذا المتصفح لا يدعم تحويل WebP بصورة صحيحة. لم يتم رفع الصورة.");
+    }
+
+    const safeBaseName = (file.name.replace(/\\.[^.]+$/, "") || "inquiry")
+      .replace(/[^a-zA-Z0-9_-]/g, "_");
+    const optimizedFile = new File(
+      [blob],
+      safeBaseName + ".webp",
+      { type: "image/webp", lastModified: Date.now() }
+    );
+
+    return {
+      file: optimizedFile,
+      converted: true,
+      originalBytes: file.size,
+      optimizedBytes: optimizedFile.size,
+      width,
+      height,
+      savedPercent: Math.max(0, Math.round((1 - optimizedFile.size / file.size) * 100))
+    };
+  } finally {
+    bitmap.close?.();
+  }
 }
-async function uploadInquiryImage(file){
-  const ext=file.type==="image/gif"?"gif":"webp";
-  const path="inquiry-replies/"+Date.now()+"-"+crypto.randomUUID()+"."+ext;
-  const {error}=await sb.storage.from("products").upload(path,file,{contentType:file.type,cacheControl:"31536000",upsert:false});
-  if(error)throw new Error("تعذر رفع الصورة: "+error.message);
-  const {data}=sb.storage.from("products").getPublicUrl(path);
-  if(!data?.publicUrl)throw new Error("تم الرفع لكن تعذر استخراج رابط الصورة.");
+
+async function uploadInquiryImage(file) {
+  const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+  if (sessionError) throw new Error("تعذر قراءة جلسة المدير: " + sessionError.message);
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) throw new Error("انتهت جلسة المدير. سجّل الدخول مجدداً.");
+
+  const extension = file.type === "image/gif" ? "gif" : "webp";
+  const path = "inquiry-replies/" + Date.now() + "-" + crypto.randomUUID() + "." + extension;
+  const endpoint = SUPABASE_URL + "/storage/v1/object/products/" + path;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  let response;
+
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + accessToken,
+        "Content-Type": file.type,
+        "x-upsert": "false",
+        "cache-control": "31536000"
+      },
+      body: file,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("انتهت مهلة رفع الصورة بعد 45 ثانية.");
+    throw new Error("تعذر الاتصال بخدمة رفع الصور: " + (error.message || error));
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const body = await response.json();
+      detail = body.message || body.error || JSON.stringify(body);
+    } catch {
+      detail = await response.text().catch(() => "");
+    }
+    throw new Error("فشل رفع الصورة (" + response.status + "): " + (detail || response.statusText));
+  }
+
+  const { data } = sb.storage.from("products").getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("تم رفع الصورة لكن تعذر استخراج رابطها.");
   return data.publicUrl;
 }
 function renderInquiryImages(){
