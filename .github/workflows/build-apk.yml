@@ -105,6 +105,15 @@ jobs:
           grep -q "CartService.instance.addInquiryOption" astro_mobile/lib/screens/product_inquiry_inline.dart
           echo "Mixed inquiry cart and payment integration patch applied."
 
+      - name: Make cart confirmation messages non-blocking
+        run: |
+          set -e
+          python3 scripts/patch_short_cart_snackbars.py
+          grep -q "duration: const Duration(seconds: 2)" astro_mobile/lib/screens/home_screen.dart
+          grep -q "messenger.hideCurrentSnackBar()" astro_mobile/lib/screens/home_screen.dart
+          grep -q "duration: const Duration(seconds: 2)" astro_mobile/lib/screens/product_detail_screen.dart
+          echo "Cart confirmation messages now dismiss after two seconds."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
