@@ -114,6 +114,16 @@ jobs:
           grep -q "duration: const Duration(seconds: 2)" astro_mobile/lib/screens/product_detail_screen.dart
           echo "Cart confirmation messages now dismiss after two seconds."
 
+      - name: Persist cart and remove blocking add-to-cart messages
+        run: |
+          set -e
+          python3 scripts/patch_persistent_cart_and_remove_add_snackbar.py
+          grep -q "Future<void> initialize()" astro_mobile/lib/services/cart_service.dart
+          grep -q "SharedPreferences.getInstance()" astro_mobile/lib/services/cart_service.dart
+          grep -q "await CartService.instance.initialize()" astro_mobile/lib/main.dart
+          ! grep -q "SnackBarAction(" astro_mobile/lib/screens/product_detail_screen.dart
+          echo "Cart persistence and non-blocking add-to-cart behavior applied."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
