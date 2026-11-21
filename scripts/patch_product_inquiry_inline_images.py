@@ -37,7 +37,7 @@ replacement2 = """        if (replyImages.isNotEmpty) ...[
             runSpacing: 10,
             children: replyImages.map((image) {
               final url = (image['url'] ?? '').toString();
-              final price = double.tryParse('\${image['price'] ?? ''}');
+              final price = double.tryParse((image['price'] ?? '').toString());
               return SizedBox(
                 width: 132,
                 child: Container(
@@ -64,7 +64,7 @@ replacement2 = """        if (replyImages.isNotEmpty) ...[
                       Text(
                         price == null
                             ? 'السعر غير محدد'
-                            : '\${price.toStringAsFixed(2)} د.ل',
+                            : price.toStringAsFixed(2) + ' د.ل',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: astroBlue,
