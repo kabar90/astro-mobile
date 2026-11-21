@@ -545,6 +545,10 @@ document.querySelectorAll("nav button").forEach(button => {
       await loadOrders();
     }
 
+    if (button.dataset.view === "productInquiries") {
+      await window.loadProductInquiries?.();
+    }
+
     if (button.dataset.view === "delivery") {
       await loadDeliveryCities();
     }
