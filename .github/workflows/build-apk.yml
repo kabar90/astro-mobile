@@ -87,6 +87,14 @@ jobs:
 
 
 
+      - name: Show priced inquiry images inside the matching category
+        run: |
+          set -e
+          python3 scripts/patch_product_inquiry_inline_images.py
+          grep -q "الخيارات المتوفرة بالصور والأسعار" astro_mobile/lib/screens/product_inquiry_inline.dart
+          grep -q "admin_image_items" astro_mobile/supabase/product_inquiries.sql
+          echo "Inline inquiry image prices patch applied."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
