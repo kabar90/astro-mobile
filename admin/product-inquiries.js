@@ -60,7 +60,7 @@ async function optimizeInquiryImage(file) {
       throw new Error("هذا المتصفح لا يدعم تحويل WebP بصورة صحيحة. لم يتم رفع الصورة.");
     }
 
-    const safeBaseName = (file.name.replace(/\\.[^.]+$/, "") || "inquiry")
+    const safeBaseName = (file.name.replace(/\.[^.]+$/, "") || "inquiry")
       .replace(/[^a-zA-Z0-9_-]/g, "_");
     const optimizedFile = new File(
       [blob],
