@@ -17,6 +17,10 @@ create table if not exists public.product_inquiries (
   answered_at timestamptz
 );
 
+alter table public.product_inquiries
+  add column if not exists admin_image_urls jsonb not null default '[]'::jsonb
+  check (jsonb_typeof(admin_image_urls) = 'array');
+
 create index if not exists product_inquiries_user_created_idx
   on public.product_inquiries (user_id, created_at desc);
 create index if not exists product_inquiries_status_created_idx
