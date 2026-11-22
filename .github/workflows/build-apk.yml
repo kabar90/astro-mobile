@@ -246,7 +246,7 @@ jobs:
           if mirror_url not in source:
               mirror = ('maven { url = uri("' + mirror_url + '") }' if root.suffix == ".kts" else "maven { url '" + mirror_url + "' }")
               if "mavenCentral()" not in source: raise SystemExit("Expected mavenCentral() repository declaration was not found")
-              source = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()", 1); root.write_text(source)
+              source = source.replace("mavenCentral()", mirror + "\n        mavenCentral()", 1); root.write_text(source)
           if mirror_url not in root.read_text(): raise SystemExit("Maven mirror was not added")
           print("Added Google-hosted Maven Central mirror before the standard Maven Central repository.")
           PY
@@ -260,7 +260,7 @@ jobs:
           if f'android:scheme="{scheme}"' not in content:
               intent_filter = f'''\n                  <intent-filter>\n                      <action android:name="android.intent.action.VIEW" />\n                      <category android:name="android.intent.category.DEFAULT" />\n                      <category android:name="android.intent.category.BROWSABLE" />\n                      <data android:scheme="{scheme}" android:host="{host}" />\n                  </intent-filter>\n              '''
               if "</activity>" not in content: raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
-              content = content.replace("</activity>", intent_filter + "\\n        </activity>", 1); manifest.write_text(content)
+              content = content.replace("</activity>", intent_filter + "\n        </activity>", 1); manifest.write_text(content)
           print(f"Configured Android auth callback: {scheme}://{host}")
           PY
 
@@ -360,7 +360,7 @@ jobs:
           if root is None: raise SystemExit("Android root Gradle file not found")
           content = root.read_text()
           snippet = '''\n          subprojects {\n              tasks.configureEach {\n                  if (name.startsWith("lintVital")) {\n                      enabled = false\n                  }\n              }\n          }\n          '''
-          if 'name.startsWith("lintVital")' not in content: root.write_text(content.rstrip() + "\\n" + snippet)
+          if 'name.startsWith("lintVital")' not in content: root.write_text(content.rstrip() + "\n" + snippet)
           print("Release lint configuration completed.")
           PY
 
