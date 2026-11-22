@@ -110,3 +110,73 @@ create trigger trg_notify_service_payment_submitted
 after update of status on public.service_inquiries
 for each row execute function public.notify_service_payment_submitted();
 revoke all on function public.notify_service_payment_submitted() from public, anon, authenticated;
+
+
+-- Notify admin when a service inquiry is created.
+create or replace function public.notify_new_service_inquiry()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, vault, net
+as $$
+declare v_url text; v_secret text; v_history bigint; v_body text;
+begin
+  select decrypted_secret into v_url from vault.decrypted_secrets where name='astro_project_url' limit 1;
+  select decrypted_secret into v_secret from vault.decrypted_secrets where name='astro_admin_notification_secret' limit 1;
+  if v_url is null or v_secret is null then
+    raise warning 'New service inquiry notification skipped: secrets missing';
+    return new;
+  end if;
+  v_body := 'استفسار خدمة جديد: ' || coalesce(new.device_model,'') || ' - ' ||
+    case new.service_type when 'maintenance' then 'الصيانة' when 'software' then 'السوفتوير' else 'برمجة الهاتف' end ||
+    '، رقم الاستفسار #' || new.id || '.';
+  insert into public.astro_notification_history(title,body,sent_by,delivery_status)
+    values ('استفسار خدمة جديد',v_body,'system:service_inquiries','queued') returning id into v_history;
+  perform net.http_post(url := v_url || '/functions/v1/fcm-send',
+    headers := jsonb_build_object('Content-Type','application/json','x-admin-secret',v_secret),
+    body := jsonb_build_object('title','استفسار خدمة جديد','body',v_body,'audience','admin','history_id',v_history));
+  return new;
+end;
+$$;
+
+-- Notify the owner when the admin changes an inquiry to answered.
+create or replace function public.notify_service_inquiry_answered()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, vault, net, auth
+as $$
+declare v_url text; v_secret text; v_phone text; v_history bigint; v_body text;
+begin
+  if new.status = 'answered' and old.status is distinct from new.status then
+    select decrypted_secret into v_url from vault.decrypted_secrets where name='astro_project_url' limit 1;
+    select decrypted_secret into v_secret from vault.decrypted_secrets where name='astro_admin_notification_secret' limit 1;
+    select case
+      when regexp_replace(coalesce(email,''),'@.*$','','i') like '218%' then '+' || regexp_replace(email,'@.*$','','i')
+      when regexp_replace(coalesce(email,''),'@.*$','','i') like '0%' then '+218' || substring(regexp_replace(email,'@.*$','','i') from 2)
+      else null end into v_phone from auth.users where id=new.user_id;
+    if v_url is null or v_secret is null or v_phone is null then
+      raise warning 'Service answer notification skipped: missing config or account phone';
+      return new;
+    end if;
+    v_body := 'تم الرد على استفسارك بخصوص ' || coalesce(new.device_model,'') ||
+      '. افتح تطبيق ASTRO MOBILE للاطلاع على رد الإدارة.';
+    insert into public.astro_notification_history(title,body,sent_by,delivery_status)
+      values ('تم الرد على استفسارك',v_body,'system:service_inquiries','queued') returning id into v_history;
+    perform net.http_post(url := v_url || '/functions/v1/fcm-send',
+      headers := jsonb_build_object('Content-Type','application/json','x-admin-secret',v_secret),
+      body := jsonb_build_object('title','تم الرد على استفسارك','body',v_body,'audience','customers','phone',v_phone,'history_id',v_history));
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_new_service_inquiry on public.service_inquiries;
+create trigger trg_notify_new_service_inquiry after insert on public.service_inquiries
+for each row execute function public.notify_new_service_inquiry();
+revoke all on function public.notify_new_service_inquiry() from public, anon, authenticated;
+
+drop trigger if exists trg_notify_service_inquiry_answered on public.service_inquiries;
+create trigger trg_notify_service_inquiry_answered after update of status on public.service_inquiries
+for each row execute function public.notify_service_inquiry_answered();
+revoke all on function public.notify_service_inquiry_answered() from public, anon, authenticated;
