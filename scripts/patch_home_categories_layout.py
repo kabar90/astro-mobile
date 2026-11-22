@@ -3,10 +3,10 @@ root = Path('astro_mobile')
 p = root / 'lib/screens/home_screen.dart'
 s = p.read_text(encoding='utf-8')
 old = '''              child: SizedBox(
-                height: 176,
+                height: 174,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),'''
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),'''
 new = '''              child: SizedBox(
                 // Extra room prevents the category subtitle/count chip from
                 // overflowing on devices with larger system font scaling.
