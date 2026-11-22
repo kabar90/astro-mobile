@@ -1,16 +1,16 @@
 from pathlib import Path
-import re
 
 root = Path("astro_mobile")
-cart = root / "lib/services/cart_service.dart"
-s = cart.read_text(encoding="utf-8")
+cart_path = root / "lib/services/cart_service.dart"
+s = cart_path.read_text(encoding="utf-8")
 
-if "shared_preferences/shared_preferences.dart" not in s:
+if "import 'dart:convert';" not in s:
     s = s.replace("import 'package:flutter/foundation.dart';",
                   "import 'dart:convert';\nimport 'package:flutter/foundation.dart';\nimport 'package:shared_preferences/shared_preferences.dart';", 1)
 
-anchor = "  Map<String, dynamic> toOrderJson() {"
-storage = """  Map<String, dynamic> toStorageJson() => {
+line_anchor = "  double get total => price * quantity;\n"
+line_add = """
+  Map<String, dynamic> toStorageJson() => {
     'product': product == null ? null : {
       'id': product!.id, 'name': product!.name, 'category': product!.category,
       'subcategory_id': product!.subcategoryId, 'price': product!.price,
@@ -29,11 +29,11 @@ storage = """  Map<String, dynamic> toStorageJson() => {
 
   factory CartLine.fromStorageJson(Map<String, dynamic> data) {
     final rawProduct = data['product'];
-    final product = rawProduct is Map
+    final Product? restoredProduct = rawProduct is Map
         ? Product.fromMap((rawProduct['id'] ?? '').toString(), Map<String, dynamic>.from(rawProduct))
         : null;
     return CartLine(
-      product: product,
+      product: restoredProduct,
       color: data['color']?.toString(),
       inquiryId: data['inquiry_id']?.toString(),
       optionId: data['option_id']?.toString(),
@@ -43,14 +43,13 @@ storage = """  Map<String, dynamic> toStorageJson() => {
       quantity: (data['quantity'] as num?)?.toInt() ?? 1,
     );
   }
-
 """
 if "toStorageJson()" not in s:
-    if anchor not in s: raise SystemExit("CartLine serialization anchor missing")
-    s = s.replace(anchor, storage + anchor, 1)
+    if line_anchor not in s: raise SystemExit("CartLine total getter anchor missing")
+    s = s.replace(line_anchor, line_anchor + line_add, 1)
 
-anchor = "  final List<CartLine> _items = [];"
-init = """  final List<CartLine> _items = [];
+items_anchor = "  final List<CartLine> _items = [];\n"
+storage_add = """
   static const String _storageKey = 'astro_mobile_cart_v1';
 
   Future<void> initialize() async {
@@ -74,53 +73,49 @@ init = """  final List<CartLine> _items = [];
   Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _storageKey,
-        jsonEncode(_items.map((item) => item.toStorageJson()).toList()),
-      );
+      await prefs.setString(_storageKey, jsonEncode(_items.map((item) => item.toStorageJson()).toList()));
     } catch (e) {
       debugPrint('ASTRO cart save failed: $e');
     }
   }
 """
 if "_storageKey" not in s:
-    if anchor not in s: raise SystemExit("Cart storage anchor missing")
-    s = s.replace(anchor, init, 1)
+    if items_anchor not in s: raise SystemExit("CartService items anchor missing")
+    s = s.replace(items_anchor, items_anchor + storage_add, 1)
 
-# Persist after every cart mutation.
-s = s.replace("    notifyListeners();", "    _persist();\n    notifyListeners();")
-# Restore method's notify should not write an empty/intermediate state.
-s = s.replace("      _persist();\n    notifyListeners();\n    } catch (e)", "      notifyListeners();\n    } catch (e)")
-cart.write_text(s, encoding="utf-8")
+# Persist all cart mutations, but never write during restore.
+head, tail = s.split("  List<CartLine> get items", 1)
+tail = tail.replace("    notifyListeners();", "    _persist();\n    notifyListeners();")
+s = head + "  List<CartLine> get items" + tail
+cart_path.write_text(s, encoding="utf-8")
 
-main = root / "lib/main.dart"
-m = main.read_text(encoding="utf-8")
-if "services/cart_service.dart" not in m:
-    m = m.replace("import 'services/notification_service.dart';",
-                  "import 'services/notification_service.dart';\nimport 'services/cart_service.dart';", 1)
+main_path = root / "lib/main.dart"
+m = main_path.read_text(encoding="utf-8")
+if "import 'services/cart_service.dart';" not in m:
+    m = m.replace("import 'services/notification_service.dart';", "import 'services/notification_service.dart';\nimport 'services/cart_service.dart';", 1)
 if "await CartService.instance.initialize();" not in m:
-    m = m.replace("  WidgetsFlutterBinding.ensureInitialized();",
-                  "  WidgetsFlutterBinding.ensureInitialized();\n  await CartService.instance.initialize();", 1)
-main.write_text(m, encoding="utf-8")
+    m = m.replace("  WidgetsFlutterBinding.ensureInitialized();", "  WidgetsFlutterBinding.ensureInitialized();\n  await CartService.instance.initialize();", 1)
+main_path.write_text(m, encoding="utf-8")
 
-# Remove the blocking add-to-cart snackbar (including its persistent action button).
-detail = root / "lib/screens/product_detail_screen.dart"
-d = detail.read_text(encoding="utf-8")
-pattern = re.compile(r"    CartService\.instance\.add\(product, selectedColor, quantity: selectedQuantity\);\s*ScaffoldMessenger\.of\(context\)\.showSnackBar\(\s*SnackBar\(.*?\n    \);", re.S)
-d2, n = pattern.subn("    CartService.instance.add(product, selectedColor, quantity: selectedQuantity);", d, count=1)
-if n == 0 and "CartService.instance.add(product, selectedColor, quantity: selectedQuantity);" not in d:
-    raise SystemExit("Product detail add-to-cart block not found")
-detail.write_text(d2, encoding="utf-8")
+detail_path = root / "lib/screens/product_detail_screen.dart"
+d = detail_path.read_text(encoding="utf-8")
+start = d.find("    CartService.instance.add(product, selectedColor, quantity: selectedQuantity);")
+if start < 0: raise SystemExit("Product detail add call not found")
+end_marker = "    );"
+end = d.find(end_marker, d.find("ScaffoldMessenger.of(context).showSnackBar(", start))
+if end >= 0 and "SnackBarAction(" in d[start:end+len(end_marker)]:
+    d = d[:start] + "    CartService.instance.add(product, selectedColor, quantity: selectedQuantity);" + d[end+len(end_marker):]
+detail_path.write_text(d, encoding="utf-8")
 
-home = root / "lib/screens/home_screen.dart"
-h = home.read_text(encoding="utf-8")
-h = h.replace("                                message('تمت إضافة ${p.name} إلى السلة');", "")
-home.write_text(h, encoding="utf-8")
+home_path = root / "lib/screens/home_screen.dart"
+h = home_path.read_text(encoding="utf-8").replace("                                message('تمت إضافة ${p.name} إلى السلة');", "")
+home_path.write_text(h, encoding="utf-8")
 
-inquiry = root / "lib/screens/product_inquiry_inline.dart"
-q = inquiry.read_text(encoding="utf-8")
-q = q.replace("                              _message(added ? 'تمت إضافة الخيار إلى السلة' : 'هذا الخيار موجود بالفعل في السلة');",
-              "                              if (!added) _message('هذا الخيار موجود بالفعل في السلة');")
-inquiry.write_text(q, encoding="utf-8")
+inq_path = root / "lib/screens/product_inquiry_inline.dart"
+q = inq_path.read_text(encoding="utf-8").replace(
+    "_message(added ? 'تمت إضافة الخيار إلى السلة' : 'هذا الخيار موجود بالفعل في السلة');",
+    "if (!added) _message('هذا الخيار موجود بالفعل في السلة');"
+)
+inq_path.write_text(q, encoding="utf-8")
 
-print("Persistent cart restore/save and non-blocking add-to-cart UX patch applied.")
+print("Persistent cart and removal of blocking success SnackBars applied.")
