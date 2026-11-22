@@ -91,6 +91,6 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
         if(r['status']=='payment_submitted')const Text('الإيصال قيد المراجعة.'),
         if(r['status']=='paid')const Text('تم تأكيد الدفع. سيتم التواصل معك عبر واتساب.')
       ]))))
-    ])))
+    ]))
   );
 }
