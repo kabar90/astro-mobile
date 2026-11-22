@@ -250,7 +250,7 @@ jobs:
                   mirror = "maven { url '" + mirror_url + "' }"
               if "mavenCentral()" not in source:
                   raise SystemExit("Expected mavenCentral() repository declaration was not found")
-              source = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()", 1)
+              source = source.replace("mavenCentral()", mirror + "\n        mavenCentral()", 1)
               root.write_text(source)
           if mirror_url not in root.read_text():
               raise SystemExit("Maven mirror was not added")
