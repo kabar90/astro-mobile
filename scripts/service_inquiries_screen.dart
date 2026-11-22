@@ -14,7 +14,7 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
   String type = 'maintenance';
   bool busy = false, loading = true;
   List<Map<String,dynamic>> rows = [];
-  static const types = {'maintenance':'الصيانة - حضور شخصي','software':'السوفتوير - حضور شخصي','remote_programming':'البرمجة عن بُعد'};
+  static const types = {'maintenance':'الصيانة','software':'السوفتوير','remote_programming':'برمجة هاتفك النقال'};
   @override void initState(){super.initState();load();}
   @override void dispose(){model.dispose();details.dispose();super.dispose();}
   void msg(String s){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));}
@@ -78,7 +78,7 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
         DropdownButtonFormField<String>(value:type,decoration:const InputDecoration(labelText:'نوع الخدمة'),items:types.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),onChanged:(v)=>setState(()=>type=v??type)),
         const SizedBox(height:10),TextField(controller:model,decoration:const InputDecoration(labelText:'نوع الجهاز / الموديل')),
         const SizedBox(height:10),TextField(controller:details,minLines:2,maxLines:4,decoration:InputDecoration(labelText:type=='maintenance'?'اشرح العطل':type=='software'?'نوع السوفتوير المطلوب':'نوع البرمجة المطلوبة')),
-        Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(type=='remote_programming'?'البرمجة عن بُعد: الدفع بتحويل مصرفي بعد رد الإدارة.':'تتطلب الخدمة الحضور الشخصي إلى المحل والدفع داخله.',style:const TextStyle(color:Colors.black54))),
+        Padding(padding:const EdgeInsets.symmetric(vertical:8),child:Text(type=='remote_programming'?'يمكن برمجة بعض أعطال الهاتف عن بُعد في حالات معينة، بعد مراجعة نوع العطل وتأكيد إمكانية معالجته. في حال توفر الخدمة عن بُعد، ستظهر لك التكلفة وطريقة الدفع بعد رد الإدارة.':'تتطلب خدمتا الصيانة والسوفتوير الحضور الشخصي إلى المحل، والدفع داخل المحل.',style:const TextStyle(color:Colors.black54))),
         ElevatedButton(onPressed:busy?null:send,child:Text(busy?'جارٍ الإرسال':'إرسال الاستفسار'))
       ]))),
       const SizedBox(height:14),const Text('استفساراتي والردود',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold,color:astroNavy)),
