@@ -31,7 +31,7 @@ replacement=anchor+"""
                       child: Icon(Icons.build_circle_outlined, color: astroBlue),
                     ),
                     title: const Text('خدمات الصيانة والبرمجة', style: TextStyle(color: astroNavy, fontWeight: FontWeight.w900)),
-                    subtitle: const Text('استفسر عن الصيانة أو السوفتوير أو البرمجة عن بُعد'),
+                    subtitle: const Text('الصيانة • السوفتوير • برمجة هاتفك النقال'),
                     trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: astroBlue),
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ServiceInquiriesScreen())),
                   ),
