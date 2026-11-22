@@ -233,30 +233,28 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           android = Path("astro_mobile/android")
-          candidates = [android / "build.gradle.kts", android / "build.gradle"]
-          root = next((p for p in candidates if p.exists()), None)
-          if root is None:
+          root = android / "build.gradle.kts"
+          if not root.exists():
+              root = android / "build.gradle"
+          if not root.exists():
               raise SystemExit("Android root Gradle file not found")
+
           source = root.read_text()
-          mirror = (
-              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
-              if root.suffix == ".kts"
-              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
-          )
-          if "maven-central.storage-download.googleapis.com" not in source:
-              pattern = r'(allprojects\s*\{\s*repositories\s*\{)'
-              match = re.search(pattern, source)
-              if not match:
-                  raise SystemExit("allprojects repositories block not found in Android root Gradle file")
-              source = source[:match.end()] + "\n        " + mirror + source[match.end()]
+          mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          if mirror_url not in source:
+              if root.suffix == ".kts":
+                  mirror = 'maven { url = uri("' + mirror_url + '") }'
+              else:
+                  mirror = "maven { url '" + mirror_url + "' }"
+              if "mavenCentral()" not in source:
+                  raise SystemExit("Expected mavenCentral() repository declaration was not found")
+              source = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()", 1)
               root.write_text(source)
-          check = root.read_text()
-          if "maven-central.storage-download.googleapis.com" not in check:
-              raise SystemExit("Maven Central mirror was not configured")
-          print("Google-hosted Maven Central mirror configured for Android project dependencies.")
+          if mirror_url not in root.read_text():
+              raise SystemExit("Maven mirror was not added")
+          print("Added Google-hosted Maven Central mirror before the standard Maven Central repository.")
           PY
 
       - name: Configure Supabase email deep link
