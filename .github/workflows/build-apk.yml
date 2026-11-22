@@ -107,8 +107,10 @@ jobs:
           set -e
           python3 scripts/patch_home_categories_layout.py
           grep -q "height: 196" astro_mobile/lib/screens/home_screen.dart
+          grep -q "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95" astro_mobile/lib/screens/home_screen.dart
+          grep -q "mainAxisSpacing: 18" astro_mobile/lib/screens/home_screen.dart
           grep -q "منتجات مختارة" astro_mobile/lib/screens/home_screen.dart
-          echo "Home category carousel and featured heading layout patch applied."
+          echo "Category grid cards now fit their badges; featured heading spacing verified."
 
       - name: Make cart confirmation messages non-blocking
         run: |
