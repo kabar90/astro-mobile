@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
@@ -43,6 +44,27 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
     if(ok!=true){phone.dispose();return;}
     await payment(row,phone.text.trim()); phone.dispose();
   }
+  Widget _copyableBankValue(String label, dynamic rawValue) {
+    final value = (rawValue ?? '').toString().trim();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: SelectableText('$label: $value')),
+          IconButton(
+            tooltip: 'نسخ $label',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.copy, size: 20),
+            onPressed: value.isEmpty ? null : () async {
+              await Clipboard.setData(ClipboardData(text: value));
+              if (mounted) msg('تم نسخ $label.');
+            },
+          ),
+        ],
+      ),
+    );
+  }
   Future<void> payment(Map<String,dynamic> row,String phone) async {
     Map<String,dynamic>? bank; XFile? receipt; bool sending=false;
     try{bank=await db.from('bank_transfer_settings').select().eq('id',1).maybeSingle();}catch(_){}
@@ -52,8 +74,9 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
       content:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
         Text('المبلغ: ${row['quoted_price']} د.ل',style:const TextStyle(fontWeight:FontWeight.bold)),
         if(bank==null) const Text('تعذر تحميل بيانات المصرف.') else ...[
-          Text('المصرف: ${bank!['bank_name']??'-'}'),Text('صاحب الحساب: ${bank!['account_holder']??'-'}'),Text('رقم الحساب: ${bank!['account_number']??'-'}'),
-          if((bank!['iban']??'').toString().isNotEmpty)Text('IBAN: ${bank!['iban']}')
+          Text('المصرف: ${bank!['bank_name']??'-'}'),Text('صاحب الحساب: ${bank!['account_holder']??'-'}'),
+          _copyableBankValue('رقم الحساب', bank!['account_number']),
+          if((bank!['iban']??'').toString().isNotEmpty)_copyableBankValue('IBAN', bank!['iban'])
         ],
         OutlinedButton(onPressed:sending?null:()async{final f=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:80);if(f!=null)setLocal(()=>receipt=f);},child:Text(receipt==null?'إرفاق إيصال التحويل':receipt!.name)),
         const Text('سيتم التواصل معك بعد تأكيد الدفع فقط.')
