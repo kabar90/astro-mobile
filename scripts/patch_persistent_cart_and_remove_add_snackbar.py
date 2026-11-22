@@ -128,4 +128,142 @@ if "SnackBarAction(" in d or "تمت إضافة ${product.name} إلى السل�
     raise SystemExit("Product detail success snackbar remains after removal")
 detail_path.write_text(d, encoding="utf-8")
 
-print("Persistent cart save/restore and complete removal of product success SnackBar applied.")
+
+# Restore the intended brief success toast: two seconds, an explicit X, and a cart action.
+detail_import = "import 'cart_screen.dart';"
+if detail_import not in d:
+    d = d.replace("import '../services/cart_service.dart';", "import '../services/cart_service.dart';\n" + detail_import, 1)
+detail_helper = """
+  void _showCartAddedMessage(String productName) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        content: Row(
+          children: [
+            Expanded(child: Text('تمت إضافة $productName إلى السلة')),
+            IconButton(
+              tooltip: 'إغلاق',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => messenger.hideCurrentSnackBar(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'عرض السلة',
+          textColor: Colors.white,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ),
+        ),
+      ),
+    );
+  }
+
+"""
+if "_showCartAddedMessage(String productName)" not in d:
+    d = d.replace("  void _addToCart() {", detail_helper + "  void _addToCart() {", 1)
+d = d.replace(
+    "    CartService.instance.add(product, selectedColor, quantity: selectedQuantity);\n",
+    "    CartService.instance.add(product, selectedColor, quantity: selectedQuantity);\n    _showCartAddedMessage(product.name);\n",
+    1,
+)
+detail_path.write_text(d, encoding="utf-8")
+
+# Home quick-add uses the same two-second closeable toast and cart action.
+home_path = root / "lib/screens/home_screen.dart"
+home = home_path.read_text(encoding="utf-8")
+home_helper = """
+  void cartAddedMessage(String productName) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        content: Row(
+          children: [
+            Expanded(child: Text('تمت إضافة $productName إلى السلة')),
+            IconButton(
+              tooltip: 'إغلاق',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => messenger.hideCurrentSnackBar(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'عرض السلة',
+          textColor: Colors.white,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ),
+        ),
+      ),
+    );
+  }
+
+"""
+if "void cartAddedMessage(String productName)" not in home:
+    home = home.replace("  void message(String value) {", home_helper + "  void message(String value) {", 1)
+home = home.replace("message('تمت إضافة ${p.name} إلى السلة');", "cartAddedMessage(p.name);")
+home_path.write_text(home, encoding="utf-8")
+
+# Inquiry option success uses the same toast; duplicate-option warning remains unchanged.
+inq_path = root / "lib/screens/product_inquiry_inline.dart"
+inq = inq_path.read_text(encoding="utf-8")
+if "import 'cart_screen.dart';" not in inq:
+    inq = inq.replace("import '../services/cart_service.dart';", "import '../services/cart_service.dart';\nimport 'cart_screen.dart';", 1)
+inq_helper = """
+  void _cartAddedMessage(String productName) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        content: Row(
+          children: [
+            Expanded(child: Text('تمت إضافة $productName إلى السلة')),
+            IconButton(
+              tooltip: 'إغلاق',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => messenger.hideCurrentSnackBar(),
+              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'عرض السلة',
+          textColor: Colors.white,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ),
+        ),
+      ),
+    );
+  }
+
+"""
+if "void _cartAddedMessage(String productName)" not in inq:
+    inq = inq.replace("  void _message(String value) {", inq_helper + "  void _message(String value) {", 1)
+inq = inq.replace(
+    "_message(added ? 'تمت إضافة الخيار إلى السلة' : 'هذا الخيار موجود بالفعل في السلة');",
+    "if (added) { _cartAddedMessage('الخيار'); } else { _message('هذا الخيار موجود بالفعل في السلة'); }",
+)
+inq_path.write_text(inq, encoding="utf-8")
+
+# Assertions: all three add flows show a 2-second toast with a close control and cart action.
+for path in [detail_path, home_path, inq_path]:
+    text = path.read_text(encoding="utf-8")
+    if "Duration(seconds: 2)" not in text or "عرض السلة" not in text or "Icons.close" not in text:
+        raise SystemExit(f"Missing closeable two-second cart toast in {path}")
+print("Persistent cart retained; product, quick-add and inquiry additions show a 2-second closeable toast with View Cart.")
+
