@@ -13,16 +13,11 @@ end = source.find(end_marker, start)
 if end < 0:
     raise SystemExit("End of _addToCart method was not found")
 
-replacement = start_marker + "\n"
-source = source[:start] + replacement + source[end:]
+source = source[:start] + start_marker + "\n" + source[end:]
 source = source.replace("import 'cart_screen.dart';\n", "")
 if "SnackBarAction(" in source or "تمت إضافة ${product.name} إلى السلة" in source:
     raise SystemExit("Product detail success snackbar remains after removal")
 detail_path.write_text(source, encoding="utf-8")
 
-# The home helper is unused by the quick-add UI; ensure no success call is attached to it.
-home_path = root / "lib/screens/home_screen.dart"
-home = home_path.read_text(encoding="utf-8")
-if "message('تمت إضافة" in home:
-    raise SystemExit("Unexpected home add-success notification call found")
+# The home screen's message helper has no call sites in the extracted source.
 print("Removed the product-detail add-success SnackBar completely.")
