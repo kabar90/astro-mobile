@@ -19,6 +19,8 @@ create table if not exists public.service_inquiries (
   constraint in_person_no_remote_payment check (service_type='remote_programming' or (receipt_path is null and whatsapp_phone is null and whatsapp_consent=false))
 );
 alter table public.service_inquiries enable row level security;
+-- Data API privileges; row access remains restricted by the RLS policies below.
+grant select, insert, update on table public.service_inquiries to authenticated;
 drop policy if exists "Customers create own service inquiries" on public.service_inquiries;
 create policy "Customers create own service inquiries" on public.service_inquiries for insert to authenticated with check (auth.uid()=user_id);
 drop policy if exists "Customers read own service inquiries" on public.service_inquiries;
