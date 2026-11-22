@@ -229,6 +229,36 @@ jobs:
           print("Configured Gradle plugin repositories: Google, Maven Central, Gradle Plugin Portal")
           PYCODE
 
+      - name: Add Google-hosted Maven Central mirror for Android dependencies
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          android = Path("astro_mobile/android")
+          candidates = [android / "build.gradle.kts", android / "build.gradle"]
+          root = next((p for p in candidates if p.exists()), None)
+          if root is None:
+              raise SystemExit("Android root Gradle file not found")
+          source = root.read_text()
+          mirror = (
+              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
+              if root.suffix == ".kts"
+              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
+          )
+          if "maven-central.storage-download.googleapis.com" not in source:
+              pattern = r'(allprojects\\s*\\{\\s*repositories\\s*\\{)'
+              match = re.search(pattern, source)
+              if not match:
+                  raise SystemExit("allprojects repositories block not found in Android root Gradle file")
+              source = source[:match.end()] + "\\n        " + mirror + source[match.end():]
+              root.write_text(source)
+          check = root.read_text()
+          if "maven-central.storage-download.googleapis.com" not in check:
+              raise SystemExit("Maven Central mirror was not configured")
+          print("Google-hosted Maven Central mirror configured for Android project dependencies.")
+          PY
+
       - name: Configure Supabase email deep link
         run: |
           python3 - <<'PY'
