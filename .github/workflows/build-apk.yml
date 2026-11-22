@@ -163,59 +163,75 @@ jobs:
 
       - name: Ensure Gradle plugin repositories
         run: |
+          set -e
           python3 - <<'PYCODE'
           from pathlib import Path
-          import re
+
           android = Path("astro_mobile/android")
-          candidates = [android / "settings.gradle.kts", android / "settings.gradle"]
-          settings = next((p for p in candidates if p.exists()), None)
-          if settings is None: raise SystemExit("Gradle settings file not found")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
+          if settings is None:
+              raise SystemExit("Gradle settings file not found")
+
           source = settings.read_text()
-          match = re.search(r'(?m)^\\s*pluginManagement\\s*\\{', source)
-          if not match: raise SystemExit("pluginManagement block not found")
-          start = source.find("{", match.start()); depth = 0; end = None
-          for i in range(start, len(source)):
-              if source[i] == "{": depth += 1
-              elif source[i] == "}":
-                  depth -= 1
-                  if depth == 0: end = i; break
-          if end is None: raise SystemExit("Unclosed pluginManagement block")
-          block = source[start:end + 1]
-          repos = re.search(r'(?m)^\\s*repositories\\s*\\{', block)
-          required = ["google()", "gradlePluginPortal()", "mavenCentral()"]
-          if repos:
-              rstart = block.find("{", repos.start()); rdepth = 0; rend = None
-              for i in range(rstart, len(block)):
-                  if block[i] == "{": rdepth += 1
-                  elif block[i] == "}":
-                      rdepth -= 1
-                      if rdepth == 0: rend = i; break
-              if rend is None: raise SystemExit("Unclosed repositories block")
-              existing = block[rstart + 1:rend]
-              missing = [item for item in required if item not in existing]
-              if missing: block = block[:rend] + "\\n" + "\\n".join("        " + item for item in missing) + "\\n    " + block[rend:]
-          else: block = block[:1] + "\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n" + block[1:]
-          mirror_repo = ('maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }' if settings.suffix == ".kts" else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }")
-          if "maven-central.storage-download.googleapis.com" not in block:
-              block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, block, count=1)
-          source = source[:start] + block + source[end + 1:]
-          mirror_repo = ('maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }' if settings.suffix == ".kts" else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }")
-          dep_match = re.search(r'(?m)^\\s*dependencyResolutionManagement\\s*\\{', source)
-          if dep_match:
-              dep_start = source.find("{", dep_match.start()); dep_depth = 0; dep_end = None
-              for i in range(dep_start, len(source)):
-                  if source[i] == "{": dep_depth += 1
-                  elif source[i] == "}":
-                      dep_depth -= 1
-                      if dep_depth == 0: dep_end = i; break
-              if dep_end is None: raise SystemExit("Unclosed dependencyResolutionManagement block")
-              dep_block = source[dep_start:dep_end + 1]
-              if "repositories {" not in dep_block: dep_block = dep_block[:1] + "\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n" + dep_block[1:]
-              elif "maven-central.storage-download.googleapis.com" not in dep_block: dep_block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, dep_block, count=1)
-              source = source[:dep_start] + dep_block + source[dep_end + 1:]
-          else: source += "\\ndependencyResolutionManagement {\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n}\\n"
+          mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          is_kts = settings.suffix == ".kts"
+          mirror = (
+              f'maven {{ url = uri("{mirror_url}") }}'
+              if is_kts else
+              f"maven {{ url '{mirror_url}' }}"
+          )
+
+          def add_mirror_to_block(text, block_name):
+              token = block_name + " {"
+              start = text.find(token)
+              if start < 0:
+                  return text, False
+              open_brace = text.find("{", start)
+              depth = 0
+              close_brace = None
+              for index in range(open_brace, len(text)):
+                  if text[index] == "{":
+                      depth += 1
+                  elif text[index] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          close_brace = index
+                          break
+              if close_brace is None:
+                  raise SystemExit(f"Unclosed {block_name} block")
+              block = text[start:close_brace + 1]
+              if mirror_url not in block:
+                  repo_token = "repositories {"
+                  repo_at = block.find(repo_token)
+                  if repo_at < 0:
+                      insertion = "repositories {\n        google()\n        " + mirror + "\n        mavenCentral()\n    }\n    "
+                      block = block[:1 + block.find("{")] + "\n    " + insertion + block[1 + block.find("{"):]
+                  else:
+                      repo_open = block.find("{", repo_at)
+                      block = block[:repo_open + 1] + "\n        " + mirror + block[repo_open + 1:]
+              return text[:start] + block + text[close_brace + 1:], True
+
+          source, found = add_mirror_to_block(source, "pluginManagement")
+          if not found:
+              raise SystemExit("pluginManagement block not found in generated settings file")
+
+          source, found_dep = add_mirror_to_block(source, "dependencyResolutionManagement")
+          if not found_dep:
+              source += (
+                  "\ndependencyResolutionManagement {\n"
+                  "    repositories {\n"
+                  "        google()\n"
+                  f"        {mirror}\n"
+                  "        mavenCentral()\n"
+                  "    }\n"
+                  "}\n"
+              )
+
           settings.write_text(source)
-          print("Configured plugin and dependency repositories with the Google Maven Central mirror first.")
+          check = settings.read_text()
+          if mirror_url not in check or "pluginManagement" not in check:
+              raise SystemExit("Gradle repository mirror verification failed")
+          print("Gradle plugin and dependency repositories configured.")
           PYCODE
 
       - name: Add Google-hosted Maven Central mirror for Android dependencies
