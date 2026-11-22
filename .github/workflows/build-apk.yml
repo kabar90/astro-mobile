@@ -234,7 +234,7 @@ jobs:
               if settings.suffix == ".kts"
               else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
           )
-          dep_match = re.search(r'(?m)^\\s*dependencyResolutionManagement\\s*\\{', source)
+          dep_match = re.search(r'(?m)^\s*dependencyResolutionManagement\s*\{', source)
           if dep_match:
               dep_start = source.find("{", dep_match.start())
               dep_depth = 0
@@ -251,12 +251,12 @@ jobs:
                   raise SystemExit("Unclosed dependencyResolutionManagement block")
               dep_block = source[dep_start:dep_end + 1]
               if "repositories {" not in dep_block:
-                  dep_block = dep_block[:1] + "\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n" + dep_block[1:]
+                  dep_block = dep_block[:1] + "\n    repositories {\n        google()\n        " + mirror_repo + "\n        mavenCentral()\n    }\n" + dep_block[1:]
               elif "maven-central.storage-download.googleapis.com" not in dep_block:
-                  dep_block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, dep_block, count=1)
+                  dep_block = re.sub(r'(repositories\s*\{)', lambda m: m.group(1) + "\n        " + mirror_repo, dep_block, count=1)
               source = source[:dep_start] + dep_block + source[dep_end + 1:]
           else:
-              source += "\\ndependencyResolutionManagement {\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n}\\n"
+              source += "\ndependencyResolutionManagement {\n    repositories {\n        google()\n        " + mirror_repo + "\n        mavenCentral()\n    }\n}\n"
 
           settings.write_text(source)
           print("Configured plugin and dependency repositories with the Google Maven Central mirror first.")
