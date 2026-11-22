@@ -63,7 +63,7 @@ jobs:
           set -e
           python3 scripts/patch_service_inquiries.py
           grep -q "class ServiceInquiriesScreen" astro_mobile/lib/screens/service_inquiries_screen.dart
-          grep -q "خدمات الصيانة والبرمجة" astro_mobile/lib/screens/contact_screen.dart
+          grep -q "خدمات الصيانة والبرمجة" astro_mobile/lib/screens/home_screen.dart
           echo "Service inquiries screen installed."
 
       - name: Reduce catalogue REST response payload
