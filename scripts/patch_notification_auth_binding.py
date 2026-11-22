@@ -56,7 +56,7 @@ method = """  Future<void> _bindAuthenticatedUser() async {
   }
 
 """
-if "_bindAuthenticatedUser()" not in s:
+if "Future<void> _bindAuthenticatedUser()" not in s:
     s = s.replace(marker, method + marker, 1)
 
 p.write_text(s, encoding="utf-8")
