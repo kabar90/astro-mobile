@@ -247,11 +247,11 @@ jobs:
               else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
           )
           if "maven-central.storage-download.googleapis.com" not in source:
-              pattern = r'(allprojects\\s*\\{\\s*repositories\\s*\\{)'
+              pattern = r'(allprojects\s*\{\s*repositories\s*\{)'
               match = re.search(pattern, source)
               if not match:
                   raise SystemExit("allprojects repositories block not found in Android root Gradle file")
-              source = source[:match.end()] + "\\n        " + mirror + source[match.end():]
+              source = source[:match.end()] + "\n        " + mirror + source[match.end()]
               root.write_text(source)
           check = root.read_text()
           if "maven-central.storage-download.googleapis.com" not in check:
