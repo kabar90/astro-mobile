@@ -109,3 +109,4 @@ drop trigger if exists trg_notify_service_payment_submitted on public.service_in
 create trigger trg_notify_service_payment_submitted
 after update of status on public.service_inquiries
 for each row execute function public.notify_service_payment_submitted();
+revoke all on function public.notify_service_payment_submitted() from public, anon, authenticated;
