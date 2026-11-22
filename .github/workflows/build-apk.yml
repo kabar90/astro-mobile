@@ -225,8 +225,41 @@ jobs:
                   count=1
               )
 
-          settings.write_text(source[:start] + block + source[end + 1:])
-          print("Configured Gradle plugin repositories: Google, Maven Central, Gradle Plugin Portal")
+          source = source[:start] + block + source[end + 1:]
+
+          # Flutter engine artifacts are resolved as project dependencies, not plugins.
+          # Put the mirror first in dependencyResolutionManagement as well.
+          mirror_repo = (
+              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
+              if settings.suffix == ".kts"
+              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
+          )
+          dep_match = re.search(r'(?m)^\\s*dependencyResolutionManagement\\s*\\{', source)
+          if dep_match:
+              dep_start = source.find("{", dep_match.start())
+              dep_depth = 0
+              dep_end = None
+              for i in range(dep_start, len(source)):
+                  if source[i] == "{":
+                      dep_depth += 1
+                  elif source[i] == "}":
+                      dep_depth -= 1
+                      if dep_depth == 0:
+                          dep_end = i
+                          break
+              if dep_end is None:
+                  raise SystemExit("Unclosed dependencyResolutionManagement block")
+              dep_block = source[dep_start:dep_end + 1]
+              if "repositories {" not in dep_block:
+                  dep_block = dep_block[:1] + "\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n" + dep_block[1:]
+              elif "maven-central.storage-download.googleapis.com" not in dep_block:
+                  dep_block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, dep_block, count=1)
+              source = source[:dep_start] + dep_block + source[dep_end + 1:]
+          else:
+              source += "\\ndependencyResolutionManagement {\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n}\\n"
+
+          settings.write_text(source)
+          print("Configured plugin and dependency repositories with the Google Maven Central mirror first.")
           PYCODE
 
       - name: Add Google-hosted Maven Central mirror for Android dependencies
