@@ -1,23 +1,28 @@
 from pathlib import Path
-root = Path('astro_mobile')
-p = root / 'lib/screens/home_screen.dart'
-s = p.read_text(encoding='utf-8')
-old = '''              child: SizedBox(
-                height: 174,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),'''
-new = '''              child: SizedBox(
-                // Extra room prevents the category subtitle/count chip from
-                // overflowing on devices with larger system font scaling.
-                height: 196,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),'''
-if old not in s:
-    raise SystemExit('Missing root category carousel layout anchor')
-s = s.replace(old, new, 1)
-old2 = '''              child: Padding(
+import re
+
+p = Path("astro_mobile/lib/screens/home_screen.dart")
+s = p.read_text(encoding="utf-8")
+
+# Target only the root-category carousel (identified by rootCategories),
+# not other horizontal lists in the home screen.
+pattern = re.compile(
+    r"(SliverToBoxAdapter\s*\(\s*child:\s*SizedBox\s*\(\s*)"
+    r"height:\s*174,"
+    r"(\s*child:\s*ListView\.separated\s*\(\s*"
+    r"scrollDirection:\s*Axis\.horizontal,\s*"
+    r"padding:\s*const EdgeInsets\.symmetric\(horizontal:\s*16,\s*vertical:\s*4\),\s*"
+    r"itemCount:\s*rootCategories\.length,)"
+)
+s, count = pattern.subn(
+    r"\1height: 196,\2",
+    s,
+    count=1,
+)
+if count != 1:
+    raise SystemExit("Could not uniquely locate rootCategories carousel for spacing fix")
+
+old_heading = """              child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 2, 18, 12),
                 child: Row(
                   children: [
@@ -30,10 +35,8 @@ old2 = '''              child: Padding(
                     Text('${products.length} منتج', style: const TextStyle(color: Colors.black45, fontSize: 12)),
                   ],
                 ),
-              ),'''
-new2 = '''              child: Padding(
-                // Keep the featured-products heading clearly separated from
-                // the category carousel above it.
+              ),"""
+new_heading = """              child: Padding(
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -56,9 +59,10 @@ new2 = '''              child: Padding(
                     ),
                   ],
                 ),
-              ),'''
-if old2 not in s:
-    raise SystemExit('Missing featured products heading anchor')
-s = s.replace(old2, new2, 1)
-p.write_text(s, encoding='utf-8')
-print('Home category carousel spacing and featured heading alignment patched.')
+              ),"""
+if old_heading not in s:
+    raise SystemExit("Could not locate featured-products heading block")
+s = s.replace(old_heading, new_heading, 1)
+
+p.write_text(s, encoding="utf-8")
+print("Root-category carousel spacing and featured-products heading alignment applied.")
