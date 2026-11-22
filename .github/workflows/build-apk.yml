@@ -58,6 +58,15 @@ jobs:
           grep -q "static Stream<List<StoreCategory>> watchCategories()" astro_mobile/lib/services/product_repository.dart
           echo "Offline-first product and category catalogue patch applied."
 
+      - name: Bind Firebase notifications automatically to signed-in customers
+        run: |
+          set -e
+          python3 scripts/patch_notification_auth_binding.py
+          grep -q "Future<void> _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
+          grep -q "onAuthStateChange.listen" astro_mobile/lib/services/notification_service.dart
+          grep -q "await _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
+          echo "Automatic customer FCM token binding verified."
+
       - name: Add independent service inquiries screen
         run: |
           set -e
