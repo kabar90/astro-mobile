@@ -110,6 +110,14 @@ jobs:
           grep -q "Keep the featured-products heading clearly separated" astro_mobile/lib/screens/home_screen.dart
           echo "Home category carousel and featured heading layout patch applied."
 
+      - name: Fix category carousel spacing and featured products heading
+        run: |
+          set -e
+          python3 scripts/patch_home_categories_layout.py
+          grep -q "height: 196" astro_mobile/lib/screens/home_screen.dart
+          grep -q "Keep the featured-products heading clearly separated" astro_mobile/lib/screens/home_screen.dart
+          echo "Home category carousel and featured heading layout patch applied."
+
       - name: Make cart confirmation messages non-blocking
         run: |
           set -e
