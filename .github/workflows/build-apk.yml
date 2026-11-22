@@ -58,6 +58,14 @@ jobs:
           grep -q "static Stream<List<StoreCategory>> watchCategories()" astro_mobile/lib/services/product_repository.dart
           echo "Offline-first product and category catalogue patch applied."
 
+      - name: Add independent service inquiries screen
+        run: |
+          set -e
+          python3 scripts/patch_service_inquiries.py
+          grep -q "class ServiceInquiriesScreen" astro_mobile/lib/screens/service_inquiries_screen.dart
+          grep -q "خدمات الصيانة والبرمجة" astro_mobile/lib/screens/contact_screen.dart
+          echo "Service inquiries screen installed."
+
       - name: Reduce catalogue REST response payload
         run: |
           set -e
