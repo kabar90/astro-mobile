@@ -63,7 +63,7 @@ class _ServiceInquiriesScreenState extends State<ServiceInquiriesScreen> {
         try{
           final path='service-payments/${row['id']}_${DateTime.now().millisecondsSinceEpoch}.jpg';
           await db.storage.from('receipts').uploadBinary(path,await receipt!.readAsBytes(),fileOptions:FileOptions(upsert:false,contentType:receipt!.mimeType??'image/jpeg'));
-          await db.from('service_inquiries').update({'whatsapp_phone':phone,'whatsapp_consent':true,'receipt_path':path,'status':'payment_submitted','payment_submitted_at':DateTime.now().toUtc().toIso8601String()}).eq('id',row['id']).eq('status','answered');
+          await db.rpc('astro_submit_remote_service_payment',params:{'p_inquiry_id':row['id'],'p_whatsapp_phone':phone,'p_receipt_path':path});
           if(c.mounted)Navigator.pop(c);msg('تم إرسال الإيصال. بانتظار تأكيد الدفع.');await load();
         }catch(e){setLocal(()=>sending=false);msg('تعذر إرسال الإيصال: $e');}
       },child:Text(sending?'جارٍ الإرسال':'إرسال الإيصال'))]
