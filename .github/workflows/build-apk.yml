@@ -84,9 +84,6 @@ jobs:
           grep -q "onPostgresChanges" astro_mobile/lib/services/product_repository.dart
           echo "Realtime now refreshes only after actual table changes."
 
-
-
-
       - name: Show priced inquiry images inside the matching category
         run: |
           set -e
@@ -104,6 +101,14 @@ jobs:
           grep -q "astro_create_mixed_order" astro_mobile/lib/screens/bank_transfer_screen.dart
           grep -q "CartService.instance.addInquiryOption" astro_mobile/lib/screens/product_inquiry_inline.dart
           echo "Mixed inquiry cart and payment integration patch applied."
+
+      - name: Fix category carousel spacing and featured products heading
+        run: |
+          set -e
+          python3 scripts/patch_home_categories_layout.py
+          grep -q "height: 196" astro_mobile/lib/screens/home_screen.dart
+          grep -q "Keep the featured-products heading clearly separated" astro_mobile/lib/screens/home_screen.dart
+          echo "Home category carousel and featured heading layout patch applied."
 
       - name: Make cart confirmation messages non-blocking
         run: |
@@ -137,7 +142,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -157,107 +161,59 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
-
       - name: Ensure Gradle plugin repositories
         run: |
           python3 - <<'PYCODE'
           from pathlib import Path
           import re
-
           android = Path("astro_mobile/android")
           candidates = [android / "settings.gradle.kts", android / "settings.gradle"]
           settings = next((p for p in candidates if p.exists()), None)
-          if settings is None:
-              raise SystemExit("Gradle settings file not found")
-
+          if settings is None: raise SystemExit("Gradle settings file not found")
           source = settings.read_text()
-          match = re.search(r'(?m)^\s*pluginManagement\s*\{', source)
-          if not match:
-              raise SystemExit("pluginManagement block not found")
-          start = source.find("{", match.start())
-          depth = 0
-          end = None
+          match = re.search(r'(?m)^\\s*pluginManagement\\s*\\{', source)
+          if not match: raise SystemExit("pluginManagement block not found")
+          start = source.find("{", match.start()); depth = 0; end = None
           for i in range(start, len(source)):
-              if source[i] == "{":
-                  depth += 1
+              if source[i] == "{": depth += 1
               elif source[i] == "}":
                   depth -= 1
-                  if depth == 0:
-                      end = i
-                      break
-          if end is None:
-              raise SystemExit("Unclosed pluginManagement block")
-
+                  if depth == 0: end = i; break
+          if end is None: raise SystemExit("Unclosed pluginManagement block")
           block = source[start:end + 1]
-          repos = re.search(r'(?m)^\s*repositories\s*\{', block)
+          repos = re.search(r'(?m)^\\s*repositories\\s*\\{', block)
           required = ["google()", "gradlePluginPortal()", "mavenCentral()"]
           if repos:
-              rstart = block.find("{", repos.start())
-              rdepth = 0
-              rend = None
+              rstart = block.find("{", repos.start()); rdepth = 0; rend = None
               for i in range(rstart, len(block)):
-                  if block[i] == "{":
-                      rdepth += 1
+                  if block[i] == "{": rdepth += 1
                   elif block[i] == "}":
                       rdepth -= 1
-                      if rdepth == 0:
-                          rend = i
-                          break
-              if rend is None:
-                  raise SystemExit("Unclosed repositories block")
+                      if rdepth == 0: rend = i; break
+              if rend is None: raise SystemExit("Unclosed repositories block")
               existing = block[rstart + 1:rend]
               missing = [item for item in required if item not in existing]
-              if missing:
-                  block = block[:rend] + "\n" + "\n".join("        " + item for item in missing) + "\n    " + block[rend:]
-          else:
-              block = block[:1] + "\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n" + block[1:]
-
-          mirror_repo = (
-              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
-              if settings.suffix == ".kts"
-              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
-          )
+              if missing: block = block[:rend] + "\\n" + "\\n".join("        " + item for item in missing) + "\\n    " + block[rend:]
+          else: block = block[:1] + "\\n    repositories {\\n        google()\\n        mavenCentral()\\n        gradlePluginPortal()\\n    }\\n" + block[1:]
+          mirror_repo = ('maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }' if settings.suffix == ".kts" else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }")
           if "maven-central.storage-download.googleapis.com" not in block:
-              block = re.sub(
-                  r'(repositories\s*\{)',
-                  lambda m: m.group(1) + "\n        " + mirror_repo,
-                  block,
-                  count=1
-              )
-
+              block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, block, count=1)
           source = source[:start] + block + source[end + 1:]
-
-          # Flutter engine artifacts are resolved as project dependencies, not plugins.
-          # Put the mirror first in dependencyResolutionManagement as well.
-          mirror_repo = (
-              'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }'
-              if settings.suffix == ".kts"
-              else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }"
-          )
-          dep_match = re.search(r'(?m)^\s*dependencyResolutionManagement\s*\{', source)
+          mirror_repo = ('maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }' if settings.suffix == ".kts" else "maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }")
+          dep_match = re.search(r'(?m)^\\s*dependencyResolutionManagement\\s*\\{', source)
           if dep_match:
-              dep_start = source.find("{", dep_match.start())
-              dep_depth = 0
-              dep_end = None
+              dep_start = source.find("{", dep_match.start()); dep_depth = 0; dep_end = None
               for i in range(dep_start, len(source)):
-                  if source[i] == "{":
-                      dep_depth += 1
+                  if source[i] == "{": dep_depth += 1
                   elif source[i] == "}":
                       dep_depth -= 1
-                      if dep_depth == 0:
-                          dep_end = i
-                          break
-              if dep_end is None:
-                  raise SystemExit("Unclosed dependencyResolutionManagement block")
+                      if dep_depth == 0: dep_end = i; break
+              if dep_end is None: raise SystemExit("Unclosed dependencyResolutionManagement block")
               dep_block = source[dep_start:dep_end + 1]
-              if "repositories {" not in dep_block:
-                  dep_block = dep_block[:1] + "\n    repositories {\n        google()\n        " + mirror_repo + "\n        mavenCentral()\n    }\n" + dep_block[1:]
-              elif "maven-central.storage-download.googleapis.com" not in dep_block:
-                  dep_block = re.sub(r'(repositories\s*\{)', lambda m: m.group(1) + "\n        " + mirror_repo, dep_block, count=1)
+              if "repositories {" not in dep_block: dep_block = dep_block[:1] + "\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n" + dep_block[1:]
+              elif "maven-central.storage-download.googleapis.com" not in dep_block: dep_block = re.sub(r'(repositories\\s*\\{)', lambda m: m.group(1) + "\\n        " + mirror_repo, dep_block, count=1)
               source = source[:dep_start] + dep_block + source[dep_end + 1:]
-          else:
-              source += "\ndependencyResolutionManagement {\n    repositories {\n        google()\n        " + mirror_repo + "\n        mavenCentral()\n    }\n}\n"
-
+          else: source += "\\ndependencyResolutionManagement {\\n    repositories {\\n        google()\\n        " + mirror_repo + "\\n        mavenCentral()\\n    }\\n}\\n"
           settings.write_text(source)
           print("Configured plugin and dependency repositories with the Google Maven Central mirror first.")
           PYCODE
@@ -266,27 +222,16 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           android = Path("astro_mobile/android")
           root = android / "build.gradle.kts"
-          if not root.exists():
-              root = android / "build.gradle"
-          if not root.exists():
-              raise SystemExit("Android root Gradle file not found")
-
-          source = root.read_text()
-          mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          if not root.exists(): root = android / "build.gradle"
+          if not root.exists(): raise SystemExit("Android root Gradle file not found")
+          source = root.read_text(); mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
           if mirror_url not in source:
-              if root.suffix == ".kts":
-                  mirror = 'maven { url = uri("' + mirror_url + '") }'
-              else:
-                  mirror = "maven { url '" + mirror_url + "' }"
-              if "mavenCentral()" not in source:
-                  raise SystemExit("Expected mavenCentral() repository declaration was not found")
-              source = source.replace("mavenCentral()", mirror + "\n        mavenCentral()", 1)
-              root.write_text(source)
-          if mirror_url not in root.read_text():
-              raise SystemExit("Maven mirror was not added")
+              mirror = ('maven { url = uri("' + mirror_url + '") }' if root.suffix == ".kts" else "maven { url '" + mirror_url + "' }")
+              if "mavenCentral()" not in source: raise SystemExit("Expected mavenCentral() repository declaration was not found")
+              source = source.replace("mavenCentral()", mirror + "\\n        mavenCentral()", 1); root.write_text(source)
+          if mirror_url not in root.read_text(): raise SystemExit("Maven mirror was not added")
           print("Added Google-hosted Maven Central mirror before the standard Maven Central repository.")
           PY
 
@@ -294,24 +239,12 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           manifest = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
-          content = manifest.read_text()
-          scheme = "com.astromobile.store"
-          host = "login-callback"
+          content = manifest.read_text(); scheme = "com.astromobile.store"; host = "login-callback"
           if f'android:scheme="{scheme}"' not in content:
-              intent_filter = f'''
-                  <intent-filter>
-                      <action android:name="android.intent.action.VIEW" />
-                      <category android:name="android.intent.category.DEFAULT" />
-                      <category android:name="android.intent.category.BROWSABLE" />
-                      <data android:scheme="{scheme}" android:host="{host}" />
-                  </intent-filter>
-              '''
-              if "</activity>" not in content:
-                  raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
-              content = content.replace("</activity>", intent_filter + "\n        </activity>", 1)
-              manifest.write_text(content)
+              intent_filter = f'''\n                  <intent-filter>\n                      <action android:name="android.intent.action.VIEW" />\n                      <category android:name="android.intent.category.DEFAULT" />\n                      <category android:name="android.intent.category.BROWSABLE" />\n                      <data android:scheme="{scheme}" android:host="{host}" />\n                  </intent-filter>\n              '''
+              if "</activity>" not in content: raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
+              content = content.replace("</activity>", intent_filter + "\\n        </activity>", 1); manifest.write_text(content)
           print(f"Configured Android auth callback: {scheme}://{host}")
           PY
 
@@ -320,53 +253,31 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
-          android = Path("astro_mobile/android")
-          settings = android / "settings.gradle.kts"
-          app = android / "app" / "build.gradle.kts"
-          if not settings.exists():
-              settings = android / "settings.gradle"
-          if not app.exists():
-              app = android / "app" / "build.gradle"
-          if not settings.exists() or not app.exists():
-              raise SystemExit("Android Gradle files not found")
-          kotlin = app.suffix == ".kts"
-          s = settings.read_text()
-          a = app.read_text()
+          android = Path("astro_mobile/android"); settings = android / "settings.gradle.kts"; app = android / "app" / "build.gradle.kts"
+          if not settings.exists(): settings = android / "settings.gradle"
+          if not app.exists(): app = android / "app" / "build.gradle"
+          if not settings.exists() or not app.exists(): raise SystemExit("Android Gradle files not found")
+          kotlin = app.suffix == ".kts"; s = settings.read_text(); a = app.read_text()
           if "com.google.gms.google-services" not in s:
-              plugin = (
-                  '    id("com.google.gms.google-services") version "4.4.2" apply false'
-                  if settings.suffix == ".kts"
-                  else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
-              )
-              s = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, s, count=1)
-              settings.write_text(s)
+              plugin = ('    id("com.google.gms.google-services") version "4.4.2" apply false' if settings.suffix == ".kts" else "    id 'com.google.gms.google-services' version '4.4.2' apply false")
+              s = re.sub(r'plugins\\s*\\{', lambda m: m.group(0) + "\\n" + plugin, s, count=1); settings.write_text(s)
           if "com.google.gms.google-services" not in a:
               plugin = '    id("com.google.gms.google-services")' if kotlin else "    id 'com.google.gms.google-services'"
-              a = re.sub(r'plugins\s*\{', lambda m: m.group(0) + "\n" + plugin, a, count=1)
+              a = re.sub(r'plugins\\s*\\{', lambda m: m.group(0) + "\\n" + plugin, a, count=1)
           if kotlin:
-              if "isCoreLibraryDesugaringEnabled" not in a:
-                  a = re.sub(r'compileOptions\s*\{', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true', a, count=1)
-              a = re.sub(r'(?m)^\s*coreLibraryDesugaring\(.*\)\s*$', '', a)
-              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-              a = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', a)
+              if "isCoreLibraryDesugaringEnabled" not in a: a = re.sub(r'compileOptions\\s*\\{', 'compileOptions {\\n        isCoreLibraryDesugaringEnabled = true', a, count=1)
+              a = re.sub(r'(?m)^\\s*coreLibraryDesugaring\\(.*\\)\\s*$', '', a); dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+              a = re.sub(r'minSdk\\s*=\\s*flutter\\.minSdkVersion', 'minSdk = 23', a)
           else:
-              if "coreLibraryDesugaringEnabled true" not in a:
-                  a = re.sub(r'compileOptions\s*\{', 'compileOptions {\n        coreLibraryDesugaringEnabled true', a, count=1)
-              a = re.sub(r'(?m)^\s*coreLibraryDesugaring\s+.*$', '', a)
-              dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-              a = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', a)
-          if "compileOptions {" not in a:
-              raise SystemExit("compileOptions block not found")
-          if re.search(r'(?m)^\s*dependencies\s*\{', a):
-              a = re.sub(r'(?m)^(\s*dependencies\s*\{)', lambda m: m.group(1) + "\n" + dependency, a, count=1)
-          else:
-              a += "\n\ndependencies {\n" + dependency + "\n}\n"
+              if "coreLibraryDesugaringEnabled true" not in a: a = re.sub(r'compileOptions\\s*\\{', 'compileOptions {\\n        coreLibraryDesugaringEnabled true', a, count=1)
+              a = re.sub(r'(?m)^\\s*coreLibraryDesugaring\\s+.*$', '', a); dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+              a = re.sub(r'minSdkVersion\\s+flutter\\.minSdkVersion', 'minSdkVersion 23', a)
+          if "compileOptions {" not in a: raise SystemExit("compileOptions block not found")
+          if re.search(r'(?m)^\\s*dependencies\\s*\\{', a): a = re.sub(r'(?m)^(\\s*dependencies\\s*\\{)', lambda m: m.group(1) + "\\n" + dependency, a, count=1)
+          else: a += "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
           app.write_text(a)
-          if "desugar_jdk_libs:2.1.4" not in a:
-              raise SystemExit("Desugaring dependency missing")
-          if "com.google.gms.google-services" not in app.read_text():
-              raise SystemExit("Firebase Gradle plugin missing")
+          if "desugar_jdk_libs:2.1.4" not in a: raise SystemExit("Desugaring dependency missing")
+          if "com.google.gms.google-services" not in app.read_text(): raise SystemExit("Firebase Gradle plugin missing")
           print("Android Gradle configuration completed successfully.")
           PY
 
@@ -374,23 +285,12 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          android = Path("astro_mobile/android")
-          candidates = [android / "build.gradle.kts", android / "build.gradle"]
+          android = Path("astro_mobile/android"); candidates = [android / "build.gradle.kts", android / "build.gradle"]
           root = next((p for p in candidates if p.exists()), None)
-          if root is None:
-              raise SystemExit("Android root Gradle file not found")
+          if root is None: raise SystemExit("Android root Gradle file not found")
           content = root.read_text()
-          snippet = '''
-          subprojects {
-              tasks.configureEach {
-                  if (name.startsWith("lintVital")) {
-                      enabled = false
-                  }
-              }
-          }
-          '''
-          if 'name.startsWith("lintVital")' not in content:
-              root.write_text(content.rstrip() + "\n" + snippet)
+          snippet = '''\n          subprojects {\n              tasks.configureEach {\n                  if (name.startsWith("lintVital")) {\n                      enabled = false\n                  }\n              }\n          }\n          '''
+          if 'name.startsWith("lintVital")' not in content: root.write_text(content.rstrip() + "\\n" + snippet)
           print("Release lint configuration completed.")
           PY
 
@@ -422,9 +322,7 @@ jobs:
         run: |
           for attempt in 1 2 3; do
             echo "APK build attempt ${attempt}/3"
-            if flutter build apk --release; then
-              exit 0
-            fi
+            if flutter build apk --release; then exit 0; fi
             if [ "${attempt}" -lt 3 ]; then
               wait_seconds=$((attempt * 30))
               echo "Build failed; waiting ${wait_seconds}s before retry (helps with Maven HTTP 429 rate limits)."
