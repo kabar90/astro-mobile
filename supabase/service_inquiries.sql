@@ -47,3 +47,65 @@ begin
 end; $$;
 revoke all on function public.astro_submit_remote_service_payment(bigint,text,text) from public;
 grant execute on function public.astro_submit_remote_service_payment(bigint,text,text) to authenticated;
+
+
+-- Notify admin devices and the submitting customer's registered app when a remote
+-- programming receipt is submitted. The FCM function validates the secret and
+-- records delivery results in astro_notification_history.
+create or replace function public.notify_service_payment_submitted()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, vault, net
+as $$
+declare
+  v_project_url text;
+  v_admin_secret text;
+  v_history_id bigint;
+  v_admin_body text;
+  v_customer_body text;
+begin
+  if new.status = 'payment_submitted'
+     and old.status is distinct from new.status
+     and new.service_type = 'remote_programming' then
+    select decrypted_secret into v_project_url
+      from vault.decrypted_secrets where name = 'astro_project_url' limit 1;
+    select decrypted_secret into v_admin_secret
+      from vault.decrypted_secrets where name = 'astro_admin_notification_secret' limit 1;
+    if v_project_url is null or v_admin_secret is null then
+      raise warning 'Service payment notification skipped: notification secrets are missing';
+      return new;
+    end if;
+
+    v_admin_body := 'تم استلام إيصال برمجة الهاتف ' || coalesce(new.device_model, '') ||
+      '، رقم الاستفسار #' || new.id || '. يرجى مراجعة الإيصال من لوحة الإدارة.';
+    insert into public.astro_notification_history(title,body,sent_by,delivery_status)
+      values ('إيصال خدمة برمجة جديد',v_admin_body,'system:service_inquiries','queued')
+      returning id into v_history_id;
+    perform net.http_post(
+      url := v_project_url || '/functions/v1/fcm-send',
+      headers := jsonb_build_object('Content-Type','application/json','x-admin-secret',v_admin_secret),
+      body := jsonb_build_object('title','إيصال خدمة برمجة جديد','body',v_admin_body,
+        'audience','admin','history_id',v_history_id)
+    );
+
+    v_customer_body := 'تم استلام إيصالك لطلب برمجة الهاتف ' ||
+      coalesce(new.device_model,'') || '، وسيتم مراجعته وتأكيد الدفع.';
+    insert into public.astro_notification_history(title,body,sent_by,delivery_status)
+      values ('تم استلام إيصالك',v_customer_body,'system:service_inquiries','queued')
+      returning id into v_history_id;
+    perform net.http_post(
+      url := v_project_url || '/functions/v1/fcm-send',
+      headers := jsonb_build_object('Content-Type','application/json','x-admin-secret',v_admin_secret),
+      body := jsonb_build_object('title','تم استلام إيصالك','body',v_customer_body,
+        'audience','customers','phone',new.whatsapp_phone,'history_id',v_history_id)
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_notify_service_payment_submitted on public.service_inquiries;
+create trigger trg_notify_service_payment_submitted
+after update of status on public.service_inquiries
+for each row execute function public.notify_service_payment_submitted();
