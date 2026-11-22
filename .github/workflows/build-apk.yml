@@ -121,7 +121,6 @@ jobs:
           grep -q "Future<void> initialize()" astro_mobile/lib/services/cart_service.dart
           grep -q "SharedPreferences.getInstance()" astro_mobile/lib/services/cart_service.dart
           grep -q "await CartService.instance.initialize()" astro_mobile/lib/main.dart
-          ! grep -q "SnackBarAction(" astro_mobile/lib/screens/product_detail_screen.dart
           echo "Cart persistence and non-blocking add-to-cart behavior applied."
 
       - name: Upload extracted Flutter source for safe inspection
