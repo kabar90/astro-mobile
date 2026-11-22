@@ -4,7 +4,7 @@
  let active=null;
  function init(){
   const nav=document.querySelector('#dash nav'),dash=$('dash');if(!nav||!dash||$('serviceInquiriesView'))return;
-  const b=document.createElement('button');b.textContent='استفسارات الخدمات';b.dataset.view='serviceInquiriesView';nav.append(b);
+  const b=nav.querySelector('[data-view="serviceInquiriesView"]')||document.createElement('button');if(!b.isConnected){b.textContent='استفسارات الخدمات';b.dataset.view='serviceInquiriesView';nav.append(b);}
   const p=document.createElement('section');p.id='serviceInquiriesView';p.className='card hide';
   p.innerHTML='<h2>استفسارات الخدمات</h2><p>الصيانة والسوفتوير بالحضور الشخصي والدفع داخل المحل. البرمجة عن بُعد بتحويل مصرفي.</p><button id="svcRefresh">تحديث</button><p id="svcStatus"></p><div id="svcList"></div><div id="svcEditor" class="hide"><hr><h3 id="svcTitle"></h3><p id="svcInfo"></p><p id="svcContact"></p><p id="svcReceipt"></p><label>رد الإدارة<textarea id="svcReply"></textarea></label><label>السعر بالدينار الليبي<input id="svcPrice" type="number" min="0" step="0.01"></label><label>الحالة<select id="svcState"></select></label><button id="svcSave">حفظ الرد</button><span id="svcMsg"></span></div>';dash.append(p);
   const st=document.createElement('style');st.textContent='#serviceInquiriesView article{border:1px solid #ddd;border-radius:12px;padding:12px;margin:10px 0}#serviceInquiriesView label{display:block;margin:10px 0}#serviceInquiriesView input,#serviceInquiriesView textarea,#serviceInquiriesView select{display:block;width:100%;padding:10px}';document.head.append(st);
