@@ -1,78 +1,46 @@
 from pathlib import Path
-import re
 
 p = Path("astro_mobile/lib/screens/home_screen.dart")
 s = p.read_text(encoding="utf-8")
 
-# The active three-column category grid was too short for each card's image,
-# title and child-category badge. This caused badge overflow into the next sliver.
-old_ratio = "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .88 : 1.12,"
-new_ratio = "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95,"
-if old_ratio in s:
-    s = s.replace(old_ratio, new_ratio, 1)
-elif new_ratio not in s:
-    raise SystemExit("Could not locate category grid aspect-ratio setting")
+# Fix the active category grid. The former cells were too short for the
+# image, category title and subcategory badge, causing visible overflow.
+old_grid = "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .88 : 1.12,"
+new_grid = "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95,"
+if old_grid in s:
+    s = s.replace(old_grid, new_grid, 1)
+elif new_grid not in s:
+    raise SystemExit("Category grid aspect ratio was not found")
 
-old_spacing = """                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95,"""
-new_spacing = """                  mainAxisSpacing: 18,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95,"""
-if old_spacing in s:
-    s = s.replace(old_spacing, new_spacing, 1)
+# Increase vertical separation between category cards.
+grid_marker = "childAspectRatio: displaySettings.mainLayout == 'grid_3' ? .66 : .95,"
+pos = s.find(grid_marker)
+if pos < 0:
+    raise SystemExit("Updated category grid setting was not found")
+prefix = s[:pos]
+spacing_pos = prefix.rfind("mainAxisSpacing: 12,")
+if spacing_pos >= 0 and pos - spacing_pos < 180:
+    s = s[:spacing_pos] + "mainAxisSpacing: 18," + s[spacing_pos + len("mainAxisSpacing: 12,"):]
 
-# Preserve the already-applied horizontal carousel adjustment when that layout is selected.
-pattern = re.compile(
-    r"(SliverToBoxAdapter\\s*\\(\\s*child:\\s*SizedBox\\s*\\(\\s*)"
-    r"height:\\s*174,"
-    r"(\\s*child:\\s*ListView\\.separated\\s*\\(\\s*"
-    r"scrollDirection:\\s*Axis\\.horizontal,\\s*"
-    r"padding:\\s*const EdgeInsets\\.symmetric\\(horizontal:\\s*16,\\s*vertical:\\s*4\\),\\s*"
-    r"itemCount:\\s*rootCategories\\.length,)"
+# Keep the horizontal category carousel safe as well, if this layout is selected.
+s = s.replace(
+    "height: 174,\n                child: ListView.separated(",
+    "height: 196,\n                child: ListView.separated(",
+    1,
 )
-s, _ = pattern.subn(r"\\1height: 196,\\2", s, count=1)
 
-# Give the featured-products heading its own breathing room after the grid.
-old_heading = """              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 2, 18, 12),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'منتجات مختارة',
-                        style: TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                    Text('${products.length} منتج', style: const TextStyle(color: Colors.black45, fontSize: 12)),
-                  ],
-                ),
-              ),"""
-new_heading = """              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'منتجات مختارة',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${products.length} منتج',
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(color: Colors.black54, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),"""
-if old_heading in s:
-    s = s.replace(old_heading, new_heading, 1)
-elif "'منتجات مختارة'" not in s:
-    raise SystemExit("Featured products heading not found")
+# Increase the featured section's top and bottom padding. This is separate
+# from the grid cell-height fix and prevents the heading from crowding the grid.
+s = s.replace(
+    "padding: const EdgeInsets.fromLTRB(18, 2, 18, 12),",
+    "padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),",
+    1,
+)
+
+if "منتجات مختارة" not in s:
+    raise SystemExit("Featured-products heading was not found")
+if new_grid not in s or "mainAxisSpacing: 18" not in s:
+    raise SystemExit("Category grid spacing verification failed")
 
 p.write_text(s, encoding="utf-8")
-print("Category grid cell height fixed; badges now fit inside cards and featured section has breathing room.")
+print("Fixed category grid overflow and added spacing before featured products.")
