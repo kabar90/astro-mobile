@@ -31,3 +31,17 @@ using (auth.uid()=user_id and service_type='remote_programming' and status='answ
 with check (auth.uid()=user_id and service_type='remote_programming' and status='payment_submitted' and whatsapp_phone is not null and whatsapp_consent=true and receipt_path is not null);
 create index if not exists service_inquiries_user_created_idx on public.service_inquiries(user_id,created_at desc);
 create index if not exists service_inquiries_status_created_idx on public.service_inquiries(status,created_at desc);
+
+drop policy if exists "Customers submit remote service payment" on public.service_inquiries;
+create or replace function public.astro_submit_remote_service_payment(p_inquiry_id bigint,p_whatsapp_phone text,p_receipt_path text)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+ if auth.uid() is null then raise exception 'Authentication required'; end if;
+ if length(trim(coalesce(p_whatsapp_phone,'')))<7 then raise exception 'Valid WhatsApp number required'; end if;
+ if length(trim(coalesce(p_receipt_path,'')))=0 or p_receipt_path not like 'service-payments/%' then raise exception 'Valid receipt path required'; end if;
+ update public.service_inquiries set whatsapp_phone=trim(p_whatsapp_phone),whatsapp_consent=true,receipt_path=p_receipt_path,status='payment_submitted',payment_submitted_at=now(),updated_at=now()
+ where id=p_inquiry_id and user_id=auth.uid() and service_type='remote_programming' and status='answered' and quoted_price is not null;
+ if not found then raise exception 'This service inquiry is not eligible for payment'; end if;
+end; $$;
+revoke all on function public.astro_submit_remote_service_payment(bigint,text,text) from public;
+grant execute on function public.astro_submit_remote_service_payment(bigint,text,text) to authenticated;
