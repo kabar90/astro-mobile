@@ -519,7 +519,8 @@ document.querySelectorAll("nav button").forEach(button => {
       "storeContact",
       "notifications",
       "history",
-      "productInquiries"
+      "productInquiries",
+      "serviceInquiriesView"
     ];
 
     views.forEach(view => {
