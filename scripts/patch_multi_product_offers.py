@@ -32,12 +32,13 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                       stream: Supabase.instance.client.from('offer_items').stream(primaryKey: ['id']),
                       builder: (context, itemSnapshot) {
                         final offerItems = itemSnapshot.data ?? [];
-                        final offerCards = <Widget>[];
-                        final usedProducts = <String>{};
+                        final offerSections = <Widget>[];
 
                         for (final offer in activeOffers) {
                           final type = '${offer['offer_type'] ?? ''}';
                           if (type == 'bundle') continue;
+                          final offerCards = <Widget>[];
+                          final usedProducts = <String>{};
 
                           if (type == 'product') {
                             final offerId = '${offer['id']}';
@@ -92,24 +93,62 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               ));
                             }
                           }
+
+                          if (offerCards.isNotEmpty) {
+                            final startDate = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
+                            final endDate = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
+                            final offerName = '${offer['name'] ?? offer['title'] ?? 'عرض خاص'}';
+                            final period = startDate != null && endDate != null
+                                ? 'من ${startDate.day}/${startDate.month}/${startDate.year} إلى ${endDate.day}/${endDate.month}/${endDate.year}'
+                                : '';
+
+                            offerSections.add(
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 19),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(offerName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy)),
+                                          ),
+                                          if (period.isNotEmpty)
+                                            Text(period,
+                                              style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 164,
+                                      child: ListView.separated(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: offerCards.length,
+                                        separatorBuilder: (_, __) => const SizedBox(width: 11),
+                                        itemBuilder: (_, index) => offerCards[index],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
                         }
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
-                              child: Row(
-                                children: const [
-                                  Text('العروض والتخفيضات', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy)),
-                                  Spacer(),
-                                  Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 20),
-                                ],
-                              ),
-                            ),
-                            if (offerCards.isEmpty)
+                            if (offerSections.isEmpty)
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+                                padding: const EdgeInsets.fromLTRB(18, 20, 18, 10),
                                 child: Container(
                                   height: 76,
                                   alignment: Alignment.center,
@@ -123,16 +162,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 ),
                               )
                             else
-                              SizedBox(
-                                height: 164,
-                                child: ListView.separated(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: offerCards.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 11),
-                                  itemBuilder: (_, index) => offerCards[index],
-                                ),
-                              ),
+                              ...offerSections,
                           ],
                         );
                       },
