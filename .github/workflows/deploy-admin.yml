@@ -34,17 +34,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Prepare dashboard
+      - name: Prepare dashboard and download page
         run: |
+          set -e
+          rm -rf public
           mkdir -p public
-          unzip -o admin-dashboard.zip -d public
-          if [ -d public/admin ]; then
-            cp -R public/admin/. public/
-            rm -rf public/admin
-          fi
-          if [ -d admin ]; then
-            cp -R admin/. public/
-          fi
+          test -d admin
+          cp -R admin/. public/
+          test -f public/index.html
+          test -f public/download.html
+          echo "Prepared GitHub Pages site:"
+          find public -maxdepth 2 -type f | sort
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
