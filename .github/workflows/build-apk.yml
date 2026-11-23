@@ -129,6 +129,14 @@ jobs:
           grep -q "منتجات مختارة" astro_mobile/lib/screens/home_screen.dart
           echo "Category grid cards now fit their badges; featured heading spacing verified."
 
+      - name: Use Supabase category images in the home carousel
+        run: |
+          set -e
+          python3 scripts/patch_home_category_remote_images.py
+          grep -q "child: item.imageUrl.isNotEmpty" astro_mobile/lib/screens/home_screen.dart
+          grep -q "imageUrl: item.imageUrl" astro_mobile/lib/screens/home_screen.dart
+          echo "Home category carousel now uses the same Supabase image_url as the all-categories page."
+
       - name: Make cart confirmation messages non-blocking
         run: |
           set -e
