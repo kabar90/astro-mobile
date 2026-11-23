@@ -42,89 +42,220 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                           if (type == 'bundle') {
                             final offerId = '${offer['id']}';
                             final bundleItems = offerItems.where((row) => '${row['offer_id']}' == offerId).toList();
-                            final bundleProducts = <Widget>[];
+                            final bundleEntries = <Map<String, dynamic>>[];
                             for (final item in bundleItems) {
                               final product = _findProduct(products, '${item['product_id'] ?? ''}');
                               if (product == null) continue;
-                              final quantity = int.tryParse('${item['quantity'] ?? 1}') ?? 1;
-                              bundleProducts.add(
-                                Container(
-                                  width: 112,
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: const Color(0xFFE1E8F0)),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Expanded(
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(9),
-                                          child: Image.network(
-                                            product.imageUrl,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: astroNavy)),
-                                      Text('الكمية: $quantity',
-                                        style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
-                                    ],
-                                  ),
-                                ),
-                              );
+                              bundleEntries.add({
+                                'product': product,
+                                'quantity': int.tryParse('${item['quantity'] ?? 1}') ?? 1,
+                              });
                             }
 
-                            if (bundleProducts.isNotEmpty) {
+                            if (bundleEntries.isNotEmpty) {
                               final startDate = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
                               final endDate = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
-                              final offerName = '${offer['name'] ?? offer['title'] ?? 'عرض الباقة'}';
+                              final offerName = '${offer['name'] ?? offer['title'] ?? 'باقة مميزة'}';
                               final period = startDate != null && endDate != null
                                   ? 'من ${startDate.day}/${startDate.month}/${startDate.year} إلى ${endDate.day}/${endDate.month}/${endDate.year}'
                                   : '';
                               final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}') ?? 0;
+                              final bundleProducts = bundleEntries.map((entry) => entry['product'] as Product).toList();
+
                               offerSections.add(
                                 Padding(
-                                  padding: const EdgeInsets.only(bottom: 14),
+                                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.card_giftcard_rounded, color: Color(0xFFE44755), size: 19),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy)),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.card_giftcard_rounded, color: Color(0xFFE44755), size: 19),
+                                          const SizedBox(width: 7),
+                                          Expanded(
+                                            child: Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: astroNavy)),
+                                          ),
+                                          if (period.isNotEmpty)
+                                            Text(period, style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 9),
+                                      GridView.builder(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        itemCount: 1,
+                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 10,
+                                          childAspectRatio: 0.88,
+                                        ),
+                                        itemBuilder: (context, index) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(18),
+                                              border: Border.all(color: const Color(0xFFDCE6F1)),
+                                              boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 9, offset: Offset(0, 3))],
                                             ),
-                                            if (period.isNotEmpty)
-                                              Text(period, style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: 142,
-                                        child: ListView.separated(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                                          scrollDirection: Axis.horizontal,
-                                          itemCount: bundleProducts.length,
-                                          separatorBuilder: (_, __) => const SizedBox(width: 9),
-                                          itemBuilder: (_, index) => bundleProducts[index],
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(18, 7, 18, 0),
-                                        child: Text('سعر الباقة كاملة: ${bundlePrice.toStringAsFixed(2)} د.ل',
-                                          textAlign: TextAlign.start,
-                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                                            padding: const EdgeInsets.all(10),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: [
+                                                Expanded(
+                                                  child: Stack(
+                                                    children: [
+                                                      Positioned.fill(
+                                                        child: Row(
+                                                          children: [
+                                                            for (final product in bundleProducts.take(3))
+                                                              Expanded(
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets.all(2),
+                                                                  child: ClipRRect(
+                                                                    borderRadius: BorderRadius.circular(9),
+                                                                    child: Image.network(product.imageUrl, fit: BoxFit.cover,
+                                                                      errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined))),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Positioned(
+                                                        top: 5, right: 5,
+                                                        child: Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(color: const Color(0xFFE44755), borderRadius: BorderRadius.circular(20)),
+                                                          child: Text('${bundleEntries.length} منتجات',
+                                                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: astroNavy)),
+                                                Text('${bundlePrice.toStringAsFixed(2)} د.ل',
+                                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                                                const SizedBox(height: 5),
+                                                SizedBox(
+                                                  height: 34,
+                                                  child: ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: const Color(0xFF1765C5),
+                                                      foregroundColor: Colors.white,
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                                                    ),
+                                                    onPressed: () {
+                                                      showModalBottomSheet<void>(
+                                                        context: context,
+                                                        isScrollControlled: true,
+                                                        backgroundColor: Colors.transparent,
+                                                        builder: (sheetContext) => DraggableScrollableSheet(
+                                                          initialChildSize: 0.72,
+                                                          minChildSize: 0.45,
+                                                          maxChildSize: 0.92,
+                                                          builder: (context, scrollController) => Container(
+                                                            decoration: const BoxDecoration(
+                                                              color: Colors.white,
+                                                              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                                            ),
+                                                            child: Column(
+                                                              children: [
+                                                                const SizedBox(height: 10),
+                                                                Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8))),
+                                                                Padding(
+                                                                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Expanded(child: Text(offerName, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy))),
+                                                                      IconButton(onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close)),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Padding(
+                                                                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                                                                  child: Align(alignment: Alignment.centerRight,
+                                                                    child: Text('محتويات الباقة — اضغط على المنتج للتفاصيل',
+                                                                      style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 12))),
+                                                                ),
+                                                                Expanded(
+                                                                  child: GridView.builder(
+                                                                    controller: scrollController,
+                                                                    padding: const EdgeInsets.all(14),
+                                                                    itemCount: bundleEntries.length,
+                                                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                                                      crossAxisCount: 2,
+                                                                      crossAxisSpacing: 10,
+                                                                      mainAxisSpacing: 10,
+                                                                      childAspectRatio: 0.76,
+                                                                    ),
+                                                                    itemBuilder: (context, itemIndex) {
+                                                                      final entry = bundleEntries[itemIndex];
+                                                                      final product = entry['product'] as Product;
+                                                                      final quantity = entry['quantity'] as int;
+                                                                      return InkWell(
+                                                                        borderRadius: BorderRadius.circular(14),
+                                                                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))),
+                                                                        child: Container(
+                                                                          padding: const EdgeInsets.all(9),
+                                                                          decoration: BoxDecoration(
+                                                                            color: const Color(0xFFF8FAFD),
+                                                                            borderRadius: BorderRadius.circular(14),
+                                                                            border: Border.all(color: const Color(0xFFE1E8F0)),
+                                                                          ),
+                                                                          child: Column(
+                                                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                                            children: [
+                                                                              Expanded(child: ClipRRect(
+                                                                                borderRadius: BorderRadius.circular(10),
+                                                                                child: Image.network(product.imageUrl, fit: BoxFit.contain,
+                                                                                  errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined)),
+                                                                              )),
+                                                                              const SizedBox(height: 7),
+                                                                              Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: astroNavy)),
+                                                                              Text('الكمية: $quantity', style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                                Container(
+                                                                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+                                                                  decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE8EDF3)))),
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Expanded(child: Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          const Text('السعر الإجمالي للباقة', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                                                          Text('${bundlePrice.toStringAsFixed(2)} د.ل', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                                                                        ],
+                                                                      )),
+                                                                      const Text('الشراء من صفحة الباقة', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: const Text('عرض التفاصيل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
