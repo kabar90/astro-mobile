@@ -104,6 +104,64 @@ footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
  .real-product{padding:5px!important;border-radius:12px!important}
  .real-product img{border-radius:8px}
 }
+
+/* Seamless hero: one uncropped image blended into the page background */
+body{
+ background:
+  radial-gradient(ellipse at 50% 22%,#073b82 0%,#061d49 32%,transparent 66%),
+  linear-gradient(180deg,#03112f 0%,#020b20 48%,#02091b 100%);
+}
+.poster{
+ background:transparent!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+ overflow:visible;
+}
+.poster-top{
+ padding:12px 0 0!important;
+ background:transparent!important;
+}
+.real-stage{
+ display:block!important;
+ width:100%!important;
+ max-width:100%!important;
+ min-height:0!important;
+ height:auto!important;
+ margin:0 auto!important;
+ padding:0!important;
+ overflow:visible!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+.real-stage:before,.real-stage:after{display:none!important;content:none!important}
+.phone-hero-art{
+ display:block!important;
+ width:100%!important;
+ max-width:100%!important;
+ height:auto!important;
+ min-height:0!important;
+ aspect-ratio:16/9;
+ object-fit:contain!important;
+ object-position:center;
+ margin:0 auto!important;
+ border:0!important;
+ border-radius:0!important;
+ filter:none!important;
+ box-shadow:none!important;
+}
+.hero-copy{
+ margin:0 auto!important;
+ padding-top:12px!important;
+ background:transparent!important;
+}
+@media(max-width:700px){
+ .poster-top{padding-top:6px!important}
+ .phone-hero-art{aspect-ratio:16/9;min-height:0!important}
+ .hero-copy{padding-top:8px!important}
+}
 </style>
 </head>
 <body>
