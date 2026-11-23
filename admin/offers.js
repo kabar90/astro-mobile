@@ -634,7 +634,7 @@ function buildPayload() {
         : databaseDiscountType,
 
     discount_value:
-      type === "bundle" || type === "multi_product"
+      type === "bundle" || type === "product"
         ? null
         : Number($("discountValue").value),
 
