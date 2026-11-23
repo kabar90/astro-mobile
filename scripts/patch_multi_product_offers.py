@@ -5,6 +5,18 @@ cart_path = Path("astro_mobile/lib/services/cart_service.dart")
 home = home_path.read_text()
 cart = cart_path.read_text()
 
+# Install the dedicated bundle checkout screen (cash or bank transfer only).
+import shutil
+checkout_source = Path("scripts/bundle_checkout_screen.dart")
+checkout_target = root / "lib/screens/bundle_checkout_screen.dart"
+if not checkout_source.exists():
+    raise SystemExit("Bundle checkout screen source is missing")
+shutil.copyfile(checkout_source, checkout_target)
+checkout_import = "import 'bundle_checkout_screen.dart';"
+if checkout_import not in home:
+    home = home.replace("import 'account_screen.dart';", "import 'account_screen.dart';\\n" + checkout_import, 1)
+
+
 if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
     offer_query = ".from('offers')"
     query_at = home.find(offer_query)
@@ -265,7 +277,25 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                                           Text('${bundlePrice.toStringAsFixed(2)} د.ل', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
                                                                         ],
                                                                       )),
-                                                                      const Text('الشراء من صفحة الباقة', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                                                      SizedBox(
+                                                                        width: 132,
+                                                                        child: ElevatedButton(
+                                                                          style: ElevatedButton.styleFrom(
+                                                                            backgroundColor: const Color(0xFF1765C5),
+                                                                            foregroundColor: Colors.white,
+                                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                                          ),
+                                                                          onPressed: int.tryParse(offer['id'].toString()) == null ? null : () {
+                                                                            Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
+                                                                              offerId: int.parse(offer['id'].toString()),
+                                                                              offerName: offerName,
+                                                                              bundlePrice: bundlePrice,
+                                                                            )));
+                                                                          },
+                                                                          child: const Text('شراء الباقة', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                                                        ),
+                                                                      ),
                                                                     ],
                                                                   ),
                                                                 ),
