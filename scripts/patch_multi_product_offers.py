@@ -36,9 +36,103 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 
                         for (final offer in activeOffers) {
                           final type = '${offer['offer_type'] ?? ''}';
-                          if (type == 'bundle') continue;
                           final offerCards = <Widget>[];
                           final usedProducts = <String>{};
+
+                          if (type == 'bundle') {
+                            final offerId = '${offer['id']}';
+                            final bundleItems = offerItems.where((row) => '${row['offer_id']}' == offerId).toList();
+                            final bundleProducts = <Widget>[];
+                            for (final item in bundleItems) {
+                              final product = _findProduct(products, '${item['product_id'] ?? ''}');
+                              if (product == null) continue;
+                              final quantity = int.tryParse('${item['quantity'] ?? 1}') ?? 1;
+                              bundleProducts.add(
+                                Container(
+                                  width: 112,
+                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: const Color(0xFFE1E8F0)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(9),
+                                          child: Image.network(
+                                            product.imageUrl,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: astroNavy)),
+                                      Text('الكمية: $quantity',
+                                        style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (bundleProducts.isNotEmpty) {
+                              final startDate = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
+                              final endDate = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
+                              final offerName = '${offer['name'] ?? offer['title'] ?? 'عرض الباقة'}';
+                              final period = startDate != null && endDate != null
+                                  ? 'من ${startDate.day}/${startDate.month}/${startDate.year} إلى ${endDate.day}/${endDate.month}/${endDate.year}'
+                                  : '';
+                              final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}') ?? 0;
+                              offerSections.add(
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.card_giftcard_rounded, color: Color(0xFFE44755), size: 19),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy)),
+                                            ),
+                                            if (period.isNotEmpty)
+                                              Text(period, style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 142,
+                                        child: ListView.separated(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: bundleProducts.length,
+                                          separatorBuilder: (_, __) => const SizedBox(width: 9),
+                                          itemBuilder: (_, index) => bundleProducts[index],
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(18, 7, 18, 0),
+                                        child: Text('سعر الباقة كاملة: ${bundlePrice.toStringAsFixed(2)} د.ل',
+                                          textAlign: TextAlign.start,
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            continue;
+                          }
 
                           if (type == 'product') {
                             final offerId = '${offer['id']}';
