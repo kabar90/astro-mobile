@@ -360,13 +360,9 @@ function renderOffers() {
     const details = document.createElement("p");
 
     if (offer.offer_type === "product") {
-      const product = selectedProduct(offer.product_id);
-      details.textContent =
-        product?.name || `رقم المنتج: ${offer.product_id}`;
+      details.textContent = "منتجات العرض — سعر مستقل لكل منتج";
     } else if (offer.offer_type === "category") {
       details.textContent = `القسم: ${offer.category_name}`;
-    } else if (offer.offer_type === "product") {
-      details.textContent = "عرض منتجات متعددة — سعر مستقل لكل منتج";
     } else {
       details.textContent =
         `سعر الباقة: ${money(offer.bundle_price)}`;
@@ -486,10 +482,18 @@ async function editOffer(offer) {
 
     if (offer.offer_type === "product") {
       const items = await loadOfferItems(offer.id);
-      multiProductRows = items.map(item => ({
-        productId: String(item.product_id),
-        offerPrice: item.offer_price == null ? "" : String(item.offer_price)
-      }));
+      if (items.length) {
+        multiProductRows = items.map(item => ({
+          productId: String(item.product_id),
+          offerPrice: item.offer_price == null ? "" : String(item.offer_price)
+        }));
+      } else if (offer.product_id) {
+        const product = selectedProduct(offer.product_id);
+        let oldPrice = Number(product?.price || 0);
+        if (offer.discount_type === "fixed_price") oldPrice = Number(offer.discount_value);
+        else if (offer.discount_type === "percentage") oldPrice *= (100 - Number(offer.discount_value)) / 100;
+        multiProductRows = [{ productId: String(offer.product_id), offerPrice: oldPrice.toFixed(2) }];
+      }
     }
 
     renderBundleRows();
