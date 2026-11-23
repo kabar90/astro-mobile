@@ -107,16 +107,31 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                   child: Stack(
                                                     children: [
                                                       Positioned.fill(
-                                                        child: (offer['cover_image_url'] ?? '').toString().trim().isNotEmpty
-                                                            ? ClipRRect(
+                                                        child: FutureBuilder<Map<String, dynamic>?>(
+                                                          future: Supabase.instance.client
+                                                              .from('offers')
+                                                              .select('cover_image_url')
+                                                              .eq('id', offer['id'])
+                                                              .maybeSingle(),
+                                                          builder: (context, coverSnapshot) {
+                                                            final coverUrl = (coverSnapshot.data?['cover_image_url'] ??
+                                                                    offer['cover_image_url'] ?? '')
+                                                                .toString().trim();
+                                                            if (coverUrl.isNotEmpty) {
+                                                              return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
                                                                 child: Image.network(
-                                                                  offer['cover_image_url'].toString(),
+                                                                  coverUrl,
+                                                                  key: ValueKey(coverUrl),
                                                                   fit: BoxFit.cover,
-                                                                  errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined)),
+                                                                  errorBuilder: (_, __, ___) => const ColoredBox(
+                                                                    color: Color(0xFFF0F3F8),
+                                                                    child: Icon(Icons.image_outlined),
+                                                                  ),
                                                                 ),
-                                                              )
-                                                            : Row(
+                                                              );
+                                                            }
+                                                            return Row(
                                                                 children: [
                                                                   for (final product in bundleProducts.take(3))
                                                                     Expanded(
@@ -130,7 +145,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                                       ),
                                                                     ),
                                                                 ],
-                                                              ),
+                                                              );
+                                                          },
+                                                        ),
                                                       ),
                                                       Positioned(
                                                         top: 5, right: 5,
