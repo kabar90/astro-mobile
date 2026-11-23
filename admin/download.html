@@ -48,6 +48,20 @@ h1 span{color:#12dfff;text-shadow:0 0 22px #009fff}
 .info strong{display:block;font-size:21px;color:#eafaff;margin-bottom:4px}
 footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 @media(max-width:700px){main{padding:10px 10px 30px}header{padding:0 3px 14px}.brand img{width:60px;height:60px}.brand{gap:7px}.storeline span{font-size:11px}.poster{border-radius:22px}.poster-top{padding:12px 8px 0}.ribbon{top:25px;right:10px;font-size:12px;padding:7px 9px}.ribbon strong{font-size:16px}.ribbon small{font-size:9px}.discount{top:40px;left:12px;width:58px;height:58px;border-radius:15px;font-size:35px}.art{width:100%;margin-top:8px}.hero-copy{margin-top:-2px;padding-bottom:20px}h1{font-size:34px}.subtitle{font-size:14px;margin:8px auto 15px}.cta{gap:9px;padding:11px 8px;border-radius:17px}.android{font-size:33px}.cta-copy{font-size:18px}.cta-copy small{font-size:11px}.download-link{font-size:14px;padding:11px 13px}.download-link .arrow{font-size:21px}.features{grid-template-columns:repeat(3,1fr);row-gap:14px;margin:20px auto}.feature{font-size:11px;padding:4px;border-left:1px solid #28649b}.feature:nth-child(3){border-left:0}.feature i{width:43px;height:43px;font-size:22px}.section-title{font-size:20px;margin:25px 0 14px}.categories{grid-template-columns:repeat(3,1fr);gap:8px}.category{min-height:118px;border-radius:15px;padding:10px 5px}.category .symbol{font-size:35px}.category b{font-size:12px}.bottom-info{grid-template-columns:repeat(2,1fr);gap:8px}.info{font-size:12px}.info strong{font-size:18px}}
+
+.real-stage{position:relative;display:flex;align-items:center;justify-content:center;gap:clamp(5px,2vw,22px);width:100%;max-width:900px;min-height:clamp(245px,39vw,390px);margin:0 auto 12px;padding:28px 10px 22px;border-radius:22px;background:radial-gradient(ellipse at 50% 60%,#0757a8aa,transparent 58%),linear-gradient(145deg,#071b42,#02091c);overflow:hidden}
+.real-stage:before{content:"";position:absolute;width:52%;aspect-ratio:1;border:3px solid #13dfff;border-radius:50%;box-shadow:0 0 25px #00cfff,inset 0 0 25px #00cfff55;opacity:.55}
+.real-stage:after{content:"";position:absolute;bottom:24px;left:8%;right:8%;height:22px;border-radius:50%;background:#04baff;filter:blur(25px);opacity:.55}
+.real-product{position:relative;z-index:1;width:18%;height:clamp(145px,24vw,245px);padding:10px;border-radius:20px;background:linear-gradient(145deg,#f7fbff,#c7e8ff);border:2px solid #8deaff;box-shadow:0 0 25px #08bfff88,0 15px 28px #0008;display:flex;align-items:center;justify-content:center;transform:rotate(-7deg)}
+.real-product:nth-child(2){width:22%;height:clamp(180px,29vw,290px);transform:translateY(-12px);z-index:2}
+.real-product:nth-child(3){transform:rotate(7deg)}
+.real-product:nth-child(4){width:16%;height:clamp(130px,21vw,215px);transform:rotate(-5deg)}
+.real-product:nth-child(5){width:16%;height:clamp(130px,21vw,215px);transform:rotate(6deg)}
+.real-product img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
+.real-product small{position:absolute;bottom:7px;left:5px;right:5px;text-align:center;color:#08234c;font-weight:900;font-size:clamp(9px,1.3vw,13px)}
+.category-photo{width:100%;height:90px;object-fit:contain;border-radius:12px;padding:6px;background:linear-gradient(145deg,#f7fbff,#d4eaff);box-shadow:0 0 15px #19bfff35}
+.feature-photo{display:block;width:60px;height:52px;object-fit:contain;padding:4px;margin:0 auto 7px;border-radius:12px;background:linear-gradient(145deg,#f7fbff,#d6ecff);box-shadow:0 0 14px #08aaff55}
+@media(max-width:700px){.real-stage{min-height:225px;padding:20px 4px 18px;gap:5px;border-radius:15px}.real-product{height:145px;width:19%;padding:5px;border-radius:12px}.real-product:nth-child(2){height:180px;width:23%}.real-product:nth-child(4),.real-product:nth-child(5){height:125px;width:16%}.real-product small{font-size:8px;bottom:4px}.category-photo{height:65px;padding:3px}.feature-photo{width:42px;height:40px}}
 </style>
 </head>
 <body><main>
@@ -59,13 +73,19 @@ footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 <div class="poster-top">
 <div class="ribbon">عروض<strong>الجمعة السوداء</strong><small>تخفيضات ضخمة</small></div>
 <div class="discount">%</div>
-<img class="art" src="astro-hero.svg" alt="مشهد تقني من ASTRO MOBILE يضم الهواتف والروبوت والسماعات والساعة والشاحن والهدايا">
+<div class="real-stage" aria-label="منتجات حقيقية من متجر ASTRO MOBILE">
+<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات لاسلكية"><small>سماعات لاسلكية</small></div>
+<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="هاتف Redmi A7 Pro"><small>Redmi</small></div>
+<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/1-1794435070787-2cada16b-f829-4f97-854b-95b7a3d46f55.webp" alt="هاتف Samsung A07"><small>Samsung</small></div>
+<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية"><small>ساعة ذكية</small></div>
+<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن Xiaomi"><small>شواحن</small></div>
+</div>
 </div>
 <div class="hero-copy">
 <h1>حمّل تطبيق<br><span>ASTRO MOBILE</span> الآن</h1>
 <p class="subtitle">تسوّق بكل سهولة، وتابع أحدث المنتجات والعروض<br><strong>كن أول من يحصل على عروض ASTRO MOBILE</strong></p>
 <div class="cta">
-<div class="android">◉</div>
+<img class="feature-photo" style="width:58px;height:58px" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="تطبيق ASTRO على الهاتف">
 <div class="cta-copy">تطبيق ASTRO MOBILE<small>تجربة تسوق سهلة وسريعة على أندرويد</small></div>
 <span class="download-link" aria-disabled="true" title="سيتم تفعيل الرابط عند نشر ملف APK النهائي"><span class="arrow">⇩</span> التحميل قريباً</span>
 </div>
@@ -73,20 +93,20 @@ footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 </div>
 </section>
 <section class="features" aria-label="مميزات التطبيق">
-<div class="feature"><i>♧</i>إشعارات فورية<br>للعروض</div>
-<div class="feature"><i>🚚</i>توصيل لجميع<br>المدن الليبية</div>
-<div class="feature"><i>▤</i>طرق دفع مرنة<br>تحويل بنكي أو عند الاستلام</div>
-<div class="feature"><i>♢</i>عروض حصرية<br>وخصومات</div>
-<div class="feature"><i>✓</i>تسوق آمن<br>وموثوق</div>
+<div class="feature"><img class="feature-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="منتجات وعروض"><span>إشعارات فورية<br>للعروض</span></div>
+<div class="feature"><img class="feature-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/266-1795366764754-d6fda3c6-8a8f-423a-9bc8-9110a514a39a.webp" alt="منتجات المتجر"><span>توصيل لجميع<br>المدن الليبية</span></div>
+<div class="feature"><img class="feature-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/258-1795340776702-df66a474-968c-4589-844c-88da29175f08.webp" alt="شاحن Samsung"><span>طرق دفع مرنة<br>تحويل بنكي أو عند الاستلام</span></div>
+<div class="feature"><img class="feature-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية"><span>عروض حصرية<br>وخصومات</span></div>
+<div class="feature"><img class="feature-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/248-1795287064177-8b80f6f2-6b9a-4131-943f-1943bb549c9a.webp" alt="يد تحكم للألعاب"><span>تسوق آمن<br>وموثوق</span></div>
 </section>
 <h2 class="section-title">اكتشف <span>أقسام ASTRO MOBILE</span></h2>
 <section class="categories">
-<div class="category"><span class="symbol">📱</span><b>هواتف Redmi</b></div>
-<div class="category"><span class="symbol">📲</span><b>هواتف Samsung</b></div>
-<div class="category"><span class="symbol">🎧</span><b>سماعات لاسلكية</b></div>
-<div class="category"><span class="symbol">⌚</span><b>ساعات ذكية</b></div>
-<div class="category"><span class="symbol">🔌</span><b>شواحن وكوابل</b></div>
-<div class="category"><span class="symbol">🎮</span><b>ألعاب وإكسسوارات</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="Redmi"><b>هواتف Redmi</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/1-1794435070787-2cada16b-f829-4f97-854b-95b7a3d46f55.webp" alt="Samsung"><b>هواتف Samsung</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات لاسلكية"><b>سماعات لاسلكية</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية"><b>ساعات ذكية</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن"><b>شواحن وكوابل</b></div>
+<div class="category"><img class="category-photo" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/248-1795287064177-8b80f6f2-6b9a-4131-943f-1943bb549c9a.webp" alt="يد تحكم ألعاب"><b>ألعاب وإكسسوارات</b></div>
 </section>
 <section class="bottom-info">
 <div class="info"><strong>أندرويد</strong>متوافق مع أجهزة Android</div>
