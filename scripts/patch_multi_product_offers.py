@@ -425,9 +425,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
     home = home.replace(marker, helper + marker, 1)
     old_tap = "onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))),"
     new_tap = "onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: _productAtOfferPrice(product, salePrice)))),"
-    if old_tap not in home:
+    card_marker = "  Widget _offerProductCard(Product product, double salePrice, String label) {"
+    card_start = home.find(card_marker)
+    if card_start < 0:
+        raise SystemExit("Could not find offer card method")
+    card_tail = home[card_start:]
+    if old_tap not in card_tail:
         raise SystemExit("Could not find offer card navigation to pass sale price")
-    home = home.replace(old_tap, new_tap, 1)
+    home = home[:card_start] + card_tail.replace(old_tap, new_tap, 1)
     home_path.write_text(home)
 
 if "item.product?.price == product.price" not in cart:
