@@ -1,32 +1,74 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head>
+<html lang="ar" dir="rtl">
+<head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#061b3b"><meta name="description" content="الصفحة الرسمية لتحميل تطبيق ASTRO MOBILE في ليبيا.">
-<title>تحميل تطبيق ASTRO MOBILE</title>
+<meta name="theme-color" content="#03132d">
+<meta name="description" content="حمّل تطبيق ASTRO MOBILE وتسوق الهواتف والإكسسوارات والساعات الذكية والشواحن في ليبيا.">
+<title>ASTRO MOBILE | تحميل التطبيق</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#03132d;color:#fff;font-family:Tahoma,Arial,sans-serif}
-main{max-width:720px;margin:auto;padding:18px 14px 36px}
-.hero{border:1px solid #168dff;border-radius:24px;background:radial-gradient(ellipse at 50% 18%,#1266bd 0,#092b5a 46%,#03132d 100%);box-shadow:0 0 36px #087bff55;padding:25px 18px;text-align:center}
-.logo{width:104px;height:104px;object-fit:contain;border-radius:22px;background:#fff;padding:6px;box-shadow:0 0 24px #16bfff55}
-.tag{display:inline-block;margin-top:14px;border:1px solid #56c7ff;border-radius:30px;padding:7px 16px;color:#b9efff;background:#063c78}
-h1{font-size:clamp(28px,7vw,42px);line-height:1.45;margin:15px 0 8px}
-.sub{color:#d9eaff;font-size:17px;line-height:1.9;margin:0 auto 20px}
-.status{max-width:430px;margin:22px auto 8px;padding:16px 14px;border-radius:16px;border:1px solid #56bfff;background:#062b59;color:#fff;font-size:18px;font-weight:bold}
-.note{font-size:13px;color:#c5d9f2;line-height:1.9;margin:12px auto 0;max-width:520px}
-.features{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
-.feature{padding:15px 10px;text-align:center;border:1px solid #225b91;border-radius:14px;background:#08244a;font-weight:bold;line-height:1.7}
-footer{text-align:center;color:#8ca9ca;font-size:12px;margin-top:24px}
-</style></head><body><main>
+:root{--blue:#087cff;--cyan:#12d7ff;--navy:#03132d;--panel:#08254d}
+*{box-sizing:border-box}
+body{margin:0;color:#fff;background:radial-gradient(ellipse at 50% -10%,#124b91 0,#061d40 38%,#020d20 100%);font-family:Tahoma,Arial,sans-serif}
+main{width:min(100%,850px);margin:auto;padding:16px 14px 42px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 5px 18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;direction:ltr;text-align:left;font-size:20px;line-height:1.05}
+.robot{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#0a9bff,#052c67);border:1px solid #5adfff;box-shadow:0 0 22px #078dff88;font-size:28px}
+.brand small{display:block;font-size:10px;letter-spacing:2px;color:#9edcff;margin-top:4px}
+.header-note{font-size:12px;color:#c8e3ff;text-align:left;line-height:1.7}
+.hero{position:relative;overflow:hidden;text-align:center;padding:28px 18px 24px;border:1px solid #37baff;border-radius:27px;background:radial-gradient(ellipse at 50% 10%,#1469c3 0,#0a326b 42%,#03152f 100%);box-shadow:0 0 34px #087bff55,inset 0 0 45px #1d9fff22}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;filter:blur(3px);pointer-events:none}
+.hero:before{width:220px;height:220px;border:2px solid #15d7ff66;top:15px;left:-125px;box-shadow:0 0 24px #13d9ff}
+.hero:after{width:190px;height:190px;border:2px solid #a44dff66;bottom:-130px;right:-85px;box-shadow:0 0 24px #a44dff}
+.pill{display:inline-block;padding:8px 16px;border:1px solid #5edbff;border-radius:30px;background:#063a75;color:#c6f4ff;font-size:13px;font-weight:bold}
+h1{font-size:clamp(30px,7vw,48px);line-height:1.35;margin:17px 0 9px;text-shadow:0 3px 20px #009dff88}
+.lead{font-size:17px;line-height:1.9;color:#e0efff;max-width:620px;margin:0 auto 17px}
+.product-showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:650px;margin:20px auto 22px}
+.product{min-width:0;overflow:hidden;border:1px solid #5bcaff77;border-radius:17px;background:linear-gradient(160deg,#164b83,#061c3d);box-shadow:0 7px 22px #0005}
+.product img{display:block;width:100%;height:145px;object-fit:contain;background:radial-gradient(circle,#fff 0,#eaf4ff 70%,#c8ddf5 100%);padding:8px}
+.product span{display:block;padding:9px 5px 11px;font-size:12px;font-weight:bold;color:#eff8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.download{display:block;position:relative;z-index:1;max-width:460px;margin:12px auto 8px;padding:17px 16px;border-radius:17px;text-decoration:none;color:white;font-size:21px;font-weight:900;background:linear-gradient(100deg,#075be8,#009dfb 55%,#00c9e9);border:1px solid #9beaff;box-shadow:0 0 26px #008cff99,0 8px 18px #0006}
+.download .arrow{font-size:25px;vertical-align:middle;margin-left:8px}
+.download-note{font-size:12px;color:#c9e4ff;line-height:1.8}
+.benefits{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:19px 0}
+.benefit{padding:14px 6px;border:1px solid #28629a;border-radius:15px;background:#071f41;text-align:center;font-size:12px;font-weight:bold;line-height:1.7;color:#e9f5ff}
+.benefit b{display:block;font-size:24px;margin-bottom:5px}
+.section-title{text-align:center;font-size:20px;margin:27px 0 5px}
+.section-sub{text-align:center;color:#a9c9e9;font-size:13px;margin:0 0 14px}
+.trust{display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin-top:20px}
+.trust span{border:1px solid #315d8a;border-radius:30px;padding:8px 13px;background:#061b39;color:#d5eaff;font-size:12px}
+footer{text-align:center;color:#86a9ce;font-size:12px;line-height:1.8;margin-top:26px}
+@media(max-width:520px){main{padding:10px 10px 30px}.header-note{font-size:10px}.product-showcase{gap:7px}.product img{height:112px;padding:5px}.product span{font-size:10px}.benefits{grid-template-columns:repeat(2,1fr)}.hero{padding:23px 12px}.lead{font-size:15px}}
+</style>
+</head>
+<body><main>
+<header>
+<div class="brand"><div class="robot">🤖</div><div>ASTRO<br>MOBILE<small>SMART SHOPPING</small></div></div>
+<div class="header-note">متجر ASTRO MOBILE للتقنية<br>هواتف • إكسسوارات • صيانة وبرمجة</div>
+</header>
 <section class="hero">
-<img class="logo" src="astro-logo.jpg" alt="شعار ASTRO MOBILE">
-<div><span class="tag">التطبيق الرسمي لمتجر ASTRO MOBILE</span></div>
-<h1>قريباً… حمّل تطبيق ASTRO MOBILE</h1>
-<p class="sub">تسوّق بكل سهولة، تابع طلباتك، واستفد من العروض والخصومات الحصرية من متجرنا.</p>
-<div class="status">⏳ نجهّز رابط التحميل المباشر</div>
-<p class="note">سيظهر زر التحميل هنا فور تجهيز ملف APK النهائي الموقّع والتأكد من سلامة التحديثات. لا تثبّت نسخاً غير رسمية.</p>
+<div class="pill">✦ التطبيق الرسمي لمتجر ASTRO MOBILE ✦</div>
+<h1>كل احتياجاتك التقنية<br>في تطبيق واحد!</h1>
+<p class="lead">تسوّق بسهولة، اكتشف أحدث المنتجات، واستفد من العروض والخصومات الحصرية مع توصيل لجميع المدن الليبية.</p>
+<h2 class="section-title">اكتشف منتجاتنا</h2>
+<p class="section-sub">تشكيلة متنوعة من المنتجات المتوفرة في المتجر</p>
+<div class="product-showcase">
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية للأطفال"><span>⌚ ساعات ذكية</span></div>
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعة لاسلكية"><span>🎧 سماعات لاسلكية</span></div>
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن شاومي"><span>⚡ شواحن سريعة</span></div>
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/262-1795361603121-e4fd56bc-4faa-4e7f-bdac-f730118b3d64.webp" alt="ميكروفون لاسلكي"><span>🎤 إكسسوارات متنوعة</span></div>
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/266-1795366764754-d6fda3c6-8a8f-423a-9bc8-9110a514a39a.webp" alt="مودم واي فاي محمول"><span>📶 أجهزة اتصال</span></div>
+<div class="product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/261-1795341341647-2c547081-acce-4a93-9bf0-c4504e343165.webp" alt="لوحة مفاتيح وماوس"><span>⌨️ ملحقات الكمبيوتر</span></div>
+</div>
+<div class="pill">قريباً — رابط التحميل المباشر</div>
+<div class="download" aria-label="تحميل التطبيق قريباً"><span class="arrow">⬇</span> تحميل تطبيق الأندرويد</div>
+<p class="download-note">نعمل على تجهيز ملف APK النهائي الموقّع. سيتم تفعيل زر التحميل فور جاهزيته.</p>
 </section>
-<section class="features">
-<div class="feature">🎁 عروض وخصومات حصرية</div><div class="feature">🚚 توصيل لجميع المدن الليبية</div>
-<div class="feature">🔔 إشعارات فورية للطلبات</div><div class="feature">💳 دفع مرن وآمن</div>
-</section><footer>© ASTRO MOBILE — جميع الحقوق محفوظة</footer>
+<section class="benefits">
+<div class="benefit"><b>🎁</b>عروض حصرية<br>وخصومات دائمة</div>
+<div class="benefit"><b>🚚</b>توصيل لجميع<br>المدن الليبية</div>
+<div class="benefit"><b>🔔</b>إشعارات فورية<br>للعروض والطلبات</div>
+<div class="benefit"><b>💳</b>طرق دفع مرنة<br>ومتعددة</div>
+</section>
+<div class="trust"><span>✓ تجربة تسوق سهلة</span><span>✓ منتجات متنوعة</span><span>✓ متجر ASTRO MOBILE الرسمي</span></div>
+<footer>تابع جديد ASTRO MOBILE وكن أول من يستفيد من العروض<br>© ASTRO MOBILE — جميع الحقوق محفوظة</footer>
 </main></body></html>
