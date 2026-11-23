@@ -704,11 +704,22 @@ async function saveOffer(event) {
       if (coverFile) {
         if (!coverFile.type.startsWith("image/")) throw new Error("اختر ملف صورة صالحاً.");
         if (coverFile.size > 8 * 1024 * 1024) throw new Error("حجم صورة الباقة يجب ألا يتجاوز 8 ميجابايت.");
-        $("bundleCoverMsg").textContent = "جارٍ رفع صورة الباقة...";
-        const ext = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" })[coverFile.type] || "jpg";
-        const path = `bundle-covers/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("products").upload(path, coverFile, {
-          contentType: coverFile.type,
+        if (coverFile.type === "image/gif") {
+          throw new Error("لصورة الباقة الرئيسية استخدم JPG أو PNG أو WebP ثابتة؛ لا ندعم GIF المتحرك حتى لا نفقد الحركة أو نرفع ملفاً غير WebP.");
+        }
+        $("bundleCoverMsg").textContent = "جارٍ ضغط الصورة وتحويلها إلى WebP على هاتفك...";
+        if (typeof optimizeProductImageForUpload !== "function") {
+          throw new Error("أداة تحويل الصور إلى WebP غير متاحة. حدّث لوحة التحكم وأعد المحاولة.");
+        }
+        const optimizedCover = await optimizeProductImageForUpload(coverFile);
+        if (!optimizedCover.converted || optimizedCover.file.type !== "image/webp") {
+          throw new Error("لم يتم تحويل الصورة فعلياً إلى WebP؛ أوقفنا الرفع لحماية مساحة التخزين.");
+        }
+        $("bundleCoverMsg").textContent =
+          `تم تحويل الصورة إلى WebP: ${(optimizedCover.originalBytes / 1024).toFixed(0)} KB ← ${(optimizedCover.optimizedBytes / 1024).toFixed(0)} KB (توفير ${optimizedCover.savedPercent}%). جارٍ الرفع...`;
+        const path = `bundle-covers/${Date.now()}-${crypto.randomUUID()}.webp`;
+        const { error: uploadError } = await supabase.storage.from("products").upload(path, optimizedCover.file, {
+          contentType: "image/webp",
           cacheControl: "31536000",
           upsert: false
         });
