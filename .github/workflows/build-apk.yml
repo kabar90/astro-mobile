@@ -42,6 +42,14 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
+      - name: Add searchable delivery city picker
+        run: |
+          set -e
+          python3 scripts/patch_delivery_city_search.py
+          grep -q "ابحث عن مدينتك" astro_mobile/lib/screens/checkout_screen.dart
+          grep -q "لم يتم العثور على المدينة" astro_mobile/lib/screens/checkout_screen.dart
+          echo "Searchable delivery city picker verified."
+
       - name: Fix duplicate image downloads and enable persistent cache
         run: |
           set -e
