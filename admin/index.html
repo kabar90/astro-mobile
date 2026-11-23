@@ -342,13 +342,12 @@
           <option value="product">خصم على منتج</option>
           <option value="category">خصم على قسم كامل</option>
           <option value="bundle">باقة منتجات بسعر خاص</option>
-          <option value="multi_product">عرض أسبوعي متعدد المنتجات</option>
         </select>
       </label>
 
-      <div id="productOfferFields">
-        <label>اختر المنتج
-          <select id="offerProduct" required>
+      <div id="productOfferFields" class="hide">
+        <label>المنتج السابق (للتوافق مع العروض القديمة)
+          <select id="offerProduct">
             <option value="">اختر المنتج</option>
           </select>
         </label>
@@ -356,7 +355,7 @@
 
       <div id="multiProductOfferFields" class="hide">
         <h3>منتجات العرض وأسعارها</h3>
-        <p>أضف المنتجات المشاركة وحدد سعر العرض لكل منتج بشكل مستقل. يختار العميل المنتج الذي يناسبه ويشتريه منفرداً.</p>
+        <p>أضف منتجاً واحداً أو أكثر وحدد سعر كل منتج بشكل مستقل. يستطيع العميل اختيار المنتج الذي يناسبه وشراؤه منفرداً.</p>
         <div id="multiProductItems"></div>
         <button id="addMultiProductItem" type="button">＋ إضافة منتج للعرض</button>
       </div>
@@ -622,7 +621,7 @@
 
 <script type="module" src="app.js?v=webp-auto-v14"></script>
 <script type="module" src="home-sections.js?v=20261117-1"></script>
-<script type="module" src="offers.js?v=20261123-multi-product-1"></script>
+<script type="module" src="offers.js?v=20261123-product-items-2"></script>
 <script type="module" src="notifications.js"></script>
 <script type="module" src="password-reset.js"></script>
 <script type="module" src="product-inquiries.js?v=20261122-4"></script>
