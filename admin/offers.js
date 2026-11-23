@@ -366,7 +366,7 @@ function renderOffers() {
     } else if (offer.offer_type === "category") {
       details.textContent = `القسم: ${offer.category_name}`;
     } else if (offer.offer_type === "product") {
-      details.textContent = "عرض متعدد المنتجات — سعر مستقل لكل منتج";
+      details.textContent = "عرض منتجات متعددة — سعر مستقل لكل منتج";
     } else {
       details.textContent =
         `سعر الباقة: ${money(offer.bundle_price)}`;
@@ -484,7 +484,7 @@ async function editOffer(offer) {
       }));
     }
 
-    if (offer.offer_type === "multi_product") {
+    if (offer.offer_type === "product") {
       const items = await loadOfferItems(offer.id);
       multiProductRows = items.map(item => ({
         productId: String(item.product_id),
@@ -531,24 +531,15 @@ function validateForm() {
   }
 
   if (type === "product") {
-    const product = selectedProduct($("offerProduct").value);
-
-    if (!product || product.is_active === false) {
-      throw new Error("اختر منتجاً نشطاً.");
-    }
-
-    const value = Number($("discountValue").value);
-
-    if (!Number.isFinite(value) || value < 0) {
-      throw new Error("قيمة الخصم غير صحيحة.");
-    }
-
-    if ($("discountType").value === "percentage") {
-      if (value <= 0 || value > 100) {
-        throw new Error("نسبة الخصم يجب أن تكون أكبر من صفر وحتى 100.");
-      }
-    } else if (value <= 0 || value >= Number(product.price)) {
-      throw new Error("سعر العرض يجب أن يكون أكبر من صفر وأقل من السعر الأصلي.");
+    if (multiProductRows.length < 1) throw new Error("أضف منتجاً واحداً على الأقل إلى العرض.");
+    const used = new Set();
+    for (const row of multiProductRows) {
+      const product = selectedProduct(row.productId);
+      const price = Number(row.offerPrice);
+      if (!product || product.is_active === false) throw new Error("اختر منتجاً نشطاً لكل سطر.");
+      if (!Number.isFinite(price) || price <= 0 || price >= Number(product.price)) throw new Error("سعر العرض يجب أن يكون أكبر من صفر وأقل من السعر الأصلي.");
+      if (used.has(String(row.productId))) throw new Error("لا تكرر المنتج نفسه في العرض.");
+      used.add(String(row.productId));
     }
   }
 
@@ -634,7 +625,7 @@ function buildPayload() {
         : null,
 
     discount_type:
-      type === "bundle" || type === "multi_product"
+      type === "bundle" || type === "product"
         ? null
         : databaseDiscountType,
 
