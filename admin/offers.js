@@ -708,10 +708,10 @@ async function saveOffer(event) {
           throw new Error("لصورة الباقة الرئيسية استخدم JPG أو PNG أو WebP ثابتة؛ لا ندعم GIF المتحرك حتى لا نفقد الحركة أو نرفع ملفاً غير WebP.");
         }
         $("bundleCoverMsg").textContent = "جارٍ ضغط الصورة وتحويلها إلى WebP على هاتفك...";
-        if (typeof optimizeProductImageForUpload !== "function") {
+        if (typeof window.optimizeProductImageForUpload !== "function") {
           throw new Error("أداة تحويل الصور إلى WebP غير متاحة. حدّث لوحة التحكم وأعد المحاولة.");
         }
-        const optimizedCover = await optimizeProductImageForUpload(coverFile);
+        const optimizedCover = await window.optimizeProductImageForUpload(coverFile);
         if (!optimizedCover.converted || optimizedCover.file.type !== "image/webp") {
           throw new Error("لم يتم تحويل الصورة فعلياً إلى WebP؛ أوقفنا الرفع لحماية مساحة التخزين.");
         }
