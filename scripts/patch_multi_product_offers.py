@@ -14,7 +14,7 @@ if not checkout_source.exists():
 shutil.copyfile(checkout_source, checkout_target)
 checkout_import = "import 'bundle_checkout_screen.dart';"
 if checkout_import not in home:
-    home = home.replace("import 'account_screen.dart';", "import 'account_screen.dart';\\n" + checkout_import, 1)
+    home = home.replace("import 'account_screen.dart';", "import 'account_screen.dart';\n" + checkout_import, 1)
 
 
 if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
