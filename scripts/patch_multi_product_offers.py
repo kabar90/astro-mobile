@@ -1,5 +1,7 @@
 from pathlib import Path
 
+root = Path('astro_mobile')
+
 home_path = Path("astro_mobile/lib/screens/home_screen.dart")
 cart_path = Path("astro_mobile/lib/services/cart_service.dart")
 home = home_path.read_text()
