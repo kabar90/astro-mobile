@@ -175,9 +175,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
     home = home.replace(old_tap, new_tap, 1)
     home_path.write_text(home)
 
-if "item.product.price == product.price" not in cart:
-    old_match = "(item) => item.product.id == product.id && item.color == color,"
-    new_match = "(item) => item.product.id == product.id &&\n          item.product.price == product.price && item.color == color,"
+if "item.product?.price == product.price" not in cart:
+    old_match = "(item) => !item.isInquiryOption && item.product?.id == product.id && item.color == color,"
+    new_match = "(item) => !item.isInquiryOption && item.product?.id == product.id &&\n          item.product?.price == product.price && item.color == color,"
     if old_match not in cart:
         raise SystemExit("Could not find cart item matching logic")
     cart_path.write_text(cart.replace(old_match, new_match, 1))
