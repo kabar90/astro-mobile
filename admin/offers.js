@@ -106,16 +106,16 @@ function setTypeFields() {
 
   $("multiProductOfferFields").classList.toggle(
     "hide",
-    type !== "multi_product"
+    type !== "product"
   );
 
-  $("offerProduct").required = type === "product";
+  $("offerProduct").required = false;
   $("offerCategory").required = type === "category";
   $("discountFields").classList.toggle(
     "hide",
-    type === "bundle" || type === "multi_product"
+    type === "bundle" || type === "product"
   );
-  $("discountValue").required = type !== "bundle" && type !== "multi_product";
+  $("discountValue").required = type === "category";
   $("bundlePrice").required = type === "bundle";
 }
 
@@ -352,7 +352,6 @@ function renderOffers() {
       product: "عرض منتج",
       category: "عرض قسم",
       bundle: "باقة مجمعة",
-      multi_product: "عرض أسبوعي متعدد المنتجات"
     };
 
     const type = document.createElement("p");
@@ -366,7 +365,7 @@ function renderOffers() {
         product?.name || `رقم المنتج: ${offer.product_id}`;
     } else if (offer.offer_type === "category") {
       details.textContent = `القسم: ${offer.category_name}`;
-    } else if (offer.offer_type === "multi_product") {
+    } else if (offer.offer_type === "product") {
       details.textContent = "عرض متعدد المنتجات — سعر مستقل لكل منتج";
     } else {
       details.textContent =
@@ -565,7 +564,7 @@ function validateForm() {
     }
   }
 
-  if (type === "multi_product") {
+  if (type === "product") {
     if (multiProductRows.length < 1) throw new Error("أضف منتجاً واحداً على الأقل إلى العرض.");
     const used = new Set();
     for (const row of multiProductRows) {
@@ -627,10 +626,7 @@ function buildPayload() {
     description: $("offerDescription").value.trim() || null,
     offer_type: type,
 
-    product_id:
-      type === "product"
-        ? Number($("offerProduct").value)
-        : null,
+    product_id: null,
 
     category_name:
       type === "category"
@@ -705,7 +701,7 @@ async function saveOffer(event) {
       offerId = data.id;
     }
 
-    if (payload.offer_type === "bundle" || payload.offer_type === "multi_product") {
+    if (payload.offer_type === "bundle" || payload.offer_type === "product") {
       const { error: deleteError } = await supabase
         .from("offer_items")
         .delete()
