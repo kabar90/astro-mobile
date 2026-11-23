@@ -107,21 +107,30 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                   child: Stack(
                                                     children: [
                                                       Positioned.fill(
-                                                        child: Row(
-                                                          children: [
-                                                            for (final product in bundleProducts.take(3))
-                                                              Expanded(
-                                                                child: Padding(
-                                                                  padding: const EdgeInsets.all(2),
-                                                                  child: ClipRRect(
-                                                                    borderRadius: BorderRadius.circular(9),
-                                                                    child: Image.network(product.imageUrl, fit: BoxFit.cover,
-                                                                      errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined))),
-                                                                  ),
+                                                        child: (offer['cover_image_url'] ?? '').toString().trim().isNotEmpty
+                                                            ? ClipRRect(
+                                                                borderRadius: BorderRadius.circular(10),
+                                                                child: Image.network(
+                                                                  offer['cover_image_url'].toString(),
+                                                                  fit: BoxFit.cover,
+                                                                  errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined)),
                                                                 ),
+                                                              )
+                                                            : Row(
+                                                                children: [
+                                                                  for (final product in bundleProducts.take(3))
+                                                                    Expanded(
+                                                                      child: Padding(
+                                                                        padding: const EdgeInsets.all(2),
+                                                                        child: ClipRRect(
+                                                                          borderRadius: BorderRadius.circular(9),
+                                                                          child: Image.network(product.imageUrl, fit: BoxFit.cover,
+                                                                            errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined))),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                ],
                                                               ),
-                                                          ],
-                                                        ),
                                                       ),
                                                       Positioned(
                                                         top: 5, right: 5,
