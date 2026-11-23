@@ -111,7 +111,11 @@ function setTypeFields() {
 
   $("offerProduct").required = type === "product";
   $("offerCategory").required = type === "category";
-  $("discountValue").required = type !== "bundle";
+  $("discountFields").classList.toggle(
+    "hide",
+    type === "bundle" || type === "multi_product"
+  );
+  $("discountValue").required = type !== "bundle" && type !== "multi_product";
   $("bundlePrice").required = type === "bundle";
 }
 
@@ -634,12 +638,12 @@ function buildPayload() {
         : null,
 
     discount_type:
-      type === "bundle"
+      type === "bundle" || type === "multi_product"
         ? null
         : databaseDiscountType,
 
     discount_value:
-      type === "bundle"
+      type === "bundle" || type === "multi_product"
         ? null
         : Number($("discountValue").value),
 
