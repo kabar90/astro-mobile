@@ -46,15 +46,15 @@ h1 span{color:var(--cyan);direction:ltr;display:inline-block;text-shadow:0 0 25p
 .section-title{text-align:center;margin:0 0 19px;font-size:clamp(21px,3vw,29px)}
 .section-title span{color:var(--cyan)}
 .categories{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-.category{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:13px 8px;text-align:center;border:1px solid #2988e5a6;border-radius:22px;background:linear-gradient(155deg,#0b2e60aa,#06163388);box-shadow:0 0 22px #007bff16,inset 0 0 20px #2a9dff0d}
-.category:nth-child(even){border-color:#2988e5a6}
-.category .emoji{font-size:44px;filter:drop-shadow(0 0 12px #00bfff99)}
-.category b{font-size:13px}
+.category{min-height:164px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:10px 9px 13px;text-align:center;border:1px solid #45cfff99;border-radius:21px;background:linear-gradient(155deg,#0b2e60aa,#06163388);box-shadow:0 0 22px #007bff20,inset 0 0 20px #2a9dff0d;overflow:hidden}
+.category:nth-child(even){border-color:#a56bff99}
+.category-photo{width:100%;height:112px;display:block;object-fit:cover;object-position:center;border-radius:14px;border:1px solid #75eaff88;box-shadow:0 0 15px #00bfff44}
+.category b{font-size:13px;text-shadow:0 1px 8px #000}
 .bottom-download{margin:42px 0 20px;text-align:center;padding:25px 15px 30px;border-top:1px solid #2baeff30;border-bottom:1px solid #2baeff30;background:transparent}
 .bottom-download h2{font-size:clamp(21px,3vw,31px);margin:0 0 8px}
 .bottom-download p{color:#bfd9f5;margin:0 0 18px;font-size:14px}
 footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
-@media(max-width:760px){.shell{width:calc(100% - 22px)}header{height:82px}.brand img{width:51px;height:51px}.brand-name{font-size:25px}.brand-name small{font-size:7px}.head-note{font-size:12px}.head-note span{font-size:10px}.visual{height:clamp(240px,68vw,390px)}.offer-tag{top:22px;right:2%;font-size:11px;padding:8px 11px}.offer-tag b{font-size:14px}.hero-copy{margin-top:-4px}.features{margin:25px 0 34px}.feature{padding:13px 5px}.feature-icon{width:43px;height:43px;border-radius:14px}.feature-icon svg{width:24px;height:24px}.feature b{font-size:11px}.feature small{font-size:9px}.categories{grid-template-columns:repeat(3,1fr);gap:9px}.category{min-height:120px;border-radius:17px}.category .emoji{font-size:36px}.category b{font-size:11px}}
+@media(max-width:760px){.shell{width:calc(100% - 22px)}header{height:82px}.brand img{width:51px;height:51px}.brand-name{font-size:25px}.brand-name small{font-size:7px}.head-note{font-size:12px}.head-note span{font-size:10px}.visual{height:clamp(240px,68vw,390px)}.offer-tag{top:22px;right:2%;font-size:11px;padding:8px 11px}.offer-tag b{font-size:14px}.hero-copy{margin-top:-4px}.features{margin:25px 0 34px}.feature{padding:13px 5px}.feature-icon{width:43px;height:43px;border-radius:14px}.feature-icon svg{width:24px;height:24px}.feature b{font-size:11px}.feature small{font-size:9px}.categories{grid-template-columns:repeat(3,1fr);gap:9px}.category{min-height:139px;border-radius:17px;padding:8px 7px 11px;gap:8px}.category-photo{height:94px;border-radius:12px}.category b{font-size:11px}}
 @media(max-width:390px){.head-note{max-width:145px}.visual{height:245px}.download{min-width:96%;gap:10px;padding:13px 12px}.features{grid-template-columns:repeat(5,1fr)}.feature-icon{width:37px;height:37px;border-radius:12px}.feature-icon svg{width:21px;height:21px}.feature b{font-size:10px}.feature small{font-size:8px}}
 </style>
 </head>
@@ -90,12 +90,12 @@ footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
 </section>
 <h2 class="section-title">اكتشف أقسام <span>ASTRO MOBILE</span></h2>
 <section class="categories">
- <div class="category"><div class="emoji">📱</div><b>هواتف ذكية</b></div>
- <div class="category"><div class="emoji">🎧</div><b>سماعات لاسلكية</b></div>
- <div class="category"><div class="emoji">⌚</div><b>ساعات ذكية</b></div>
- <div class="category"><div class="emoji">🔌</div><b>شواحن وكوابل</b></div>
- <div class="category"><div class="emoji">🎮</div><b>ألعاب وإكسسوارات</b></div>
- <div class="category"><div class="emoji">🛠️</div><b>خدمات تقنية</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=640&h=420&fit=crop&auto=format" alt="هواتف ذكية" loading="lazy"><b>هواتف ذكية</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=640&h=420&fit=crop&auto=format" alt="سماعات لاسلكية" loading="lazy"><b>سماعات لاسلكية</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=640&h=420&fit=crop&auto=format" alt="ساعات ذكية" loading="lazy"><b>ساعات ذكية</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=640&h=420&fit=crop&auto=format" alt="شواحن وكوابل" loading="lazy"><b>شواحن وكوابل</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1592840496694-26d035b52b48?w=640&h=420&fit=crop&auto=format" alt="ألعاب وإكسسوارات" loading="lazy"><b>ألعاب وإكسسوارات</b></div>
+ <div class="category"><img class="category-photo" src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=640&h=420&fit=crop&auto=format" alt="خدمات تقنية وصيانة" loading="lazy"><b>خدمات تقنية</b></div>
 </section>
 <section class="bottom-download">
  <h2>كن أول من يكتشف الجديد</h2>
