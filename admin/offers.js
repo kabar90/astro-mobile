@@ -19,6 +19,7 @@ let products = [];
 let offers = [];
 let editingOfferId = null;
 let bundleRows = [];
+let multiProductRows = [];
 
 const money = (value) =>
   `${Number(value || 0).toFixed(2)} د.ل`;
@@ -103,6 +104,11 @@ function setTypeFields() {
     type !== "bundle"
   );
 
+  $("multiProductOfferFields").classList.toggle(
+    "hide",
+    type !== "multi_product"
+  );
+
   $("offerProduct").required = type === "product";
   $("offerCategory").required = type === "category";
   $("discountValue").required = type !== "bundle";
@@ -151,6 +157,7 @@ function resetForm() {
 
   editingOfferId = null;
   bundleRows = [];
+  multiProductRows = [];
 
   $("offerId").value = "";
   $("offerActive").checked = false;
@@ -178,6 +185,7 @@ function resetForm() {
   });
 
   renderBundleRows();
+  renderMultiProductRows();
   setTypeFields();
   setDiscountFields();
   message("");
@@ -243,6 +251,69 @@ function addBundleRow(productId = "", quantity = 1) {
   renderBundleRows();
 }
 
+
+function renderMultiProductRows() {
+  const container = $("multiProductItems");
+  if (!container) return;
+  container.replaceChildren();
+
+  if (!multiProductRows.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "لم تتم إضافة منتجات لهذا العرض بعد.";
+    container.append(empty);
+  }
+
+  multiProductRows.forEach((row, index) => {
+    const line = document.createElement("div");
+    line.className = "offer-bundle-row";
+
+    const select = document.createElement("select");
+    select.required = true;
+    productOptions(select, row.productId);
+    select.addEventListener("change", () => {
+      row.productId = select.value;
+      const product = selectedProduct(row.productId);
+      if (product && (row.offerPrice === "" || row.offerPrice == null)) {
+        row.offerPrice = String(product.price ?? "");
+        price.value = row.offerPrice;
+      }
+    });
+
+    const price = document.createElement("input");
+    price.type = "number";
+    price.min = "0.01";
+    price.step = "0.01";
+    price.required = true;
+    price.placeholder = "سعر العرض بالدينار";
+    price.value = row.offerPrice ?? "";
+    price.addEventListener("input", () => { row.offerPrice = price.value; });
+
+    const productLabel = document.createElement("label");
+    productLabel.textContent = "المنتج";
+    productLabel.append(select);
+
+    const priceLabel = document.createElement("label");
+    priceLabel.textContent = "سعر هذا المنتج في العرض (د.ل)";
+    priceLabel.append(price);
+
+    const remove = makeButton("إزالة", () => {
+      multiProductRows.splice(index, 1);
+      renderMultiProductRows();
+    });
+
+    line.append(productLabel, priceLabel, remove);
+    container.append(line);
+  });
+}
+
+function addMultiProductRow(productId = "", offerPrice = "") {
+  multiProductRows.push({
+    productId: productId ? String(productId) : "",
+    offerPrice: offerPrice == null ? "" : String(offerPrice)
+  });
+  renderMultiProductRows();
+}
+
 function offerStatus(offer) {
   const now = Date.now();
   const start = new Date(offer.starts_at).getTime();
@@ -276,7 +347,8 @@ function renderOffers() {
     const typeNames = {
       product: "عرض منتج",
       category: "عرض قسم",
-      bundle: "باقة مجمعة"
+      bundle: "باقة مجمعة",
+      multi_product: "عرض أسبوعي متعدد المنتجات"
     };
 
     const type = document.createElement("p");
@@ -290,6 +362,8 @@ function renderOffers() {
         product?.name || `رقم المنتج: ${offer.product_id}`;
     } else if (offer.offer_type === "category") {
       details.textContent = `القسم: ${offer.category_name}`;
+    } else if (offer.offer_type === "multi_product") {
+      details.textContent = "عرض متعدد المنتجات — سعر مستقل لكل منتج";
     } else {
       details.textContent =
         `سعر الباقة: ${money(offer.bundle_price)}`;
@@ -349,7 +423,7 @@ async function loadOffers() {
 async function loadOfferItems(offerId) {
   const { data, error } = await supabase
     .from("offer_items")
-    .select("product_id,quantity")
+    .select("product_id,quantity,offer_price")
     .eq("offer_id", offerId);
 
   if (error) throw error;
@@ -396,6 +470,7 @@ async function editOffer(offer) {
       offer.category_name || "";
 
     bundleRows = [];
+    multiProductRows = [];
 
     if (offer.offer_type === "bundle") {
       const items = await loadOfferItems(offer.id);
@@ -406,7 +481,16 @@ async function editOffer(offer) {
       }));
     }
 
+    if (offer.offer_type === "multi_product") {
+      const items = await loadOfferItems(offer.id);
+      multiProductRows = items.map(item => ({
+        productId: String(item.product_id),
+        offerPrice: item.offer_price == null ? "" : String(item.offer_price)
+      }));
+    }
+
     renderBundleRows();
+    renderMultiProductRows();
     setTypeFields();
     setDiscountFields();
 
@@ -474,6 +558,19 @@ function validateForm() {
 
     if (!Number.isFinite(value) || value <= 0 || value > 100) {
       throw new Error("نسبة خصم القسم يجب أن تكون بين 1 و100.");
+    }
+  }
+
+  if (type === "multi_product") {
+    if (multiProductRows.length < 1) throw new Error("أضف منتجاً واحداً على الأقل إلى العرض.");
+    const used = new Set();
+    for (const row of multiProductRows) {
+      const product = selectedProduct(row.productId);
+      const price = Number(row.offerPrice);
+      if (!product || product.is_active === false) throw new Error("اختر منتجاً نشطاً لكل سطر.");
+      if (!Number.isFinite(price) || price <= 0) throw new Error("أدخل سعر عرض صحيحاً وأكبر من صفر لكل منتج.");
+      if (used.has(String(row.productId))) throw new Error("لا تكرر المنتج نفسه في العرض.");
+      used.add(String(row.productId));
     }
   }
 
@@ -604,7 +701,7 @@ async function saveOffer(event) {
       offerId = data.id;
     }
 
-    if (payload.offer_type === "bundle") {
+    if (payload.offer_type === "bundle" || payload.offer_type === "multi_product") {
       const { error: deleteError } = await supabase
         .from("offer_items")
         .delete()
@@ -616,11 +713,18 @@ async function saveOffer(event) {
         );
       }
 
-      const rows = bundleRows.map(row => ({
-        offer_id: offerId,
-        product_id: Number(row.productId),
-        quantity: Number(row.quantity)
-      }));
+      const rows = payload.offer_type === "bundle"
+        ? bundleRows.map(row => ({
+            offer_id: offerId,
+            product_id: Number(row.productId),
+            quantity: Number(row.quantity)
+          }))
+        : multiProductRows.map(row => ({
+            offer_id: offerId,
+            product_id: Number(row.productId),
+            quantity: 1,
+            offer_price: Number(row.offerPrice)
+          }));
 
       const { error: insertError } = await supabase
         .from("offer_items")
@@ -757,6 +861,10 @@ $("discountType")?.addEventListener("change", setDiscountFields);
 
 $("addBundleItem")?.addEventListener("click", () => {
   addBundleRow();
+});
+
+$("addMultiProductItem")?.addEventListener("click", () => {
+  addMultiProductRow();
 });
 
 $("refreshOffers")?.addEventListener("click", loadOffers);
