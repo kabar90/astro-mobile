@@ -49,6 +49,7 @@ h1 span{color:#12dfff;text-shadow:0 0 22px #009fff}
 footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 @media(max-width:700px){main{padding:10px 10px 30px}header{padding:0 3px 14px}.brand img{width:60px;height:60px}.brand{gap:7px}.storeline span{font-size:11px}.poster{border-radius:22px}.poster-top{padding:12px 8px 0}.ribbon{top:25px;right:10px;font-size:12px;padding:7px 9px}.ribbon strong{font-size:16px}.ribbon small{font-size:9px}.discount{top:40px;left:12px;width:58px;height:58px;border-radius:15px;font-size:35px}.art{width:100%;margin-top:8px}.hero-copy{margin-top:-2px;padding-bottom:20px}h1{font-size:34px}.subtitle{font-size:14px;margin:8px auto 15px}.cta{gap:9px;padding:11px 8px;border-radius:17px}.android{font-size:33px}.cta-copy{font-size:18px}.cta-copy small{font-size:11px}.download-link{font-size:14px;padding:11px 13px}.download-link .arrow{font-size:21px}.features{grid-template-columns:repeat(3,1fr);row-gap:14px;margin:20px auto}.feature{font-size:11px;padding:4px;border-left:1px solid #28649b}.feature:nth-child(3){border-left:0}.feature i{width:43px;height:43px;font-size:22px}.section-title{font-size:20px;margin:25px 0 14px}.categories{grid-template-columns:repeat(3,1fr);gap:8px}.category{min-height:118px;border-radius:15px;padding:10px 5px}.category .symbol{font-size:35px}.category b{font-size:12px}.bottom-info{grid-template-columns:repeat(2,1fr);gap:8px}.info{font-size:12px}.info strong{font-size:18px}}
 
+.phone-hero-art{position:relative;z-index:1;display:block;width:100%;height:100%;min-height:clamp(245px,39vw,390px);object-fit:cover;border-radius:18px;filter:drop-shadow(0 8px 20px #008dff55)}
 .real-stage{position:relative;display:flex;align-items:center;justify-content:center;gap:clamp(5px,2vw,22px);width:100%;max-width:900px;min-height:clamp(245px,39vw,390px);margin:0 auto 12px;padding:28px 10px 22px;border-radius:22px;background:radial-gradient(ellipse at 50% 60%,#0757a8aa,transparent 58%),linear-gradient(145deg,#071b42,#02091c);overflow:hidden}
 .real-stage:before{content:"";position:absolute;width:52%;aspect-ratio:1;border:3px solid #13dfff;border-radius:50%;box-shadow:0 0 25px #00cfff,inset 0 0 25px #00cfff55;opacity:.55}
 .real-stage:after{content:"";position:absolute;bottom:24px;left:8%;right:8%;height:22px;border-radius:50%;background:#04baff;filter:blur(25px);opacity:.55}
@@ -61,7 +62,7 @@ footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 .real-product small{position:absolute;bottom:7px;left:5px;right:5px;text-align:center;color:#08234c;font-weight:900;font-size:clamp(9px,1.3vw,13px)}
 .category-photo{width:100%;height:90px;object-fit:contain;border-radius:12px;padding:6px;background:linear-gradient(145deg,#f7fbff,#d4eaff);box-shadow:0 0 15px #19bfff35}
 .feature-photo{display:block;width:60px;height:52px;object-fit:contain;padding:4px;margin:0 auto 7px;border-radius:12px;background:linear-gradient(145deg,#f7fbff,#d6ecff);box-shadow:0 0 14px #08aaff55}
-@media(max-width:700px){.real-stage{min-height:225px;padding:20px 4px 18px;gap:5px;border-radius:15px}.real-product{height:145px;width:19%;padding:5px;border-radius:12px}.real-product:nth-child(2){height:180px;width:23%}.real-product:nth-child(4),.real-product:nth-child(5){height:125px;width:16%}.real-product small{font-size:8px;bottom:4px}.category-photo{height:65px;padding:3px}.feature-photo{width:42px;height:40px}}
+@media(max-width:700px){.phone-hero-art{min-height:225px;object-fit:cover}.real-stage{min-height:225px;padding:20px 4px 18px;gap:5px;border-radius:15px}.real-product{height:145px;width:19%;padding:5px;border-radius:12px}.real-product:nth-child(2){height:180px;width:23%}.real-product:nth-child(4),.real-product:nth-child(5){height:125px;width:16%}.real-product small{font-size:8px;bottom:4px}.category-photo{height:65px;padding:3px}.feature-photo{width:42px;height:40px}}
 
 /* Product image treatment: preserve original photo colors and brightness */
 .real-stage{
@@ -116,13 +117,7 @@ footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
 <div class="poster-top">
 <div class="ribbon">عروض<strong>الجمعة السوداء</strong><small>تخفيضات ضخمة</small></div>
 <div class="discount">%</div>
-<div class="real-stage" aria-label="منتجات حقيقية من متجر ASTRO MOBILE">
-<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات لاسلكية"><small>سماعات لاسلكية</small></div>
-<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="هاتف Redmi A7 Pro"><small>Redmi</small></div>
-<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/1-1794435070787-2cada16b-f829-4f97-854b-95b7a3d46f55.webp" alt="هاتف Samsung A07"><small>Samsung</small></div>
-<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية"><small>ساعة ذكية</small></div>
-<div class="real-product"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن Xiaomi"><small>شواحن</small></div>
-</div>
+<div class="real-stage" aria-label="هواتف ذكية بتصوير إعلاني واقعي"><img class="phone-hero-art" src="astro-phones.webp" alt="هاتفان ذكيان بتصميم واقعي وإضاءة زرقاء"></div>
 </div>
 <div class="hero-copy">
 <h1>حمّل تطبيق<br><span>ASTRO MOBILE</span> الآن</h1>
