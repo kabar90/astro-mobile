@@ -13,7 +13,7 @@ on:
       - 'scripts/**'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -442,3 +442,12 @@ jobs:
         with:
           name: ASTRO-MOBILE-BLUE-BRAND
           path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish updated APK to the existing download link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          test -f astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+          gh release upload v1.0.0 astro_mobile/build/app/outputs/flutter-apk/app-release.apk --repo "${GITHUB_REPOSITORY}" --clobber
+          echo "Updated v1.0.0 app-release.apk in place; the existing download URL is preserved."
