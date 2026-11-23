@@ -267,38 +267,57 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                                     },
                                                                   ),
                                                                 ),
-                                                                Container(
-                                                                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
-                                                                  decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE8EDF3)))),
-                                                                  child: Row(
-                                                                    children: [
-                                                                      Expanded(child: Column(
-                                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                                        children: [
-                                                                          const Text('السعر الإجمالي للباقة', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
-                                                                          Text('${bundlePrice.toStringAsFixed(2)} د.ل', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
-                                                                        ],
-                                                                      )),
-                                                                      SizedBox(
-                                                                        width: 132,
-                                                                        child: ElevatedButton(
-                                                                          style: ElevatedButton.styleFrom(
-                                                                            backgroundColor: const Color(0xFF1765C5),
-                                                                            foregroundColor: Colors.white,
-                                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                                                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                                SafeArea(
+                                                                  top: false,
+                                                                  child: Container(
+                                                                    width: double.infinity,
+                                                                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+                                                                    decoration: const BoxDecoration(
+                                                                      color: Colors.white,
+                                                                      border: Border(top: BorderSide(color: Color(0xFFE8EDF3))),
+                                                                    ),
+                                                                    child: Row(
+                                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                                      children: [
+                                                                        Expanded(
+                                                                          child: Column(
+                                                                            mainAxisSize: MainAxisSize.min,
+                                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                                            children: [
+                                                                              const Text('السعر الإجمالي للباقة',
+                                                                                style: TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
+                                                                              const SizedBox(height: 3),
+                                                                              Text('${bundlePrice.toStringAsFixed(2)} د.ل',
+                                                                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                                                style: const TextStyle(fontSize: 21, height: 1.15, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                                                                            ],
                                                                           ),
-                                                                          onPressed: int.tryParse(offer['id'].toString()) == null ? null : () {
-                                                                            Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
-                                                                              offerId: int.parse(offer['id'].toString()),
-                                                                              offerName: offerName,
-                                                                              bundlePrice: bundlePrice,
-                                                                            )));
-                                                                          },
-                                                                          child: const Text('شراء الباقة', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                                                                         ),
-                                                                      ),
-                                                                    ],
+                                                                        const SizedBox(width: 14),
+                                                                        SizedBox(
+                                                                          width: 154,
+                                                                          height: 50,
+                                                                          child: ElevatedButton(
+                                                                            style: ElevatedButton.styleFrom(
+                                                                              backgroundColor: const Color(0xFF1765C5),
+                                                                              foregroundColor: Colors.white,
+                                                                              elevation: 1,
+                                                                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                                            ),
+                                                                            onPressed: int.tryParse(offer['id'].toString()) == null ? null : () {
+                                                                              Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
+                                                                                offerId: int.parse(offer['id'].toString()),
+                                                                                offerName: offerName,
+                                                                                bundlePrice: bundlePrice,
+                                                                              )));
+                                                                            },
+                                                                            child: const Text('شراء الباقة',
+                                                                              maxLines: 1, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               ],
