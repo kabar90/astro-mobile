@@ -10,7 +10,7 @@
 :root{--navy:#020b22;--blue:#073d83;--cyan:#20e5ff;--ice:#dffaff;--violet:#855cff;--white:#f7fbff}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;min-height:100vh;color:var(--white);font-family:Tahoma,Arial,sans-serif;background:radial-gradient(ellipse 100% 48% at 50% 0%,#0a4a9b 0%,#062b59 43%,#031b3c 78%,#03122f 100%),#03122f;overflow-x:hidden}
+body{margin:0;min-height:100vh;color:var(--white);font-family:Tahoma,Arial,sans-serif;background:linear-gradient(180deg,#061b3c 0%,#041936 28%,#03152f 62%,#03132d 100%);background-attachment:fixed;overflow-x:hidden}
 body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.3;background:radial-gradient(1px 1px at 12% 18%,#bdf8ff 99%,transparent),radial-gradient(1px 1px at 78% 24%,#bdf8ff 99%,transparent),radial-gradient(1px 1px at 43% 63%,#bdf8ff 99%,transparent),radial-gradient(2px 2px at 91% 71%,#6beaff 99%,transparent);background-size:240px 220px}
 .shell{width:min(1120px,calc(100% - 38px));margin:auto;position:relative;z-index:1}
 header{height:100px;display:flex;align-items:center;justify-content:space-between;gap:18px}
@@ -37,7 +37,7 @@ h1 span{color:var(--cyan);direction:ltr;display:inline-block;text-shadow:0 0 25p
 .download .android{font-size:35px;color:#7dffe1}
 .download.disabled{opacity:.78;cursor:default}
 .download-note{font-size:11px;color:#91b9e1;margin-top:10px}
-.features{display:grid;grid-template-columns:repeat(5,1fr);margin:36px 0 45px;border-top:1px solid #28bfff45;border-bottom:1px solid #28bfff45;background:linear-gradient(90deg,transparent,#06285a66,transparent)}
+.features{display:grid;grid-template-columns:repeat(5,1fr);margin:36px 0 45px;border-top:1px solid #28bfff35;border-bottom:1px solid #28bfff35;background:transparent}
 .feature{padding:18px 10px;text-align:center;position:relative}
 .feature:not(:last-child):after{content:"";position:absolute;left:0;top:18%;height:64%;width:1px;background:linear-gradient(transparent,#3eabff88,transparent)}
 .feature-icon{width:54px;height:54px;margin:0 auto 9px;border-radius:50%;display:grid;place-items:center;border:1px solid #28caff99;background:radial-gradient(circle,#0a5ba4,#06183d);font-size:25px;color:#9af5ff;box-shadow:0 0 20px #009dff55}
@@ -47,10 +47,10 @@ h1 span{color:var(--cyan);direction:ltr;display:inline-block;text-shadow:0 0 25p
 .section-title span{color:var(--cyan)}
 .categories{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
 .category{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:13px 8px;text-align:center;border:1px solid #2988e5a6;border-radius:22px;background:linear-gradient(155deg,#0b2e60aa,#06163388);box-shadow:0 0 22px #007bff16,inset 0 0 20px #2a9dff0d}
-.category:nth-child(even){border-color:#9868ff99}
+.category:nth-child(even){border-color:#2988e5a6}
 .category .emoji{font-size:44px;filter:drop-shadow(0 0 12px #00bfff99)}
 .category b{font-size:13px}
-.bottom-download{margin:42px 0 20px;text-align:center;padding:25px 15px 30px;border-top:1px solid #2baeff44;border-bottom:1px solid #2baeff44;background:radial-gradient(ellipse at center,#0a3e7a88,transparent 72%)}
+.bottom-download{margin:42px 0 20px;text-align:center;padding:25px 15px 30px;border-top:1px solid #2baeff30;border-bottom:1px solid #2baeff30;background:transparent}
 .bottom-download h2{font-size:clamp(21px,3vw,31px);margin:0 0 8px}
 .bottom-download p{color:#bfd9f5;margin:0 0 18px;font-size:14px}
 footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
