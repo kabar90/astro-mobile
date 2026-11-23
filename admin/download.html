@@ -2,94 +2,97 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#03132d">
+<meta name="theme-color" content="#03112d">
+<meta name="description" content="حمّل تطبيق ASTRO MOBILE وتسوق الهواتف والإكسسوارات بكل سهولة في ليبيا.">
 <title>ASTRO MOBILE | حمّل التطبيق</title>
 <style>
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#fff;font-family:Tahoma,Arial,sans-serif;background:#020d24;background-image:radial-gradient(ellipse at 50% 18%,#0b4386 0,transparent 42%),radial-gradient(ellipse at 5% 60%,#17105a 0,transparent 30%),radial-gradient(ellipse at 95% 78%,#073d7c 0,transparent 26%);overflow-x:hidden}
-main{max-width:900px;margin:auto;padding:14px 14px 38px;position:relative}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px;padding:0 8px 8px}
-.brand{display:flex;align-items:center;gap:10px;direction:ltr;font-size:27px;font-weight:900;line-height:.94;text-shadow:0 0 16px #168dff}
-.brand img{width:82px;height:70px;object-fit:contain;filter:drop-shadow(0 0 12px #0aaaff)}
-.brand small{display:block;font-size:10px;letter-spacing:2px;margin-top:6px;color:#c5eaff}
-.storeline{text-align:right;font-size:18px;font-weight:bold;line-height:1.7}.storeline span{display:block;font-size:14px;color:#d7e9ff;font-weight:500}
-.hero{position:relative;min-height:650px;margin-top:8px;padding:18px 18px 20px;border:1px solid #1aa8ff;border-radius:30px;overflow:hidden;text-align:center;background:radial-gradient(ellipse at 50% 46%,#0d4d91 0,#082b60 42%,#03132f 82%);box-shadow:0 0 34px #007bff66,inset 0 0 60px #0b9fff22}
-.hero:before{content:"";position:absolute;left:50%;top:90px;transform:translateX(-50%);width:420px;height:420px;border:3px solid #20d5ff;border-radius:50%;filter:drop-shadow(0 0 13px #00cfff);opacity:.7}
-.hero:after{content:"";position:absolute;left:50%;top:125px;transform:translateX(-50%);width:350px;height:350px;border:2px solid #a84cff;border-radius:50%;filter:drop-shadow(0 0 15px #a84cff);opacity:.5}
-.hero>*{position:relative;z-index:1}
-.headline{font-size:clamp(31px,6.5vw,51px);line-height:1.3;font-weight:900;text-shadow:0 3px 15px #0008;margin:8px 0 6px}
-.headline em{font-style:normal;color:#fff;text-shadow:0 0 18px #00bfff}
-.subtitle{font-size:18px;line-height:1.75;color:#e4f2ff;margin:0 auto;max-width:600px}
-.stage{height:310px;max-width:720px;margin:0 auto -4px;display:flex;align-items:center;justify-content:center;gap:5px;position:relative}
-.stage .product{width:17%;height:205px;object-fit:contain;filter:drop-shadow(0 10px 14px #0008)}
-.stage .product.center{width:20%;height:275px;z-index:2;filter:drop-shadow(0 0 18px #168fff)}
-.stage .phone-product{width:19%;height:210px;padding:12px 7px;object-fit:contain;background:linear-gradient(145deg,#fff 0%,#eaf4ff 55%,#cbdcf2 100%);border:2px solid #b7eaff;border-radius:22px;box-shadow:0 8px 25px #00132f99,0 0 18px #26baff77;filter:none}
-.stage .product.left{transform:translateY(12px)}.stage .product.right{transform:translateY(12px)}
-.bf{position:absolute;z-index:4;top:115px;right:3px;transform:rotate(-9deg);padding:12px 15px;background:linear-gradient(145deg,#06142c,#071b37);border:2px solid #ffb42c;border-radius:15px;box-shadow:0 0 14px #ff9a16;color:#fff;font-size:22px;font-weight:900;line-height:1.3}
-.bf strong{display:block;color:#ffed26;font-size:27px}.bf small{display:block;background:#f43b36;border-radius:6px;padding:5px;margin-top:5px;font-size:13px}
-.percent{position:absolute;z-index:4;top:135px;left:5px;width:100px;height:100px;border:3px solid #ff5c6c;border-radius:24px;transform:rotate(13deg);display:grid;place-items:center;font-size:58px;font-weight:900;color:#fff;text-shadow:0 0 14px #ff314c;box-shadow:0 0 20px #ff304c;background:#4a102b66}
-.downloadbox{max-width:680px;margin:0 auto;padding:15px 18px;border:2px solid #55bfff;border-radius:24px;background:linear-gradient(110deg,#031b3b,#064c8b,#031b3b);box-shadow:0 0 25px #008dff88;display:flex;align-items:center;justify-content:center;gap:18px}
-.downloadicon{width:62px;height:62px;flex:none;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#00bfff,#0754ed);font-size:34px;box-shadow:0 0 20px #00bfff}
-.downloadtitle{font-size:27px;font-weight:900;line-height:1.4}.downloadhint{font-size:16px;color:#d6ebff;margin-top:3px}
-.downloadbtn{display:block;text-decoration:none;color:#fff;font-weight:900;font-size:19px;background:linear-gradient(90deg,#0876ff,#00c9f2);border:1px solid #a6edff;border-radius:14px;padding:13px 23px;box-shadow:0 0 18px #008dff88;margin-top:12px}
-.progress{height:9px;background:#315b88;border:1px solid #8adfff;border-radius:20px;margin:12px auto 0;max-width:560px;overflow:hidden}.progress i{display:block;width:56%;height:100%;border-radius:20px;background:linear-gradient(90deg,#09aaff,#a4ffff);box-shadow:0 0 12px #00dfff}
-.features{display:grid;grid-template-columns:repeat(4,1fr);margin:26px auto 25px;max-width:790px}
-.feature{padding:5px 8px;text-align:center;border-left:1px solid #3674a5;font-size:16px;font-weight:bold;line-height:1.6}.feature:last-child{border-left:0}.feature b{display:block;font-size:31px;margin-bottom:5px}
-.mockups{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:15px auto 26px;max-width:760px;min-height:390px}
-.phone{width:29%;height:330px;border:5px solid #0a0d18;border-radius:31px;background:#f8fbff;color:#102b56;box-shadow:0 0 0 2px #7fcaff,0 12px 28px #000a;padding:8px 7px 12px;overflow:hidden;position:relative}
-.phone.middle{width:34%;height:390px;z-index:2;border-radius:37px}
-.notch{height:13px;width:38%;margin:-3px auto 8px;background:#090d19;border-radius:0 0 12px 12px}
-.apphead{font-size:11px;font-weight:900;text-align:center;color:#0b2c63;margin:5px 0 12px}
-.appbanner{height:84px;border-radius:10px;background:linear-gradient(135deg,#b5e8ff,#e9d6ff);display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:8px;overflow:hidden}.appbanner img{width:100%;height:100%;object-fit:contain;padding:5px}
-.phone.middle .appbanner{height:110px}
-.fakecards{display:grid;grid-template-columns:1fr 1fr;gap:6px}.fakecard{background:#edf3ff;border-radius:8px;padding:5px;font-size:9px;text-align:center}.fakepic{height:48px;background:linear-gradient(145deg,#c6eaff,#e5d8ff);border-radius:6px;margin-bottom:4px;display:grid;place-items:center;font-size:23px;overflow:hidden}.fakepic img{width:100%;height:100%;object-fit:contain}
-.phone.middle .fakepic{height:58px}
-.appnav{position:absolute;bottom:8px;left:6px;right:6px;border-top:1px solid #d9e3f1;padding-top:7px;display:flex;justify-content:space-around;font-size:15px}
-.footbadges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 0}
-.footbadge{border:1px solid #527ba2;border-radius:15px;padding:12px 8px;text-align:center;background:#071d3a;font-size:14px;font-weight:bold;line-height:1.6}.footbadge b{display:block;font-size:22px}
-footer{text-align:center;color:#b2cce8;font-size:12px;margin-top:24px}
-@media(max-width:600px){main{padding:8px 9px 28px}header{min-height:64px}.brand{font-size:21px}.brand img{width:62px;height:57px}.storeline{font-size:14px}.storeline span{font-size:11px}.hero{padding:17px 9px 14px;min-height:0}.hero:before{width:300px;height:300px;top:105px}.hero:after{width:245px;height:245px;top:135px}.headline{font-size:32px}.subtitle{font-size:14px}.stage{height:220px;gap:0}.stage .product{height:150px;width:17%}.stage .product.center{height:205px;width:20%}.stage .phone-product{height:158px;width:19%;padding:8px 4px;border-radius:15px;border-width:1px}.bf{top:65px;right:0;font-size:15px;padding:8px}.bf strong{font-size:19px}.bf small{font-size:9px}.percent{top:83px;left:0;width:65px;height:65px;font-size:39px;border-radius:15px}.downloadbox{gap:10px;padding:12px 8px}.downloadicon{width:49px;height:49px;font-size:26px}.downloadtitle{font-size:20px}.downloadhint{font-size:12px}.downloadbtn{font-size:15px;padding:10px 12px}.progress{max-width:85%}.features{margin:18px auto 20px}.feature{font-size:11px;padding:4px}.feature b{font-size:23px}.mockups{min-height:275px;gap:6px}.phone{height:235px;padding:5px 4px;border-width:4px;border-radius:23px}.phone.middle{height:275px;border-radius:28px}.notch{height:9px}.apphead{font-size:8px;margin:3px 0 7px}.appbanner{height:52px;font-size:24px}.phone.middle .appbanner{height:68px}.fakepic{height:29px;font-size:16px}.phone.middle .fakepic{height:38px}.fakecard{font-size:7px;padding:3px}.appnav{font-size:11px;bottom:5px}.footbadges{grid-template-columns:repeat(2,1fr)}.footbadge{font-size:12px}}
+:root{--navy:#020b20;--blue:#087cff;--cyan:#16dfff;--white:#f5fbff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 50% 10%,#123d83 0,transparent 42%),radial-gradient(ellipse at 0 65%,#14105a 0,transparent 32%),#02091b;color:var(--white);font-family:Tahoma,Arial,sans-serif;overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;pointer-events:none;width:340px;height:340px;border-radius:50%;filter:blur(90px);opacity:.23;z-index:-1}body:before{background:#006dff;top:18%;left:-180px}body:after{background:#7d22ff;bottom:0;right:-180px}
+main{max-width:1050px;margin:auto;padding:18px 18px 50px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:4px 8px 20px}
+.brand{display:flex;align-items:center;gap:12px;direction:ltr;font-weight:1000;font-size:clamp(23px,4vw,35px);line-height:.92;letter-spacing:.5px;text-shadow:0 0 20px #078dff}
+.brand img{width:82px;height:76px;object-fit:contain;filter:drop-shadow(0 0 12px #12bfff)}
+.brand span{display:block;color:#13dfff;margin-top:5px}
+.brand small{display:block;color:#c4e8ff;font-size:9px;letter-spacing:3px;margin-top:8px}
+.storeline{text-align:right;font-size:clamp(16px,2.5vw,23px);font-weight:900;line-height:1.7}
+.storeline span{display:block;font-size:14px;color:#c8e4ff;font-weight:500}
+.poster{position:relative;overflow:hidden;border:1px solid #168dff;border-radius:30px;background:linear-gradient(160deg,#071d49 0%,#04112c 55%,#02091b 100%);box-shadow:0 0 45px #007bff3b,inset 0 0 55px #087cff18}
+.poster-top{position:relative;padding:24px 24px 0;text-align:center}
+.ribbon{position:absolute;top:52px;right:24px;z-index:3;transform:rotate(-8deg);padding:12px 16px;border:2px solid #ffb82d;border-radius:14px;background:#09152e;box-shadow:0 0 20px #ff9f20;color:white;font-weight:900;font-size:18px;line-height:1.35}
+.ribbon strong{display:block;color:#ffe54a;font-size:24px}.ribbon small{display:block;margin-top:5px;background:#e93643;padding:4px 8px;border-radius:6px;font-size:12px}
+.discount{position:absolute;left:28px;top:78px;width:84px;height:84px;border:3px solid #ff5a6b;border-radius:23px;transform:rotate(12deg);display:grid;place-items:center;font-size:52px;font-weight:1000;color:white;text-shadow:0 0 14px #ff315c;box-shadow:0 0 22px #ff315c;background:#55102c55}
+.art{display:block;width:min(100%,900px);height:auto;margin:0 auto;filter:drop-shadow(0 12px 22px #00112d)}
+.hero-copy{position:relative;margin:-8px auto 0;padding:0 15px 28px;text-align:center}
+h1{margin:0;font-size:clamp(34px,6vw,59px);line-height:1.25;font-weight:1000;text-shadow:0 3px 18px #0009}
+h1 span{color:#12dfff;text-shadow:0 0 22px #009fff}
+.subtitle{font-size:clamp(16px,2.4vw,21px);line-height:1.8;color:#e1f1ff;margin:12px auto 22px}
+.cta{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;max-width:700px;margin:0 auto;padding:15px 20px;border:2px solid #43cfff;border-radius:24px;background:linear-gradient(110deg,#031b3b,#0754a0,#031b3b);box-shadow:0 0 28px #008dff75}
+.android{font-size:45px;color:#18e5d1;filter:drop-shadow(0 0 9px #00e8d1)}
+.cta-copy{font-size:clamp(20px,3.5vw,30px);font-weight:900}
+.cta-copy small{display:block;font-size:14px;color:#d0eaff;font-weight:500;margin-top:5px}
+.download-link{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:white;background:linear-gradient(110deg,#086bff,#00c8ed);border:1px solid #a7efff;border-radius:16px;padding:14px 23px;font-size:18px;font-weight:900;box-shadow:0 0 22px #008dff80}
+.download-link .arrow{font-size:27px}
+.download-note{font-size:12px;color:#aac9e9;margin-top:12px}
+.features{display:grid;grid-template-columns:repeat(5,1fr);margin:30px auto 28px;max-width:930px}
+.feature{padding:8px 10px;text-align:center;border-left:1px solid #28649b;line-height:1.7;font-weight:800;font-size:14px}
+.feature:last-child{border:0}.feature i{display:grid;place-items:center;width:55px;height:55px;margin:0 auto 8px;border-radius:50%;background:linear-gradient(145deg,#063c79,#06152f);border:1px solid #087fff;color:#45e4ff;font-style:normal;font-size:28px;box-shadow:0 0 17px #087fff55}
+.section-title{text-align:center;font-size:25px;font-weight:900;margin:32px 0 18px}.section-title span{color:#19dfff}
+.categories{display:grid;grid-template-columns:repeat(6,1fr);gap:13px;margin:0 auto 30px}
+.category{min-height:150px;padding:14px 8px;border:1px solid #258cff;border-radius:20px;text-align:center;background:linear-gradient(150deg,#0a2b61,#080f2a);box-shadow:inset 0 0 22px #128bff18,0 0 14px #006dff33;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.category:nth-child(even){border-color:#b34dff;box-shadow:inset 0 0 22px #b34dff1c,0 0 15px #b34dff30}
+.category .symbol{font-size:45px;line-height:1;filter:drop-shadow(0 0 9px #24cfff)}
+.category b{font-size:14px}
+.bottom-info{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
+.info{border:1px solid #2779bd;border-radius:18px;padding:13px 8px;text-align:center;background:linear-gradient(145deg,#092c58,#06132b);font-weight:800;font-size:14px;box-shadow:0 0 15px #007bff20}
+.info strong{display:block;font-size:21px;color:#eafaff;margin-bottom:4px}
+footer{text-align:center;color:#9db9d9;font-size:12px;margin-top:28px}
+@media(max-width:700px){main{padding:10px 10px 30px}header{padding:0 3px 14px}.brand img{width:60px;height:60px}.brand{gap:7px}.storeline span{font-size:11px}.poster{border-radius:22px}.poster-top{padding:12px 8px 0}.ribbon{top:25px;right:10px;font-size:12px;padding:7px 9px}.ribbon strong{font-size:16px}.ribbon small{font-size:9px}.discount{top:40px;left:12px;width:58px;height:58px;border-radius:15px;font-size:35px}.art{width:100%;margin-top:8px}.hero-copy{margin-top:-2px;padding-bottom:20px}h1{font-size:34px}.subtitle{font-size:14px;margin:8px auto 15px}.cta{gap:9px;padding:11px 8px;border-radius:17px}.android{font-size:33px}.cta-copy{font-size:18px}.cta-copy small{font-size:11px}.download-link{font-size:14px;padding:11px 13px}.download-link .arrow{font-size:21px}.features{grid-template-columns:repeat(3,1fr);row-gap:14px;margin:20px auto}.feature{font-size:11px;padding:4px;border-left:1px solid #28649b}.feature:nth-child(3){border-left:0}.feature i{width:43px;height:43px;font-size:22px}.section-title{font-size:20px;margin:25px 0 14px}.categories{grid-template-columns:repeat(3,1fr);gap:8px}.category{min-height:118px;border-radius:15px;padding:10px 5px}.category .symbol{font-size:35px}.category b{font-size:12px}.bottom-info{grid-template-columns:repeat(2,1fr);gap:8px}.info{font-size:12px}.info strong{font-size:18px}}
 </style>
 </head>
 <body><main>
 <header>
-<div class="brand"><img src="astro-logo.jpg" alt="ASTRO MOBILE"><div>ASTRO<br>MOBILE<small>SMART TECHNOLOGY</small></div></div>
+<div class="brand"><img src="astro-logo.jpg" alt="ASTRO MOBILE"><div>ASTRO<span>MOBILE</span><small>SMART TECHNOLOGY</small></div></div>
 <div class="storeline">متجر ASTRO MOBILE للتقنية<span>هواتف • إكسسوارات • صيانة وبرمجة</span></div>
 </header>
-<section class="hero">
-<div class="bf">عروض<strong>الجمعة</strong>السوداء<small>تخفيضات ضخمة</small></div>
-<div class="percent">%</div>
-<div class="stage">
-<img class="product left" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات لاسلكية">
-<img class="product phone-product" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="هاتف Redmi A7 Pro">
-<img class="product center" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة ذكية">
-<img class="product phone-product" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/1-1794435070787-2cada16b-f829-4f97-854b-95b7a3d46f55.webp" alt="هاتف Samsung A07">
-<img class="product right" src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن سريع">
+<section class="poster">
+<div class="poster-top">
+<div class="ribbon">عروض<strong>الجمعة السوداء</strong><small>تخفيضات ضخمة</small></div>
+<div class="discount">%</div>
+<img class="art" src="astro-hero.svg" alt="مشهد تقني من ASTRO MOBILE يضم الهواتف والروبوت والسماعات والساعة والشاحن والهدايا">
 </div>
-<h1 class="headline">حمّل تطبيق<br><em>ASTRO MOBILE</em> الآن</h1>
-<p class="subtitle">تسوّق بكل سهولة وكن أول من يحصل على<br><strong>أقوى عروض الجمعة السوداء</strong></p>
-<div class="downloadbox">
-<div class="downloadicon">⇩</div>
-<div><div class="downloadtitle">تحميل التطبيق</div><div class="downloadhint">تسوّق أسرع… عروض أقرب إليك</div></div>
+<div class="hero-copy">
+<h1>حمّل تطبيق<br><span>ASTRO MOBILE</span> الآن</h1>
+<p class="subtitle">تسوّق بكل سهولة، وتابع أحدث المنتجات والعروض<br><strong>كن أول من يحصل على عروض ASTRO MOBILE</strong></p>
+<div class="cta">
+<div class="android">◉</div>
+<div class="cta-copy">تطبيق ASTRO MOBILE<small>تجربة تسوق سهلة وسريعة على أندرويد</small></div>
+<a class="download-link" href="https://github.com/kabar90/astro-mobile/releases/latest" target="_blank" rel="noopener"><span class="arrow">⇩</span> تحميل التطبيق</a>
 </div>
-<div class="progress"><i></i></div>
-<div class="downloadbtn" aria-disabled="true">سيتم تفعيل التحميل المباشر قريباً</div>
-</section>
-<section class="features">
-<div class="feature"><b>♧</b>إشعارات فورية<br>للعروض</div>
-<div class="feature"><b>🚚</b>توصيل لجميع<br>المدن الليبية</div>
-<div class="feature"><b>▤</b>طرق دفع مرنة<br>تحويل بنكي أو عند الاستلام</div>
-<div class="feature"><b>♧</b>عروض حصرية<br>وخصومات دائمة</div>
-</section>
-<div class="mockups">
-<div class="phone"><div class="notch"></div><div class="apphead">ASTRO MOBILE</div><div class="appbanner"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="هواتف ASTRO"></div><div class="fakecards"><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/1-1794435070787-2cada16b-f829-4f97-854b-95b7a3d46f55.webp" alt="Samsung"></div>هواتف</div><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات"></div>كماليات</div></div><div class="appnav">⌂　▣　♙</div></div>
-<div class="phone middle"><div class="notch"></div><div class="apphead">🤖 ASTRO MOBILE</div><div class="appbanner"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="منتجات ASTRO"></div><div class="fakecards"><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/192-1795272993879-5b222e1b-0193-40ab-865d-ee726ca458fd.webp" alt="ساعة"></div>ساعات ذكية</div><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="سماعات"></div>سماعات</div><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="شاحن"></div>شواحن</div><div class="fakecard"><div class="fakepic">📶</div>أجهزة اتصال</div></div><div class="appnav">⌂　▣　🛒　♙</div></div>
-<div class="phone"><div class="notch"></div><div class="apphead">الأقسام</div><div class="appbanner"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/253-1795339573785-bf528c08-7255-4f0d-8ed1-2ac0de1a1af7.webp" alt="قسم الشواحن"></div><div class="fakecards"><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/batch-test/1794771695741-b4a099de-14ea-4974-badb-3f4e8c8ba710.webp" alt="هواتف"></div>هواتف</div><div class="fakecard"><div class="fakepic"><img src="https://exkhbenfbwrbqprtyqas.supabase.co/storage/v1/object/public/products/optimized/products/194-1795273155047-03798efb-00ae-432f-9e88-2b6765fa2ce5.webp" alt="كماليات"></div>كماليات</div></div><div class="appnav">⌂　▣　♙</div></div>
+<div class="download-note">سيتم فتح صفحة تنزيل أحدث إصدار متاح من التطبيق</div>
 </div>
-<section class="footbadges">
-<div class="footbadge"><b>🛡️</b>آمن وموثوق</div>
-<div class="footbadge"><b>🤖</b>لأجهزة أندرويد</div>
-<div class="footbadge"><b>75 MB</b>حجم التطبيق تقريباً</div>
-<div class="footbadge"><b>v1.2.0</b>الإصدار</div>
 </section>
-<footer>ASTRO MOBILE — متجرك للتقنية في ليبيا</footer>
+<section class="features" aria-label="مميزات التطبيق">
+<div class="feature"><i>♧</i>إشعارات فورية<br>للعروض</div>
+<div class="feature"><i>🚚</i>توصيل لجميع<br>المدن الليبية</div>
+<div class="feature"><i>▤</i>طرق دفع مرنة<br>تحويل بنكي أو عند الاستلام</div>
+<div class="feature"><i>♢</i>عروض حصرية<br>وخصومات</div>
+<div class="feature"><i>✓</i>تسوق آمن<br>وموثوق</div>
+</section>
+<h2 class="section-title">اكتشف <span>أقسام ASTRO MOBILE</span></h2>
+<section class="categories">
+<div class="category"><span class="symbol">📱</span><b>هواتف Redmi</b></div>
+<div class="category"><span class="symbol">📲</span><b>هواتف Samsung</b></div>
+<div class="category"><span class="symbol">🎧</span><b>سماعات لاسلكية</b></div>
+<div class="category"><span class="symbol">⌚</span><b>ساعات ذكية</b></div>
+<div class="category"><span class="symbol">🔌</span><b>شواحن وكوابل</b></div>
+<div class="category"><span class="symbol">🎮</span><b>ألعاب وإكسسوارات</b></div>
+</section>
+<section class="bottom-info">
+<div class="info"><strong>أندرويد</strong>متوافق مع أجهزة Android</div>
+<div class="info"><strong>v1.2.0</strong>الإصدار</div>
+<div class="info"><strong>75 MB</strong>حجم التطبيق التقريبي</div>
+<div class="info"><strong>ASTRO</strong>متجرك للتقنية في ليبيا</div>
+</section>
+<footer>ASTRO MOBILE © جميع الحقوق محفوظة</footer>
 </main></body></html>
