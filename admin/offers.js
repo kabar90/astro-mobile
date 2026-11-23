@@ -210,7 +210,7 @@ function renderBundleRows() {
     line.className = "offer-bundle-row";
 
     const select = document.createElement("select");
-    select.required = true;
+    select.required = false;
     productOptions(select, row.productId);
 
     select.addEventListener("change", () => {
@@ -287,7 +287,7 @@ function renderMultiProductRows() {
     price.type = "number";
     price.min = "0.01";
     price.step = "0.01";
-    price.required = true;
+    price.required = false;
     price.placeholder = "سعر العرض بالدينار";
     price.value = row.offerPrice ?? "";
     price.addEventListener("input", () => { row.offerPrice = price.value; });
@@ -535,9 +535,15 @@ function validateForm() {
   }
 
   if (type === "product") {
+    // Ignore a completely empty extra row; validate only rows the admin started filling.
+    multiProductRows = multiProductRows.filter(row =>
+      String(row.productId || "").trim() !== "" || String(row.offerPrice || "").trim() !== ""
+    );
     if (multiProductRows.length < 1) throw new Error("أضف منتجاً واحداً على الأقل إلى العرض.");
     const used = new Set();
     for (const row of multiProductRows) {
+      if (!row.productId) throw new Error("اختر المنتج في كل سطر بدأت بإضافته، أو احذف السطر الفارغ.");
+      if (String(row.offerPrice || "").trim() === "") throw new Error("أدخل سعر العرض لكل منتج.");
       const product = selectedProduct(row.productId);
       const price = Number(row.offerPrice);
       if (!product || product.is_active === false) throw new Error("اختر منتجاً نشطاً لكل سطر.");
