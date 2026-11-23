@@ -40,7 +40,7 @@ h1 span{color:var(--cyan);direction:ltr;display:inline-block;text-shadow:0 0 25p
 .features{display:grid;grid-template-columns:repeat(5,1fr);margin:36px 0 45px;border-top:1px solid #28bfff35;border-bottom:1px solid #28bfff35;background:transparent}
 .feature{padding:18px 10px;text-align:center;position:relative}
 .feature:not(:last-child):after{content:"";position:absolute;left:0;top:18%;height:64%;width:1px;background:linear-gradient(transparent,#3eabff88,transparent)}
-.feature-icon{width:54px;height:54px;margin:0 auto 9px;border-radius:50%;display:grid;place-items:center;border:1px solid #28caff99;background:radial-gradient(circle,#0a5ba4,#06183d);font-size:25px;color:#9af5ff;box-shadow:0 0 20px #009dff55}
+.feature-icon{width:58px;height:58px;margin:0 auto 9px;border-radius:19px;display:grid;place-items:center;border:1px solid #54eaffaa;background:linear-gradient(145deg,#0878c9aa,#15165cdd 72%,#351477aa);color:#b9faff;box-shadow:0 0 18px #00cfff66,inset 0 0 15px #8ceeff22;transform:rotate(-3deg)}.feature-icon svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px #25eaff)}
 .feature b{display:block;font-size:13px;margin-bottom:5px}
 .feature small{display:block;color:#b7cce8;font-size:10px;line-height:1.6}
 .section-title{text-align:center;margin:0 0 19px;font-size:clamp(21px,3vw,29px)}
@@ -54,8 +54,8 @@ h1 span{color:var(--cyan);direction:ltr;display:inline-block;text-shadow:0 0 25p
 .bottom-download h2{font-size:clamp(21px,3vw,31px);margin:0 0 8px}
 .bottom-download p{color:#bfd9f5;margin:0 0 18px;font-size:14px}
 footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
-@media(max-width:760px){.shell{width:calc(100% - 22px)}header{height:82px}.brand img{width:51px;height:51px}.brand-name{font-size:25px}.brand-name small{font-size:7px}.head-note{font-size:12px}.head-note span{font-size:10px}.visual{height:clamp(240px,68vw,390px)}.offer-tag{top:22px;right:2%;font-size:11px;padding:8px 11px}.offer-tag b{font-size:14px}.hero-copy{margin-top:-4px}.features{margin:25px 0 34px}.feature{padding:13px 5px}.feature-icon{width:43px;height:43px;font-size:21px}.feature b{font-size:11px}.feature small{font-size:9px}.categories{grid-template-columns:repeat(3,1fr);gap:9px}.category{min-height:120px;border-radius:17px}.category .emoji{font-size:36px}.category b{font-size:11px}}
-@media(max-width:390px){.head-note{max-width:145px}.visual{height:245px}.download{min-width:96%;gap:10px;padding:13px 12px}.features{grid-template-columns:repeat(5,1fr)}.feature-icon{width:37px;height:37px;font-size:18px}.feature b{font-size:10px}.feature small{font-size:8px}}
+@media(max-width:760px){.shell{width:calc(100% - 22px)}header{height:82px}.brand img{width:51px;height:51px}.brand-name{font-size:25px}.brand-name small{font-size:7px}.head-note{font-size:12px}.head-note span{font-size:10px}.visual{height:clamp(240px,68vw,390px)}.offer-tag{top:22px;right:2%;font-size:11px;padding:8px 11px}.offer-tag b{font-size:14px}.hero-copy{margin-top:-4px}.features{margin:25px 0 34px}.feature{padding:13px 5px}.feature-icon{width:43px;height:43px;border-radius:14px}.feature-icon svg{width:24px;height:24px}.feature b{font-size:11px}.feature small{font-size:9px}.categories{grid-template-columns:repeat(3,1fr);gap:9px}.category{min-height:120px;border-radius:17px}.category .emoji{font-size:36px}.category b{font-size:11px}}
+@media(max-width:390px){.head-note{max-width:145px}.visual{height:245px}.download{min-width:96%;gap:10px;padding:13px 12px}.features{grid-template-columns:repeat(5,1fr)}.feature-icon{width:37px;height:37px;border-radius:12px}.feature-icon svg{width:21px;height:21px}.feature b{font-size:10px}.feature small{font-size:8px}}
 </style>
 </head>
 <body>
@@ -82,11 +82,11 @@ footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
  </div>
 </section>
 <section class="features" aria-label="مميزات التطبيق">
- <div class="feature"><div class="feature-icon">♧</div><b>إشعارات فورية</b><small>للعروض والتحديثات</small></div>
- <div class="feature"><div class="feature-icon">♧</div><b>توصيل لجميع المدن</b><small>داخل ليبيا</small></div>
- <div class="feature"><div class="feature-icon">▤</div><b>طرق دفع مرنة</b><small>تحويل مصرفي أو عند الاستلام</small></div>
- <div class="feature"><div class="feature-icon">✧</div><b>عروض حصرية</b><small>وخصومات مميزة</small></div>
- <div class="feature"><div class="feature-icon">✓</div><b>تسوّق آمن</b><small>وموثوق</small></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></div><b>إشعارات فورية</b><small>للعروض والتحديثات</small></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h12v12H2zM14 9h4l4 4v4h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M14 13h8"/></svg></div><b>توصيل لجميع المدن</b><small>داخل ليبيا</small></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg></div><b>طرق دفع مرنة</b><small>تحويل مصرفي أو عند الاستلام</small></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12 12 20 3 11V4h7z"/><circle cx="7.5" cy="8" r="1.2"/><path d="m14 7 1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg></div><b>عروض حصرية</b><small>وخصومات مميزة</small></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m8.5 12 2.3 2.3 4.8-5"/></svg></div><b>تسوّق آمن</b><small>وموثوق</small></div>
 </section>
 <h2 class="section-title">اكتشف أقسام <span>ASTRO MOBILE</span></h2>
 <section class="categories">
