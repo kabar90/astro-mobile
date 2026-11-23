@@ -815,6 +815,9 @@ async function optimizeProductImageForUpload(file) {
 // رفع صورة المنتج المحسّنة إلى Supabase
 // ========================================
 
+// إتاحة محوّل WebP لوحدة إدارة العروض (ES modules).
+window.optimizeProductImageForUpload = optimizeProductImageForUpload;
+
 async function uploadProductImage(file) {
   const {
     data: sessionData,
