@@ -165,6 +165,11 @@ function resetForm() {
 
   $("offerId").value = "";
   $("offerActive").checked = false;
+  $("bundleCoverFile").value = "";
+  $("bundleCoverUrl").value = "";
+  $("bundleCoverPreview").src = "";
+  $("bundleCoverPreview").classList.add("hide");
+  $("bundleCoverMsg").textContent = "يمكنك رفع صورة جديدة أو الاحتفاظ بالصورة الحالية عند تعديل الباقة.";
   $("offerType").value = "product";
   $("discountType").value = "percentage";
 
@@ -451,6 +456,18 @@ async function editOffer(offer) {
     $("bundlePrice").value =
       offer.bundle_price ?? "";
 
+    $("bundleCoverUrl").value = offer.cover_image_url || "";
+    $("bundleCoverFile").value = "";
+    if (offer.cover_image_url) {
+      $("bundleCoverPreview").src = offer.cover_image_url;
+      $("bundleCoverPreview").classList.remove("hide");
+      $("bundleCoverMsg").textContent = "الصورة الحالية محفوظة. اختر صورة أخرى لاستبدالها.";
+    } else {
+      $("bundleCoverPreview").src = "";
+      $("bundleCoverPreview").classList.add("hide");
+      $("bundleCoverMsg").textContent = "لم تُحدد صورة رئيسية لهذه الباقة بعد.";
+    }
+
     $("offerStart").value =
       localDateValue(offer.starts_at);
 
@@ -649,6 +666,11 @@ function buildPayload() {
         ? Number($("bundlePrice").value)
         : null,
 
+    cover_image_url:
+      type === "bundle"
+        ? ($("bundleCoverUrl").value.trim() || null)
+        : null,
+
     starts_at: new Date(
       $("offerStart").value
     ).toISOString(),
@@ -676,6 +698,29 @@ async function saveOffer(event) {
 
   try {
     validateForm();
+
+    if ($("offerType").value === "bundle") {
+      const coverFile = $("bundleCoverFile").files?.[0];
+      if (coverFile) {
+        if (!coverFile.type.startsWith("image/")) throw new Error("اختر ملف صورة صالحاً.");
+        if (coverFile.size > 8 * 1024 * 1024) throw new Error("حجم صورة الباقة يجب ألا يتجاوز 8 ميجابايت.");
+        $("bundleCoverMsg").textContent = "جارٍ رفع صورة الباقة...";
+        const ext = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" })[coverFile.type] || "jpg";
+        const path = `bundle-covers/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("products").upload(path, coverFile, {
+          contentType: coverFile.type,
+          cacheControl: "31536000",
+          upsert: false
+        });
+        if (uploadError) throw new Error(`تعذر رفع صورة الباقة: ${uploadError.message}`);
+        const { data: publicData } = supabase.storage.from("products").getPublicUrl(path);
+        if (!publicData?.publicUrl) throw new Error("تم رفع الصورة لكن تعذر استخراج رابطها.");
+        $("bundleCoverUrl").value = publicData.publicUrl;
+        $("bundleCoverPreview").src = publicData.publicUrl;
+        $("bundleCoverPreview").classList.remove("hide");
+        $("bundleCoverMsg").textContent = "تم رفع صورة الباقة بنجاح.";
+      }
+    }
 
     const payload = buildPayload();
 
@@ -856,6 +901,19 @@ $("offerCancel")?.addEventListener("click", () => {
 $("offerType")?.addEventListener("change", () => {
   setTypeFields();
   setDiscountFields();
+});
+
+$("bundleCoverFile")?.addEventListener("change", () => {
+  const file = $("bundleCoverFile").files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    message("اختر ملف صورة صالحاً.", true);
+    $("bundleCoverFile").value = "";
+    return;
+  }
+  $("bundleCoverPreview").src = URL.createObjectURL(file);
+  $("bundleCoverPreview").classList.remove("hide");
+  $("bundleCoverMsg").textContent = `الصورة جاهزة للرفع: ${file.name}`;
 });
 
 $("discountType")?.addEventListener("change", setDiscountFields);
