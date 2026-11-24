@@ -702,18 +702,21 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               )
                             else
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 2, 14, 16),
-                                child: GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: featuredOfferSections.length > 2 ? 2 : featuredOfferSections.length,
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 1,
-                                    crossAxisSpacing: 0,
-                                    mainAxisSpacing: 8,
-                                    childAspectRatio: 0.90,
+                                padding: const EdgeInsets.fromLTRB(8, 2, 8, 16),
+                                child: SizedBox(
+                                  height: 470,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                                    itemCount: featuredOfferSections.length,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                    itemBuilder: (context, index) => SizedBox(
+                                      width: MediaQuery.of(context).size.width * 0.86,
+                                      child: featuredOfferSections[index],
+                                    ),
                                   ),
-                                  itemBuilder: (context, index) => featuredOfferSections[index],
                                 ),
                               ),
                           ],
