@@ -952,7 +952,20 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                             final product = entry['product'] as Product;
                             final item = entry['item'] as Map<String, dynamic>;
                             final sale = double.tryParse('${item['offer_price'] ?? ''}');
-                            return Padding(
+                            return InkWell(
+                              onTap: type == 'bundle' && bundlePrice != null
+                                ? () {
+                                    final offerId = int.tryParse('${offer['id']}');
+                                    if (offerId == null) return;
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => BundleDetailsScreen(
+                                      offerId: offerId,
+                                      offerName: name,
+                                      bundlePrice: bundlePrice,
+                                      products: productEntries.map((e) => e['product'] as Product).toList(),
+                                    )));
+                                  }
+                                : null,
+                              child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 5),
                               child: Row(
                                 children: [
@@ -987,7 +1000,7 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                                   ),
                                 ],
                               ),
-                            );
+                            ));
                           }),
                       ],
                       if (type == 'bundle' && bundlePrice != null)
