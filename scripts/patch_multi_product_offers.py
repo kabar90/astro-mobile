@@ -552,20 +552,75 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           );
                                         },
                                       ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(14, 2, 14, 16),
-                                      child: GridView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: offerCards.length,
-                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 12,
-                                          childAspectRatio: 0.70,
-                                        ),
-                                        itemBuilder: (_, index) => offerCards[index],
-                                      ),
+                                    Builder(
+                                      builder: (context) {
+                                        final firstProduct = usedProducts.isNotEmpty
+                                            ? _findProduct(products, usedProducts.first)
+                                            : null;
+                                        final coverUrl = (offer['cover_image_url'] ?? '').toString().trim();
+                                        final imageUrl = coverUrl.isNotEmpty
+                                            ? coverUrl
+                                            : (firstProduct?.imageUrl ?? '');
+                                        return Container(
+                                          margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
+                                          padding: const EdgeInsets.all(9),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(18),
+                                            border: Border.all(color: const Color(0xFFDCE6F1)),
+                                            boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 9, offset: Offset(0, 3))],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              Expanded(
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  child: imageUrl.isEmpty
+                                                      ? Container(
+                                                          color: const Color(0xFFF1F4FA),
+                                                          child: const Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 38),
+                                                        )
+                                                      : AstroCachedImage(
+                                                          imageUrl: imageUrl,
+                                                          fit: BoxFit.cover,
+                                                          placeholder: const ColoredBox(
+                                                            color: Color(0xFFF1F4FA),
+                                                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                                          ),
+                                                          errorWidget: Container(
+                                                            color: const Color(0xFFF1F4FA),
+                                                            child: const Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 38),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(color: astroNavy, fontSize: 14, fontWeight: FontWeight.w900)),
+                                              const SizedBox(height: 4),
+                                              Text('${offerCards.length} منتجات ضمن العرض',
+                                                style: const TextStyle(color: Colors.blueGrey, fontSize: 11, fontWeight: FontWeight.w700)),
+                                              const SizedBox(height: 7),
+                                              SizedBox(
+                                                height: 36,
+                                                child: ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFF1765C5),
+                                                    foregroundColor: Colors.white,
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                  ),
+                                                  onPressed: () => Navigator.push(context, MaterialPageRoute(
+                                                    builder: (_) => _OfferProductsGridScreen(title: offerName, products: offerCards),
+                                                  )),
+                                                  child: const Text('تصفح العرض', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -604,7 +659,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 10,
                                     mainAxisSpacing: 12,
-                                    childAspectRatio: 0.70,
+                                    childAspectRatio: 0.88,
                                   ),
                                   itemBuilder: (context, index) => offerSections[index],
                                 ),
