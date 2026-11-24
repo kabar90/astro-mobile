@@ -29,32 +29,20 @@ s = s.replace(
     1,
 )
 # Add a dedicated Offers shortcut beside the database-driven main categories.
-count_marker = '                    itemCount: homeCategoryTiles.length,'
-count_marker_patched = '                    itemCount: homeCategoryTiles.length + 1,'
+count_marker = '                    itemCount: homeCategoryTiles.length + 1,'
+count_marker_patched = '                    itemCount: homeCategoryTiles.length,'
 if s.count(count_marker) == 1:
     s = s.replace(count_marker, count_marker_patched, 1)
 elif s.count(count_marker_patched) != 1:
     raise SystemExit('Category carousel itemCount anchor mismatch')
-item_marker = '                      final item = homeCategoryTiles[index];'
-offer_tile = '''                      if (index == 0) {
-                        return SizedBox(width: 164, child: Material(color: Colors.transparent, child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () {
-                            final target = _homeOffersSectionKey.currentContext;
-                            if (target != null) Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 450), curve: Curves.easeInOut, alignment: 0.08);
-                          },
-                          child: Ink(decoration: BoxDecoration(color: const Color(0xFFFFE1E8), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFFFC8D2))), padding: const EdgeInsets.all(9), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Expanded(child: Image.asset('assets/category_offers.jpg', fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 48))),
-                            const SizedBox(height: 6),
-                            const Text('العروض', style: TextStyle(color: astroNavy, fontSize: 11, fontWeight: FontWeight.w900)),
-                          ])),
-                        )));
-                      }
-                      final item = homeCategoryTiles[index];
-'''
-if s.count(item_marker) != 1:
-    raise SystemExit('Category itemBuilder anchor mismatch')
-s = s.replace(item_marker, offer_tile, 1)
+item_marker = '                      if (index == 0) {'
+item_end = "                      final item = homeCategoryTiles[index];"
+if s.count(item_marker) == 1 and s.count(item_end) == 1:
+    start = s.index(item_marker)
+    end = s.index(item_end, start)
+    s = s[:start] + item_end + s[end + len(item_end):]
+elif "homeCategoryTiles[index]" not in s:
+    raise SystemExit('Category carousel duplicate offer tile block not found')
 # Increase the featured section's top and bottom padding. This is separate
 # from the grid cell-height fix and prevents the heading from crowding the grid.
 s = s.replace(
