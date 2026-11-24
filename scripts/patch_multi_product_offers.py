@@ -820,9 +820,74 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 """
     home = home[:card_start] + grid_card + home[card_end:]
     if "class _AllOffersScreen extends StatelessWidget" not in home:
-        home += "\\n" + "\\nclass _AllOffersScreen extends StatelessWidget {\\n  final List<Widget> offers;\\n  const _AllOffersScreen({required this.offers});\\n  @override\\n  Widget build(BuildContext context) {\\n    return Scaffold(\\n      backgroundColor: const Color(0xFFF3F6FC),\\n      appBar: AppBar(title: const Text('العروض والخصومات'), backgroundColor: Colors.white, foregroundColor: astroNavy, elevation: 0),\\n      body: offers.isEmpty ? const Center(child: Text('لا توجد عروض متاحة حالياً')) : ListView.separated(\\n        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28), itemCount: offers.length,\\n        separatorBuilder: (_, __) => const SizedBox(height: 14), itemBuilder: (_, index) => offers[index],\\n      ),\\n    );\\n  }\\n}\\n\\n"
+        home += """
+
+class _AllOffersScreen extends StatelessWidget {
+  final List<Widget> offers;
+  const _AllOffersScreen({required this.offers});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FC),
+      appBar: AppBar(
+        title: const Text('العروض والخصومات'),
+        backgroundColor: Colors.white,
+        foregroundColor: astroNavy,
+        elevation: 0,
+      ),
+      body: offers.isEmpty
+          ? const Center(child: Text('لا توجد عروض متاحة حالياً'))
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
+              itemCount: offers.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (_, index) => offers[index],
+            ),
+    );
+  }
+}
+"""
+
     if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
-        home += "\\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
+        home += """
+
+class _OfferProductsGridScreen extends StatelessWidget {
+  final String title;
+  final List<Widget> products;
+
+  const _OfferProductsGridScreen({
+    required this.title,
+    required this.products,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FC),
+      appBar: AppBar(
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        backgroundColor: Colors.white,
+        foregroundColor: astroNavy,
+        elevation: 0,
+      ),
+      body: products.isEmpty
+          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))
+          : GridView.builder(
+              padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.72,
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) => products[index],
+            ),
+    );
+  }
+}
+
+"""
     home_path.write_text(home)
 
 # Retain the last successful product snapshot in memory when HomeScreen is
