@@ -10,7 +10,7 @@ cart = cart_path.read_text()
 if "final GlobalKey _homeOffersSectionKey" not in home:
     home = home.replace(
         "  int nav = 0;",
-        "  int nav = 0;\n  final GlobalKey _homeOffersSectionKey = GlobalKey();",
+        "  int nav = 0;\n  final GlobalKey _homeOffersSectionKey = GlobalKey();\n  List<Map<String, dynamic>> _cachedHomeOffers = [];\n  List<Map<String, dynamic>> _cachedHomeOfferItems = [];",
         1,
     )
 
@@ -42,8 +42,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: Supabase.instance.client.from('offers').stream(primaryKey: ['id']),
                   builder: (context, offerSnapshot) {
+                    if (offerSnapshot.hasData) _cachedHomeOffers = offerSnapshot.data!;
                     final now = DateTime.now();
-                    final activeOffers = (offerSnapshot.data ?? []).where((offer) {
+                    final activeOffers = (_cachedHomeOffers).where((offer) {
                       final starts = DateTime.tryParse('${offer['starts_at'] ?? ''}');
                       final ends = DateTime.tryParse('${offer['ends_at'] ?? ''}');
                       return offer['is_active'] == true && starts != null && ends != null &&
@@ -53,7 +54,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                     return StreamBuilder<List<Map<String, dynamic>>>(
                       stream: Supabase.instance.client.from('offer_items').stream(primaryKey: ['id']),
                       builder: (context, itemSnapshot) {
-                        final offerItems = itemSnapshot.data ?? [];
+                        if (itemSnapshot.hasData) _cachedHomeOfferItems = itemSnapshot.data!;
+                        final offerItems = _cachedHomeOfferItems;
                         final offerSections = <Widget>[];
                         // Newer campaigns take priority when multiple active campaigns include the same product.
                         final orderedOffers = [...activeOffers]
@@ -453,7 +455,15 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 : '';
 
                             offerSections.add(
-                              Padding(
+                              InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => _OfferProductsGridScreen(
+                                    title: offerName,
+                                    products: offerCards,
+                                  ),
+                                )),
+                                child: Padding(
                                 padding: const EdgeInsets.only(bottom: 14),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -516,6 +526,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                       ),
                                     ),
                                   ],
+                                ),
                                 ),
                               ),
                             );
@@ -599,6 +610,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
     if old_tap not in card_tail:
         raise SystemExit("Could not find offer card navigation to pass sale price")
     home = home[:card_start] + card_tail.replace(old_tap, new_tap, 1)
+    if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
+        home += "\\n" + "\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
     home_path.write_text(home)
 
 if "item.product?.price == product.price" not in cart:
