@@ -594,17 +594,19 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 ),
                               )
                             else
-                              SizedBox(
-                                height: 300,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(14, 2, 14, 16),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
                                   itemCount: offerSections.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                                  itemBuilder: (context, index) => SizedBox(
-                                    width: 318,
-                                    child: offerSections[index],
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.70,
                                   ),
+                                  itemBuilder: (context, index) => offerSections[index],
                                 ),
                               ),
                           ],
@@ -709,14 +711,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
               const SizedBox(height: 3),
               Row(
                 children: [
-                  Flexible(child: Text('\${salePrice.toStringAsFixed(0)} د.ل',
+                  Flexible(child: Text('${'${salePrice.toStringAsFixed(0)}'} د.ل',
                     maxLines: 1, style: const TextStyle(color: Color(0xFFD92D42), fontSize: 14, fontWeight: FontWeight.w900))),
                   const SizedBox(width: 5),
-                  if (discount > 0) Text('-\$discount%',
+                  if (discount > 0) Text('-${discount}%',
                     style: const TextStyle(color: Color(0xFFD92D42), fontSize: 10, fontWeight: FontWeight.w800)),
                 ],
               ),
-              Text('\${product.price.toStringAsFixed(0)} د.ل',
+              Text('${'${product.price.toStringAsFixed(0)}'} د.ل',
                 style: const TextStyle(color: Colors.black38, fontSize: 10, decoration: TextDecoration.lineThrough)),
             ],
           ),
