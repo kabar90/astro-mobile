@@ -651,6 +651,34 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
         home += "\n" + "\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
     home_path.write_text(home)
 
+# Retain the last successful product snapshot in memory when HomeScreen is
+# rebuilt after navigating to another tab. This avoids blank/grey content while
+# the realtime stream reconnects.
+if "static List<Product> _cachedHomeProducts = [];" not in home:
+    cache_marker = "  static List<Map<String, dynamic>> _cachedHomeOfferItems = [];"
+    if home.count(cache_marker) != 1:
+        raise SystemExit("Could not locate the home offers cache fields")
+    home = home.replace(cache_marker, cache_marker + "\\n  static List<Product> _cachedHomeProducts = [];", 1)
+
+old_products_stream = """        return StreamBuilder<List<Product>>(
+          stream: _productsStream,
+          builder: (context, snapshot) {
+            final sourceProducts = snapshot.data ?? [];"""
+new_products_stream = """        return StreamBuilder<List<Product>>(
+          stream: _productsStream,
+          initialData: _cachedHomeProducts.isEmpty ? null : _cachedHomeProducts,
+          builder: (context, snapshot) {
+            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+              _cachedHomeProducts = snapshot.data!;
+            }
+            final sourceProducts = snapshot.data ?? _cachedHomeProducts;"""
+if old_products_stream in home:
+    home = home.replace(old_products_stream, new_products_stream, 1)
+elif new_products_stream not in home:
+    raise SystemExit("Could not locate the home product StreamBuilder safely")
+
+home_path.write_text(home)
+
 if "item.product?.price == product.price" not in cart:
     old_match = "(item) => !item.isInquiryOption && item.product?.id == product.id && item.color == color,"
     new_match = "(item) => !item.isInquiryOption && item.product?.id == product.id &&\n          item.product?.price == product.price && item.color == color,"
