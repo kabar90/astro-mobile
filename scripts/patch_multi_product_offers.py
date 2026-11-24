@@ -106,6 +106,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           builder: (context, snapshot) {
                                             final left = endDate.difference(DateTime.now());
                                             if (left.isNegative || left.inSeconds == 0) {
+                                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                if (mounted) setState(() {});
+                                              });
                                               return const Text('انتهى العرض', textAlign: TextAlign.right,
                                                 style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12));
                                             }
@@ -465,6 +468,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           builder: (context, snapshot) {
                                             final left = endDate.difference(DateTime.now());
                                             if (left.isNegative || left.inSeconds == 0) {
+                                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                if (mounted) setState(() {});
+                                              });
                                               return const Text('انتهى العرض', textAlign: TextAlign.right,
                                                 style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12));
                                             }
