@@ -179,10 +179,10 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                         physics: const NeverScrollableScrollPhysics(),
                                         itemCount: 1,
                                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 10,
-                                          childAspectRatio: 0.88,
+                                          crossAxisCount: 1,
+                                          crossAxisSpacing: 0,
+                                          mainAxisSpacing: 0,
+                                          childAspectRatio: 1.65,
                                         ),
                                         itemBuilder: (context, index) {
                                           return Container(
@@ -213,13 +213,16 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                             if (coverUrl.isNotEmpty) {
                                                               return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
-                                                                child: Image.network(
-                                                                  coverUrl,
-                                                                  key: ValueKey(coverUrl),
+                                                                child: AstroCachedImage(
+                                                                  imageUrl: coverUrl,
                                                                   fit: BoxFit.cover,
-                                                                  errorBuilder: (_, __, ___) => const ColoredBox(
-                                                                    color: Color(0xFFF0F3F8),
-                                                                    child: Icon(Icons.image_outlined),
+                                                                  placeholder: const ColoredBox(
+                                                                    color: Color(0xFFF3F6FC),
+                                                                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                                                  ),
+                                                                  errorWidget: const ColoredBox(
+                                                                    color: Color(0xFFF3F6FC),
+                                                                    child: Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.black26)),
                                                                   ),
                                                                 ),
                                                               );
