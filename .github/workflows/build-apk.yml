@@ -178,7 +178,7 @@ jobs:
           python3 scripts/patch_offers_category_route.py
           grep -q "offers: _allActiveOfferWidgets" astro_mobile/lib/screens/home_screen.dart
           grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
-          echo "Offers category navigation verified after assignment placement fix."
+          echo "Offers category route patch applied with actual builder anchor."
 
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
