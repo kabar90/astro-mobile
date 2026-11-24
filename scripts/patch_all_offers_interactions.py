@@ -1,7 +1,7 @@
 from pathlib import Path
-
 p = Path("astro_mobile/lib/screens/home_screen.dart")
 s = p.read_text(encoding="utf-8")
+dollar = chr(36)
 marker = "  Future<List<Map<String, dynamic>>> _loadOffers() async {"
 helpers = r"""
   Product _offerPricedProduct(Product p, double? sale) => Product(
@@ -59,16 +59,17 @@ new_name = """Expanded(child: InkWell(
 if old_name in s: s = s.replace(old_name,new_name,1)
 
 old_sale = """if (sale != null)
-                                    Text('\${sale.toStringAsFixed(0)} د.ل',
+                                    Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),"""
-new_sale = """if (sale != null)
-                                    Text('\${sale.toStringAsFixed(0)} د.ل',
+new_sale = """if (sale != null) ...[
+                                    Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
-                                  IconButton(
-                                    tooltip: 'إضافة إلى السلة',
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () => _addOfferProduct(product, sale),
-                                    icon: const Icon(Icons.add_shopping_cart_rounded, color: astroBlue)),"""
+                                    IconButton(
+                                      tooltip: 'إضافة إلى السلة',
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () => _addOfferProduct(product, sale),
+                                      icon: const Icon(Icons.add_shopping_cart_rounded, color: astroBlue)),
+                                  ],"""
 if old_sale in s: s = s.replace(old_sale,new_sale,1)
 
 old_cover = """                          child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
@@ -78,7 +79,7 @@ new_cover = """                          child: InkWell(
                               final first = productEntries.first;
                               final p = first['product'] as Product;
                               final item = first['item'] as Map<String, dynamic>;
-                              _openOfferProduct(p, double.tryParse('\${item['offer_price'] ?? ''}'));
+                              _openOfferProduct(p, double.tryParse('""" + dollar + """{item['offer_price'] ?? ''}'));
                             },
                             child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.card_giftcard, size: 42))),"""
@@ -94,4 +95,4 @@ if old_cover in s:
                       Text(name,""",1)
 
 p.write_text(s,encoding="utf-8")
-print("Offer product cards now open product details and provide add-to-cart controls.")
+print("Offer product rows now open details and include sale-price add-to-cart buttons.")
