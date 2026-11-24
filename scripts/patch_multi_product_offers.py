@@ -988,7 +988,7 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
   }
 }
 """
-    home += "\\n" + all_offers_screen + "\\n"
+    home += "\n" + all_offers_screen + "\n"
 
     if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
         home += """
