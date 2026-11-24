@@ -697,7 +697,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                     crossAxisCount: 1,
                                     crossAxisSpacing: 0,
                                     mainAxisSpacing: 8,
-                                    childAspectRatio: 2.35,
+                                    childAspectRatio: 0.90,
                                   ),
                                   itemBuilder: (context, index) => featuredOfferSections[index],
                                 ),
