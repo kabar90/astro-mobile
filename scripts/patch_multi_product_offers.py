@@ -280,12 +280,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
                                                 const SizedBox(height: 5),
                                                 SizedBox(
-                                                  height: 34,
+                                                  height: 46,
                                                   child: ElevatedButton(
                                                     style: ElevatedButton.styleFrom(
                                                       backgroundColor: const Color(0xFF1765C5),
                                                       foregroundColor: Colors.white,
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                                      minimumSize: const Size(double.infinity, 46),
+                                                      tapTargetSize: MaterialTapTargetSize.padded,
+                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                                                     ),
                                                     onPressed: () {
