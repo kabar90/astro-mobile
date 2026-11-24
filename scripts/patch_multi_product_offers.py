@@ -840,17 +840,11 @@ class _AllOffersScreen extends StatelessWidget {
       ),
       body: offers.isEmpty
           ? const Center(child: Text('لا توجد عروض متاحة حالياً'))
-          : SingleChildScrollView(
+          : ListView.separated(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final offer in offers) ...[
-                    offer,
-                    const SizedBox(height: 14),
-                  ],
-                ],
-              ),
+              itemCount: offers.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (context, index) => offers[index],
             ),
     );
   }
