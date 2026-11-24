@@ -11,7 +11,7 @@ elif "List<Widget> _allActiveOfferWidgets = [];" not in s:
     raise SystemExit("Offer widget state anchor not found")
 
 anchor = "                        return Column("
-assign = "                        _allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);\\n" + anchor
+assign = "                        _allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);\n" + anchor
 if anchor in s:
     s = s.replace(anchor, assign, 1)
 elif "_allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);" not in s:
