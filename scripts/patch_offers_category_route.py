@@ -3,24 +3,6 @@ from pathlib import Path
 p = Path("astro_mobile/lib/screens/home_screen.dart")
 s = p.read_text(encoding="utf-8")
 
-field = "  static List<Product> _cachedHomeProducts = [];\n"
-field_new = field + "  List<Widget> _allActiveOfferWidgets = [];\n"
-if field in s:
-    s = s.replace(field, field_new, 1)
-elif "List<Widget> _allActiveOfferWidgets = [];" not in s:
-    raise SystemExit("Offer widget state anchor not found")
-
-anchor = """                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (featuredOfferSections.isNotEmpty)"""
-assign = """                        _allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);
-""" + anchor
-if anchor in s:
-    s = s.replace(anchor, assign, 1)
-elif "_allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);" not in s:
-    raise SystemExit("Exact offers section builder anchor not found")
-
 old = """                          onTap: () => setState(() {
                             categoryPageRootId = item.id;
                             categoryPageSubcategoryId = null;
@@ -30,7 +12,7 @@ new = """                          onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => _AllOffersScreen(offers: _allActiveOfferWidgets),
+                                  builder: (_) => _AllOffersScreen(products: products),
                                 ),
                               );
                               return;
@@ -42,7 +24,7 @@ new = """                          onTap: () {
                           },"""
 if old in s:
     s = s.replace(old, new, 1)
-elif "offers: _allActiveOfferWidgets" not in s:
+elif "_AllOffersScreen(products: products)" not in s:
     raise SystemExit("Category tap handler anchor not found")
 
 # Keep the complete category label visible and give the offers card a meaningful caption.
