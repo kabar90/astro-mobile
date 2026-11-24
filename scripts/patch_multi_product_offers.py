@@ -601,18 +601,22 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                 style: const TextStyle(color: Colors.blueGrey, fontSize: 10, fontWeight: FontWeight.w700)),
                                               const SizedBox(height: 5),
                                               SizedBox(
-                                                height: 30,
+                                                height: 42,
                                                 child: ElevatedButton(
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFF1765C5),
                                                     foregroundColor: Colors.white,
                                                     elevation: 0,
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    minimumSize: const Size(double.infinity, 42),
+                                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
                                                   ),
                                                   onPressed: () => Navigator.push(context, MaterialPageRoute(
                                                     builder: (_) => _OfferProductsGridScreen(title: offerName, products: offerCards),
                                                   )),
-                                                  child: const Text('تصفح العرض', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                                  child: const Text('تصفح العرض', maxLines: 1,
+                                                    style: TextStyle(color: Colors.white, fontSize: 13, height: 1.1, fontWeight: FontWeight.w800)),
                                                 ),
                                               ),
                                             ],
