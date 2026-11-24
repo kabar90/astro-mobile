@@ -389,7 +389,13 @@ function renderOffers() {
       () => toggleOffer(offer, toggle)
     );
 
-    card.append(info, edit, toggle);
+    const remove = makeButton(
+      "حذف العرض",
+      () => deleteOffer(offer, remove)
+    );
+    remove.classList.add("danger");
+
+    card.append(info, edit, toggle, remove);
     container.append(card);
   });
 }
@@ -861,6 +867,44 @@ async function toggleOffer(offer, button) {
 
   } catch (error) {
     message(`تعذر تغيير حالة العرض: ${error.message}`, true);
+    button.disabled = false;
+  }
+}
+
+async function deleteOffer(offer, button) {
+  if (!currentUser) {
+    return message("انتهت جلسة المدير. سجّل الدخول مجدداً.", true);
+  }
+
+  const confirmed = confirm(
+    `هل أنت متأكد من حذف العرض "${offer.name}" نهائياً؟ لا يمكن التراجع عن هذه الخطوة.`
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+
+  try {
+    // Remove child rows first so offers with multiple products or bundle items
+    // can be deleted even when the database foreign key does not cascade.
+    const { error: itemsError } = await supabase
+      .from("offer_items")
+      .delete()
+      .eq("offer_id", offer.id);
+
+    if (itemsError) throw itemsError;
+
+    const { error: offerError } = await supabase
+      .from("offers")
+      .delete()
+      .eq("id", offer.id);
+
+    if (offerError) throw offerError;
+
+    message(`تم حذف العرض "${offer.name}" بنجاح.`);
+    await loadOffers();
+  } catch (error) {
+    console.error("ASTRO offer delete error:", error);
+    message(`تعذر حذف العرض: ${error.message || error}`, true);
     button.disabled = false;
   }
 }
