@@ -168,6 +168,7 @@ jobs:
           set -e
           python3 scripts/patch_multi_product_offers.py
           grep -q "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" astro_mobile/lib/screens/home_screen.dart
+          grep -q "show_on_home.*true" scripts/patch_multi_product_offers.py
           grep -Fq "item.product?.price == product.price" astro_mobile/lib/services/cart_service.dart
           echo "Multi-product offers and sale-price cart flow verified."
 
