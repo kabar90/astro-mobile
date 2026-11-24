@@ -693,8 +693,10 @@ function buildPayload() {
         ? Number($("bundlePrice").value)
         : null,
 
+    // صورة العرض الرئيسية تُحفظ لباقة المنتجات ذات السعر الخاص أيضاً،
+    // لأن هذا النوع يظهر كبطاقة عرض مستقلة في الصفحة الرئيسية.
     cover_image_url:
-      type === "bundle"
+      (type === "bundle" || type === "product")
         ? ($("bundleCoverUrl").value.trim() || null)
         : null,
 
@@ -726,7 +728,7 @@ async function saveOffer(event) {
   try {
     validateForm();
 
-    if ($("offerType").value === "bundle") {
+    if (["bundle", "product"].includes($("offerType").value)) {
       const coverFile = $("bundleCoverFile").files?.[0];
       if (coverFile) {
         if (!coverFile.type.startsWith("image/")) throw new Error("اختر ملف صورة صالحاً.");
