@@ -964,7 +964,7 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700))),
-                                  Column(
+                                  if (type != 'bundle') Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -990,6 +990,31 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                             );
                           }),
                       ],
+                      if (type == 'bundle' && bundlePrice != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: astroBlue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () {
+                                final offerId = int.tryParse('${offer['id']}');
+                                if (offerId == null) return;
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
+                                  offerId: offerId,
+                                  offerName: name,
+                                  bundlePrice: bundlePrice,
+                                )));
+                              },
+                              icon: const Icon(Icons.card_giftcard_rounded),
+                              label: const Text('شراء الباقة كاملة', style: TextStyle(fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                        ),
                       if (type == 'category')
                         Text('خصم ${offer['discount_value'] ?? ''}% على قسم ${offer['category_name'] ?? ''}',
                           textAlign: TextAlign.right,
