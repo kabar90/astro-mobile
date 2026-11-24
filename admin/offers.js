@@ -171,6 +171,7 @@ function resetForm() {
 
   $("offerId").value = "";
   $("offerActive").checked = false;
+  $("offerShowOnHome").checked = true;
   $("bundleCoverFile").value = "";
   $("bundleCoverUrl").value = "";
   $("bundleCoverPreview").src = "";
@@ -383,10 +384,14 @@ function renderOffers() {
     dates.textContent =
       `من ${new Date(offer.starts_at).toLocaleString("ar-LY")} إلى ${new Date(offer.ends_at).toLocaleString("ar-LY")}`;
 
+    const homeVisibility = document.createElement("p");
+    homeVisibility.textContent = offer.show_on_home === false
+      ? "الظهور: قسم العروض فقط"
+      : "الظهور: الصفحة الرئيسية وقسم العروض";
     const status = document.createElement("strong");
     status.textContent = `الحالة: ${offerStatus(offer)}`;
 
-    info.append(title, type, details, dates, status);
+    info.append(title, type, details, dates, homeVisibility, status);
 
     const edit = makeButton("تعديل", () => editOffer(offer));
 
@@ -509,6 +514,8 @@ async function editOffer(offer) {
 
     $("offerActive").checked =
       offer.is_active === true;
+
+    $("offerShowOnHome").checked = offer.show_on_home !== false;
 
     productOptions(
       $("offerProduct"),
@@ -715,6 +722,7 @@ function buildPayload() {
     ).toISOString(),
 
     is_active: $("offerActive").checked,
+    show_on_home: $("offerShowOnHome").checked,
     updated_at: new Date().toISOString()
   };
 
