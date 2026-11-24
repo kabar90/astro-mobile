@@ -53,7 +53,7 @@ if checkout_import not in home:
 
 
 if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
-    offer_query = ".from('offers')"
+    offer_query = "stream: Supabase.instance.client.from('offers')"
     query_at = home.find(offer_query)
     if query_at < 0:
         raise SystemExit("Could not locate the existing offers section in home_screen.dart")
