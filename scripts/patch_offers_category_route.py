@@ -44,6 +44,38 @@ elif "offers: _allActiveOfferWidgets" not in s:
 # Keep the complete category label visible and give the offers card a meaningful caption.
 s = s.replace("                                  maxLines: 1,\n                                  overflow: TextOverflow.ellipsis,\n                                  textAlign: TextAlign.center,",
               "                                  maxLines: 2,\n                                  overflow: TextOverflow.ellipsis,\n                                  textAlign: TextAlign.center,", 1)
+carousel_old = """                            onTap: () => setState(() {
+                              category = item.name;
+                              selectedCategoryId = item.id;
+                              selectedSubcategoryId = null;
+                              categoryPageRootId = item.id;
+                              categoryPageSubcategoryId = null;
+                              nav = 1;
+                            }),"""
+carousel_new = """                            onTap: () {
+                              if (item.name.contains('العروض') || item.name.contains('تخفيض')) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => _AllOffersScreen(offers: _allActiveOfferWidgets),
+                                  ),
+                                );
+                                return;
+                              }
+                              setState(() {
+                                category = item.name;
+                                selectedCategoryId = item.id;
+                                selectedSubcategoryId = null;
+                                categoryPageRootId = item.id;
+                                categoryPageSubcategoryId = null;
+                                nav = 1;
+                              });
+                            },"""
+if carousel_old in s:
+    s = s.replace(carousel_old, carousel_new, 1)
+elif "category = item.name;" not in s:
+    raise SystemExit("Home category carousel tap handler not found")
+
 old_caption = """                                    childCount == 0
                                         ? 'تصفح المنتجات'
                                         : '$childCount أقسام فرعية',"""
