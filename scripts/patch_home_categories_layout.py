@@ -32,8 +32,8 @@ s = s.replace(
 count_marker = '                    itemCount: homeCategoryTiles.length,'
 if s.count(count_marker) != 1: raise SystemExit('Category carousel itemCount anchor mismatch')
 s = s.replace(count_marker, '                    itemCount: homeCategoryTiles.length + 1,', 1)
-item_marker = '                      final item = homeCategoryTiles[index];'
-offer_tile = '''                      if (index == homeCategoryTiles.length) {
+item_marker = '                      final item = homeCategoryTiles[index - 1];'
+offer_tile = '''                      if (index == 0) {
                         return SizedBox(width: 164, child: Material(color: Colors.transparent, child: InkWell(
                           borderRadius: BorderRadius.circular(20),
                           onTap: () {
