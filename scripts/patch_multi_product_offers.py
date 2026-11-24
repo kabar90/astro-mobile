@@ -59,6 +59,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
         raise SystemExit("Could not locate the existing offers section in home_screen.dart")
     start = home.rfind("              SliverToBoxAdapter(", 0, query_at)
     end = home.find("SliverToBoxAdapter(", query_at)
+    if end < 0:
+        # The offers section can be the final sliver in the original home page.
+        end = home.find("\\n            ],", query_at)
     if start < 0 or end < 0:
         raise SystemExit("Could not isolate the existing offers section safely")
 
