@@ -47,8 +47,13 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                       builder: (context, itemSnapshot) {
                         final offerItems = itemSnapshot.data ?? [];
                         final offerSections = <Widget>[];
+                        // Newer campaigns take priority when multiple active campaigns include the same product.
+                        final orderedOffers = [...activeOffers]
+                          ..sort((a, b) => (DateTime.tryParse('${b['created_at'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0))
+                              .compareTo(DateTime.tryParse('${a['created_at'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0)));
+                        final claimedProducts = <String>{};
 
-                        for (final offer in activeOffers) {
+                        for (final offer in orderedOffers) {
                           final type = '${offer['offer_type'] ?? ''}';
                           final offerCards = <Widget>[];
                           final usedProducts = <String>{};
@@ -56,6 +61,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                           if (type == 'bundle') {
                             final offerId = '${offer['id']}';
                             final bundleItems = offerItems.where((row) => '${row['offer_id']}' == offerId).toList();
+                            final bundleProductIds = bundleItems.map((row) => '${row['product_id'] ?? ''}').where((id) => id.isNotEmpty).toSet();
+                            if (bundleProductIds.any(claimedProducts.contains)) continue;
                             final bundleEntries = <Map<String, dynamic>>[];
                             for (final item in bundleItems) {
                               final product = _findProduct(products, '${item['product_id'] ?? ''}');
@@ -67,6 +74,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                             }
 
                             if (bundleEntries.isNotEmpty) {
+                              claimedProducts.addAll(bundleEntries.map((entry) => (entry['product'] as Product).id));
                               final startDate = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
                               final endDate = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
                               final offerName = '${offer['name'] ?? offer['title'] ?? 'باقة مميزة'}';
@@ -349,14 +357,15 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               final product = _findProduct(products, productId);
                               final salePrice = double.tryParse('${item['offer_price'] ?? ''}');
                               if (product == null || salePrice == null || salePrice <= 0 ||
-                                  salePrice >= product.price || usedProducts.contains(product.id)) continue;
+                                  salePrice >= product.price || usedProducts.contains(product.id) || claimedProducts.contains(product.id)) continue;
                               usedProducts.add(product.id);
+                              claimedProducts.add(product.id);
                               offerCards.add(_offerProductCard(product, salePrice, 'سعر خاص'));
                             }
 
                             // Keep legacy single-product offers visible as before.
                             final legacyId = '${offer['product_id'] ?? ''}';
-                            if (legacyId.isNotEmpty && !usedProducts.contains(legacyId)) {
+                            if (legacyId.isNotEmpty && !usedProducts.contains(legacyId) && !claimedProducts.contains(legacyId)) {
                               final product = _findProduct(products, legacyId);
                               final discountType = '${offer['discount_type'] ?? ''}';
                               final discountValue = double.tryParse('${offer['discount_value'] ?? ''}') ?? 0;
@@ -366,6 +375,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                     : discountValue;
                                 if (salePrice > 0 && salePrice < product.price) {
                                   usedProducts.add(product.id);
+                                  claimedProducts.add(product.id);
                                   offerCards.add(_offerProductCard(
                                     product, salePrice,
                                     discountType == 'percentage'
@@ -381,12 +391,13 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                             if (discountValue <= 0) continue;
                             for (final product in products) {
                               if (product.category != '${offer['category_name'] ?? ''}' ||
-                                  usedProducts.contains(product.id)) continue;
+                                  usedProducts.contains(product.id) || claimedProducts.contains(product.id)) continue;
                               final salePrice = discountType == 'percentage'
                                   ? product.price * (1 - discountValue / 100)
                                   : discountValue;
                               if (salePrice <= 0 || salePrice >= product.price) continue;
                               usedProducts.add(product.id);
+                              claimedProducts.add(product.id);
                               offerCards.add(_offerProductCard(
                                 product, salePrice,
                                 discountType == 'percentage'
