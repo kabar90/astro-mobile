@@ -36,7 +36,7 @@ if "final GlobalKey _homeOffersSectionKey" not in home:
 if "List<Map<String, dynamic>> _cachedHomeOffers" not in home:
     home = home.replace(
         "  final GlobalKey _homeOffersSectionKey = GlobalKey();",
-        "  final GlobalKey _homeOffersSectionKey = GlobalKey();\\n  List<Map<String, dynamic>> _cachedHomeOffers = [];\\n  List<Map<String, dynamic>> _cachedHomeOfferItems = [];",
+        "  final GlobalKey _homeOffersSectionKey = GlobalKey();\n  List<Map<String, dynamic>> _cachedHomeOffers = [];\n  List<Map<String, dynamic>> _cachedHomeOfferItems = []",
         1,
     )
 
