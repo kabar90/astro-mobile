@@ -652,6 +652,22 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            if (offerSections.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+                                child: Row(
+                                  children: [
+                                    const Expanded(child: Text('عروض مختارة لك',
+                                      style: TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900))),
+                                    TextButton(
+                                      onPressed: () => Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => _AllOffersScreen(offers: offerSections),
+                                      )),
+                                      child: const Text('عرض كل العروض'),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (offerSections.isEmpty)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 10),
@@ -673,7 +689,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: offerSections.length,
+                                  itemCount: offerSections.length > 2 ? 2 : offerSections.length,
                                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 10,
@@ -804,7 +820,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 """
     home = home[:card_start] + grid_card + home[card_end:]
     if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
-        home += "\n" + "\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
+        home += "\\n" + "\\nclass _AllOffersScreen extends StatelessWidget {\\n  final List<Widget> offers;\\n  const _AllOffersScreen({required this.offers});\\n  @override\\n  Widget build(BuildContext context) {\\n    return Scaffold(\\n      backgroundColor: const Color(0xFFF3F6FC),\\n      appBar: AppBar(title: const Text('العروض والخصومات'), backgroundColor: Colors.white, foregroundColor: astroNavy, elevation: 0),\\n      body: offers.isEmpty ? const Center(child: Text('لا توجد عروض متاحة حالياً')) : ListView.separated(\\n        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28), itemCount: offers.length,\\n        separatorBuilder: (_, __) => const SizedBox(height: 14), itemBuilder: (_, index) => offers[index],\\n      ),\\n    );\\n  }\\n}\\n\\n" + "\\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
     home_path.write_text(home)
 
 # Retain the last successful product snapshot in memory when HomeScreen is
