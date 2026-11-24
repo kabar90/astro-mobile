@@ -164,8 +164,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           return Align(
                                             alignment: Alignment.centerRight,
                                             child: Container(
-                                              margin: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-                                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                              margin: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                                               decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
                                               child: Text('ينتهي العرض خلال  $value',
                                                 style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
@@ -506,20 +506,17 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+                                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 19),
-                                          const SizedBox(width: 8),
+                                          const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 16),
+                                          const SizedBox(width: 5),
                                           Expanded(
                                             child: Text(offerName,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: astroNavy)),
+                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: astroNavy)),
                                           ),
-                                          if (period.isNotEmpty)
-                                            Text(period,
-                                              style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
                                         ],
                                       ),
                                     ),
@@ -547,7 +544,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                                               decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
                                               child: Text('ينتهي العرض خلال  $value',
-                                                style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
+                                                style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 10)),
                                             ),
                                           );
                                         },
@@ -562,8 +559,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                             ? coverUrl
                                             : (firstProduct?.imageUrl ?? '');
                                         return Container(
-                                          margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
-                                          padding: const EdgeInsets.all(9),
+                                          margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                                          padding: const EdgeInsets.all(7),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             borderRadius: BorderRadius.circular(18),
@@ -573,9 +570,10 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.stretch,
                                             children: [
-                                              Expanded(
+                                              SizedBox(
+                                                height: 76,
                                                 child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(10),
                                                   child: imageUrl.isEmpty
                                                       ? Container(
                                                           color: const Color(0xFFF1F4FA),
@@ -595,15 +593,15 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                         ),
                                                 ),
                                               ),
-                                              const SizedBox(height: 8),
+                                              const SizedBox(height: 5),
                                               Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(color: astroNavy, fontSize: 14, fontWeight: FontWeight.w900)),
-                                              const SizedBox(height: 4),
+                                                style: const TextStyle(color: astroNavy, fontSize: 12, fontWeight: FontWeight.w900)),
+                                              const SizedBox(height: 2),
                                               Text('${offerCards.length} منتجات ضمن العرض',
-                                                style: const TextStyle(color: Colors.blueGrey, fontSize: 11, fontWeight: FontWeight.w700)),
-                                              const SizedBox(height: 7),
+                                                style: const TextStyle(color: Colors.blueGrey, fontSize: 10, fontWeight: FontWeight.w700)),
+                                              const SizedBox(height: 5),
                                               SizedBox(
-                                                height: 36,
+                                                height: 30,
                                                 child: ElevatedButton(
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFF1765C5),
@@ -659,7 +657,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 10,
                                     mainAxisSpacing: 12,
-                                    childAspectRatio: 0.88,
+                                    childAspectRatio: 0.72,
                                   ),
                                   itemBuilder: (context, index) => offerSections[index],
                                 ),
