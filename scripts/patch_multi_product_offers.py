@@ -14,6 +14,13 @@ if "final GlobalKey _homeOffersSectionKey" not in home:
         1,
     )
 
+if "List<Map<String, dynamic>> _cachedHomeOffers" not in home:
+    home = home.replace(
+        "  final GlobalKey _homeOffersSectionKey = GlobalKey();",
+        "  final GlobalKey _homeOffersSectionKey = GlobalKey();\\n  List<Map<String, dynamic>> _cachedHomeOffers = [];\\n  List<Map<String, dynamic>> _cachedHomeOfferItems = [];",
+        1,
+    )
+
 # Install the dedicated bundle checkout screen (cash or bank transfer only).
 import shutil
 checkout_source = Path("scripts/bundle_checkout_screen.dart")
