@@ -178,7 +178,7 @@ jobs:
           python3 scripts/patch_offers_category_route.py
           grep -q "offers: _allActiveOfferWidgets" astro_mobile/lib/screens/home_screen.dart
           grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
-          echo "Offers category route patch now writes a real newline into Dart source."
+          echo "Offers category routing uses the database category without duplicate hardcoded shortcut."
 
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
