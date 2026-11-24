@@ -67,6 +67,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                 key: _homeOffersSectionKey,
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: _astroHomeOffersStream,
+                  initialData: _cachedHomeOffers.isEmpty ? null : _cachedHomeOffers,
                   builder: (context, offerSnapshot) {
                     if (offerSnapshot.hasData) _cachedHomeOffers = offerSnapshot.data!;
                     final now = DateTime.now();
@@ -79,6 +80,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 
                     return StreamBuilder<List<Map<String, dynamic>>>(
                       stream: _astroHomeOfferItemsStream,
+                      initialData: _cachedHomeOfferItems.isEmpty ? null : _cachedHomeOfferItems,
                       builder: (context, itemSnapshot) {
                         if (itemSnapshot.hasData) _cachedHomeOfferItems = itemSnapshot.data!;
                         final offerItems = _cachedHomeOfferItems;
