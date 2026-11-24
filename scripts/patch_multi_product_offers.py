@@ -664,7 +664,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                       style: TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900))),
                                     TextButton(
                                       onPressed: () => Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) => _AllOffersScreen(offers: offerSections),
+                                        builder: (_) => _AllOffersScreen(products: products),
                                       )),
                                       child: const Text('عرض كل العروض'),
                                     ),
