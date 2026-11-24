@@ -10,7 +10,7 @@ if field in s:
 elif "List<Widget> _allActiveOfferWidgets = [];" not in s:
     raise SystemExit("Offer widget state anchor not found")
 
-anchor = "                        return Column(\\n                          crossAxisAlignment: CrossAxisAlignment.stretch,\\n                          children: [\\n"
+anchor = "                        return Column("
 assign = "                        _allActiveOfferWidgets = List<Widget>.unmodifiable(offerSections);\\n" + anchor
 if anchor in s:
     s = s.replace(anchor, assign, 1)
