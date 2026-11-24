@@ -200,16 +200,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                   child: Stack(
                                                     children: [
                                                       Positioned.fill(
-                                                        child: FutureBuilder<Map<String, dynamic>?>(
-                                                          future: Supabase.instance.client
-                                                              .from('offers')
-                                                              .select('cover_image_url')
-                                                              .eq('id', offer['id'])
-                                                              .maybeSingle(),
-                                                          builder: (context, coverSnapshot) {
-                                                            final coverUrl = (coverSnapshot.data?['cover_image_url'] ??
-                                                                    offer['cover_image_url'] ?? '')
-                                                                .toString().trim();
+                                                        child: Builder(
+                                                          builder: (context) {
+                                                            final coverUrl = (offer['cover_image_url'] ?? '').toString().trim();
                                                             if (coverUrl.isNotEmpty) {
                                                               return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
@@ -220,30 +213,39 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                                     color: Color(0xFFF3F6FC),
                                                                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                                                   ),
-                                                                  errorWidget: const ColoredBox(
-                                                                    color: Color(0xFFF3F6FC),
-                                                                    child: Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.black26)),
+                                                                  errorWidget: Row(
+                                                                    children: [
+                                                                      for (final product in bundleProducts.take(3))
+                                                                        Expanded(
+                                                                          child: Padding(
+                                                                            padding: const EdgeInsets.all(2),
+                                                                            child: ClipRRect(
+                                                                              borderRadius: BorderRadius.circular(9),
+                                                                              child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover),
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                    ],
                                                                   ),
                                                                 ),
                                                               );
                                                             }
                                                             return Row(
-                                                                children: [
-                                                                  for (final product in bundleProducts.take(3))
-                                                                    Expanded(
-                                                                      child: Padding(
-                                                                        padding: const EdgeInsets.all(2),
-                                                                        child: ClipRRect(
-                                                                          borderRadius: BorderRadius.circular(9),
-                                                                          child: Image.network(product.imageUrl, fit: BoxFit.cover,
-                                                                            errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFF0F3F8), child: Icon(Icons.image_outlined))),
-                                                                        ),
+                                                              children: [
+                                                                for (final product in bundleProducts.take(3))
+                                                                  Expanded(
+                                                                    child: Padding(
+                                                                      padding: const EdgeInsets.all(2),
+                                                                      child: ClipRRect(
+                                                                        borderRadius: BorderRadius.circular(9),
+                                                                        child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover),
                                                                       ),
                                                                     ),
-                                                                ],
-                                                              );
+                                                                  ),
+                                                              ],
+                                                            );
                                                           },
-                                                        ),
+                                                        )
                                                       ),
                                                       Positioned(
                                                         top: 5, right: 5,
