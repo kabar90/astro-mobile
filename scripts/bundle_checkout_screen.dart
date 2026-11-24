@@ -163,3 +163,96 @@ class _BundleCheckoutScreenState extends State<BundleCheckoutScreen> {
       ]));
   }
 }
+
+
+class BundleDetailsScreen extends StatelessWidget {
+  final int offerId;
+  final String offerName;
+  final double bundlePrice;
+  final List<Product> products;
+
+  const BundleDetailsScreen({
+    super.key,
+    required this.offerId,
+    required this.offerName,
+    required this.bundlePrice,
+    required this.products,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: astroBackground,
+      appBar: AppBar(title: const Text('تفاصيل الباقة')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(offerName, textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: astroNavy)),
+                  const SizedBox(height: 8),
+                  const Text('تتضمن هذه الباقة المنتجات التالية معاً:',
+                    textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 12),
+                  for (final product in products)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(9),
+                            child: SizedBox(width: 76, height: 76,
+                              child: Image.network(product.imageUrl, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported))),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(product.name, textAlign: TextAlign.right,
+                                  style: const TextStyle(fontWeight: FontWeight.w900, color: astroNavy)),
+                                if (product.description.trim().isNotEmpty)
+                                  Text(product.description, maxLines: 3, overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 24),
+                  const Text('سعر المجموعة كاملة', textAlign: TextAlign.right,
+                    style: TextStyle(fontWeight: FontWeight.w800)),
+                  Text(bundlePrice.toStringAsFixed(2) + ' د.ل',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                  const SizedBox(height: 6),
+                  const Text('السعر يشمل المنتجات المذكورة معاً، ولا يمكن شراء كل منتج منفرداً من هذا العرض.',
+                    textAlign: TextAlign.right, style: TextStyle(color: Colors.blueGrey)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 52,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: astroBlue, foregroundColor: Colors.white),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                BundleCheckoutScreen(offerId: offerId, offerName: offerName, bundlePrice: bundlePrice))),
+              icon: const Icon(Icons.card_giftcard_rounded),
+              label: const Text('شراء الباقة كاملة', style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
