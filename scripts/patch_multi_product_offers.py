@@ -102,6 +102,34 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                             Text(period, style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
                                         ],
                                       ),
+                                      StreamBuilder<int>(
+                                        stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
+                                        builder: (context, snapshot) {
+                                          final remaining = endDate.difference(DateTime.now());
+                                          if (remaining.isNegative || remaining.inSeconds == 0) {
+                                            return const Padding(
+                                              padding: EdgeInsets.only(bottom: 8),
+                                              child: Text('انتهى العرض', textAlign: TextAlign.right,
+                                                style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12)),
+                                            );
+                                          }
+                                          final days = remaining.inDays;
+                                          final hours = remaining.inHours.remainder(24).toString().padLeft(2, '0');
+                                          final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+                                          final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+                                          final value = days > 0 ? '$days يوم  $hours:$minutes:$seconds' : '$hours:$minutes:$seconds';
+                                          return Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Container(
+                                              margin: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                              decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
+                                              child: Text('ينتهي العرض خلال  $value',
+                                                style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                       const SizedBox(height: 9),
                                       GridView.builder(
                                         shrinkWrap: true,
@@ -439,6 +467,34 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                         ],
                                       ),
                                     ),
+                                      StreamBuilder<int>(
+                                        stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
+                                        builder: (context, snapshot) {
+                                          final remaining = endDate.difference(DateTime.now());
+                                          if (remaining.isNegative || remaining.inSeconds == 0) {
+                                            return const Padding(
+                                              padding: EdgeInsets.only(bottom: 8),
+                                              child: Text('انتهى العرض', textAlign: TextAlign.right,
+                                                style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12)),
+                                            );
+                                          }
+                                          final days = remaining.inDays;
+                                          final hours = remaining.inHours.remainder(24).toString().padLeft(2, '0');
+                                          final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+                                          final seconds = remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+                                          final value = days > 0 ? '$days يوم  $hours:$minutes:$seconds' : '$hours:$minutes:$seconds';
+                                          return Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Container(
+                                              margin: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                                              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                              decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
+                                              child: Text('ينتهي العرض خلال  $value',
+                                                style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     SizedBox(
                                       height: 164,
                                       child: ListView.separated(
