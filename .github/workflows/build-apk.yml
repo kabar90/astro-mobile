@@ -172,6 +172,14 @@ jobs:
           grep -Fq "item.product?.price == product.price" astro_mobile/lib/services/cart_service.dart
           echo "Multi-product offers and sale-price cart flow verified."
 
+      - name: Route the offers category to all active offers
+        run: |
+          set -e
+          python3 scripts/patch_offers_category_route.py
+          grep -q "offers: _allActiveOfferWidgets" astro_mobile/lib/screens/home_screen.dart
+          grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
+          echo "Offers category navigation verified."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
