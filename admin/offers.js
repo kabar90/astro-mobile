@@ -393,7 +393,8 @@ function renderOffers() {
       "حذف العرض",
       () => deleteOffer(offer, remove)
     );
-    remove.classList.add("danger");
+    remove.style.background = "#c62828";
+    remove.style.color = "#fff";
 
     card.append(info, edit, toggle, remove);
     container.append(card);
