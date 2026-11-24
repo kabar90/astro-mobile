@@ -29,9 +29,28 @@ s = s.replace(
     1,
 )
 # Add an Offers shortcut beside the database-driven main categories.
-tile = "                    itemCount: homeCategoryTiles.length,\\n                    separatorBuilder: (_, __) => const SizedBox(width: 10),\\n                    itemBuilder: (context, index) {\\n                      final item = homeCategoryTiles[index];"
-tile_new = "                    itemCount: homeCategoryTiles.length + 1,\\n                    separatorBuilder: (_, __) => const SizedBox(width: 10),\\n                    itemBuilder: (context, index) {\\n                      if (index == homeCategoryTiles.length) {\\n                        return SizedBox(\\n                          width: 164,\\n                          child: Material(\\n                            color: Colors.transparent,\\n                            child: InkWell(\\n                              borderRadius: BorderRadius.circular(20),\\n                              onTap: () {\\n                                final target = _homeOffersSectionKey.currentContext;\\n                                if (target != null) {\\n                                  Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 450), curve: Curves.easeInOut, alignment: 0.08);\\n                                }\\n                              },\\n                              child: Ink(\\n                                decoration: BoxDecoration(color: const Color(0xFFFFE1E8), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFFFC8D2))),\\n                                padding: const EdgeInsets.all(9),\\n                                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [\\n                                  Expanded(child: Image.asset('assets/category_offers.jpg', fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 48))),\\n                                  const SizedBox(height: 6),\\n                                  const Text('العروض', style: TextStyle(color: astroNavy, fontSize: 11, fontWeight: FontWeight.w900)),\\n                                ]),\\n                              ),\\n                            ),\\n                          ),\\n                        );\\n                      }\\n                      final item = homeCategoryTiles[index];"
-if s.count(tile) != 1: raise SystemExit('Category tile insertion anchor mismatch')
+tile = """                    itemCount: homeCategoryTiles.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final item = homeCategoryTiles[index];"""
+tile_new = """                    itemCount: homeCategoryTiles.length + 1,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      if (index == homeCategoryTiles.length) {
+                        return SizedBox(width: 164, child: Material(color: Colors.transparent, child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () {
+                            final target = _homeOffersSectionKey.currentContext;
+                            if (target != null) Scrollable.ensureVisible(target, duration: const Duration(milliseconds: 450), curve: Curves.easeInOut, alignment: 0.08);
+                          },
+                          child: Ink(decoration: BoxDecoration(color: const Color(0xFFFFE1E8), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFFFC8D2))), padding: const EdgeInsets.all(9), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Expanded(child: Image.asset('assets/category_offers.jpg', fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.local_offer_rounded, color: Color(0xFFE44755), size: 48))),
+                            const SizedBox(height: 6),
+                            const Text('العروض', style: TextStyle(color: astroNavy, fontSize: 11, fontWeight: FontWeight.w900)),
+                          ])),
+                        )));
+                      }
+                      final item = homeCategoryTiles[index];"""
 s = s.replace(tile, tile_new, 1)
 
 # Increase the featured section's top and bottom padding. This is separate
