@@ -49,8 +49,10 @@ offer_tile = '''                      if (index == 0) {
                       }
                       final item = homeCategoryTiles[index];
 '''
-if s.count(item_marker) != 1: raise SystemExit('Category itemBuilder anchor mismatch')
-s = s.replace(item_marker, offer_tile, 1)
+if s.count(item_marker) == 1:
+    s = s.replace(item_marker, offer_tile.replace('homeCategoryTiles[index];', 'homeCategoryTiles[index - 1];'), 1)
+elif "if (index == 0)" not in s or "homeCategoryTiles[index - 1]" not in s:
+    raise SystemExit('Category itemBuilder anchor mismatch')
 # Increase the featured section's top and bottom padding. This is separate
 # from the grid cell-height fix and prevents the heading from crowding the grid.
 s = s.replace(
