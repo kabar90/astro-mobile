@@ -1068,3 +1068,8 @@ if "item.product?.price == product.price" not in cart:
     cart_path.write_text(cart.replace(old_match, new_match, 1))
 
 print("Multi-product offer cards and discounted cart price patch applied.")
+
+
+# Install interactions on the dedicated all-offers page as part of the same build.
+import runpy
+runpy.run_path("scripts/patch_all_offers_interactions.py")
