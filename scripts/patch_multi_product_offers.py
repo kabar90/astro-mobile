@@ -40,22 +40,27 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                       final ends = DateTime.tryParse('${offer['ends_at'] ?? ''}');
                       return offer['is_active'] == true && starts != null && ends != null &&
                           !now.isBefore(starts) && now.isBefore(ends);
-                    }).toList();
+                    }).toList()
+                      ..sort((a, b) => (DateTime.tryParse('${b['created_at'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0))
+                          .compareTo(DateTime.tryParse('${a['created_at'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0)));
 
                     return StreamBuilder<List<Map<String, dynamic>>>(
                       stream: Supabase.instance.client.from('offer_items').stream(primaryKey: ['id']),
                       builder: (context, itemSnapshot) {
                         final offerItems = itemSnapshot.data ?? [];
                         final offerSections = <Widget>[];
+                        // Campaign priority: newest-created active campaign wins for overlapping products.
+                        final claimedProducts = <String>{};
 
                         for (final offer in activeOffers) {
                           final type = '${offer['offer_type'] ?? ''}';
                           final offerCards = <Widget>[];
-                          final usedProducts = <String>{};
 
                           if (type == 'bundle') {
                             final offerId = '${offer['id']}';
                             final bundleItems = offerItems.where((row) => '${row['offer_id']}' == offerId).toList();
+                            final bundleProductIds = bundleItems.map((row) => '${row['product_id'] ?? ''}').toSet();
+                            if (bundleProductIds.any(claimedProducts.contains)) continue;
                             final bundleEntries = <Map<String, dynamic>>[];
                             for (final item in bundleItems) {
                               final product = _findProduct(products, '${item['product_id'] ?? ''}');
@@ -67,6 +72,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                             }
 
                             if (bundleEntries.isNotEmpty) {
+                              claimedProducts.addAll(bundleEntries.map((entry) => (entry['product'] as Product).id));
                               final startDate = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
                               final endDate = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
                               final offerName = '${offer['name'] ?? offer['title'] ?? 'باقة مميزة'}';
@@ -93,6 +99,32 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           if (period.isNotEmpty)
                                             Text(period, style: const TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
                                         ],
+                                      ),
+                                      if (endDate != null)
+                                        StreamBuilder<int>(
+                                          stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
+                                          builder: (context, snapshot) {
+                                            final left = endDate.difference(DateTime.now());
+                                            if (left.isNegative || left.inSeconds == 0) {
+                                              return const Text('انتهى العرض', textAlign: TextAlign.right,
+                                                style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12));
+                                            }
+                                            final days = left.inDays;
+                                            final hours = left.inHours.remainder(24).toString().padLeft(2, '0');
+                                            final minutes = left.inMinutes.remainder(60).toString().padLeft(2, '0');
+                                            final seconds = left.inSeconds.remainder(60).toString().padLeft(2, '0');
+                                            final value = days > 0 ? '$days يوم  $hours:$minutes:$seconds' : '$hours:$minutes:$seconds';
+                                            return Align(alignment: Alignment.centerRight,
+                                              child: Container(
+                                                margin: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                                                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                                decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
+                                                child: Text('ينتهي العرض خلال  $value',
+                                                  style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ),
                                       const SizedBox(height: 9),
                                       GridView.builder(
@@ -349,14 +381,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               final product = _findProduct(products, productId);
                               final salePrice = double.tryParse('${item['offer_price'] ?? ''}');
                               if (product == null || salePrice == null || salePrice <= 0 ||
-                                  salePrice >= product.price || usedProducts.contains(product.id)) continue;
-                              usedProducts.add(product.id);
+                                  salePrice >= product.price || claimedProducts.contains(product.id)) continue;
+                              claimedProducts.add(product.id);
                               offerCards.add(_offerProductCard(product, salePrice, 'سعر خاص'));
                             }
 
                             // Keep legacy single-product offers visible as before.
                             final legacyId = '${offer['product_id'] ?? ''}';
-                            if (legacyId.isNotEmpty && !usedProducts.contains(legacyId)) {
+                            if (legacyId.isNotEmpty && !claimedProducts.contains(legacyId)) {
                               final product = _findProduct(products, legacyId);
                               final discountType = '${offer['discount_type'] ?? ''}';
                               final discountValue = double.tryParse('${offer['discount_value'] ?? ''}') ?? 0;
@@ -365,7 +397,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                     ? product.price * (1 - discountValue / 100)
                                     : discountValue;
                                 if (salePrice > 0 && salePrice < product.price) {
-                                  usedProducts.add(product.id);
+                                  claimedProducts.add(product.id);
                                   offerCards.add(_offerProductCard(
                                     product, salePrice,
                                     discountType == 'percentage'
@@ -381,12 +413,12 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                             if (discountValue <= 0) continue;
                             for (final product in products) {
                               if (product.category != '${offer['category_name'] ?? ''}' ||
-                                  usedProducts.contains(product.id)) continue;
+                                  claimedProducts.contains(product.id)) continue;
                               final salePrice = discountType == 'percentage'
                                   ? product.price * (1 - discountValue / 100)
                                   : discountValue;
                               if (salePrice <= 0 || salePrice >= product.price) continue;
-                              usedProducts.add(product.id);
+                              claimedProducts.add(product.id);
                               offerCards.add(_offerProductCard(
                                 product, salePrice,
                                 discountType == 'percentage'
@@ -426,6 +458,34 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                             Text(period,
                                               style: const TextStyle(fontSize: 11, color: Colors.blueGrey, fontWeight: FontWeight.w600)),
                                         ],
+                                      ),
+                                      if (endDate != null)
+                                        StreamBuilder<int>(
+                                          stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
+                                          builder: (context, snapshot) {
+                                            final left = endDate.difference(DateTime.now());
+                                            if (left.isNegative || left.inSeconds == 0) {
+                                              return const Text('انتهى العرض', textAlign: TextAlign.right,
+                                                style: TextStyle(color: Color(0xFFB42318), fontWeight: FontWeight.w800, fontSize: 12));
+                                            }
+                                            final days = left.inDays;
+                                            final hours = left.inHours.remainder(24).toString().padLeft(2, '0');
+                                            final minutes = left.inMinutes.remainder(60).toString().padLeft(2, '0');
+                                            final seconds = left.inSeconds.remainder(60).toString().padLeft(2, '0');
+                                            final value = days > 0 ? '$days يوم  $hours:$minutes:$seconds' : '$hours:$minutes:$seconds';
+                                            return Padding(
+                                              padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+                                              child: Align(alignment: Alignment.centerRight,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                                  decoration: BoxDecoration(color: const Color(0xFFFFF0F1), borderRadius: BorderRadius.circular(10)),
+                                                  child: Text('ينتهي العرض خلال  $value',
+                                                    style: const TextStyle(color: Color(0xFFE44755), fontWeight: FontWeight.w900, fontSize: 12)),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
