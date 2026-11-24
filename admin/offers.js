@@ -404,20 +404,18 @@ function renderOffers() {
     remove.style.fontWeight = "700";
     remove.style.order = "10";
 
+    // اجعل بطاقة العرض عمودية حتى لا تختفي أزرار الإجراءات بجانب تفاصيل العرض.
+    card.style.cssText = "display:block;width:100%;box-sizing:border-box";
+    info.style.cssText = "display:block;width:100%;min-width:0;box-sizing:border-box;margin-bottom:12px";
     const actions = document.createElement("div");
     actions.className = "offer-admin-actions";
-    actions.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;width:100%;margin-top:10px;align-items:center";
+    actions.style.cssText = "display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box;margin-top:12px";
     [edit, toggle, remove].forEach(action => {
-      action.style.display = "inline-flex";
-      action.style.visibility = "visible";
-      action.style.opacity = "1";
-      action.style.flex = "1 1 110px";
-      action.style.minHeight = "42px";
-      action.style.justifyContent = "center";
+      action.style.cssText = "display:flex!important;visibility:visible!important;opacity:1!important;width:100%;min-width:0;min-height:44px;box-sizing:border-box;justify-content:center;align-items:center;margin:0;padding:10px 6px;white-space:normal";
       actions.append(action);
     });
     remove.textContent = "🗑 حذف العرض";
-    remove.style.cssText = "background:#c62828;color:#fff;border:1px solid #a51f1f;display:inline-flex;visibility:visible;opacity:1;flex:1 1 110px;min-height:42px;justify-content:center;font-weight:700";
+    remove.style.cssText += ";background:#c62828!important;color:#fff!important;border:1px solid #a51f1f!important;font-weight:700";
     card.append(info, actions);
     container.append(card);
   });
