@@ -93,6 +93,33 @@ new_sale = """if (sale != null && type != 'bundle') ...[
                                   ],"""
 if old_sale in s: s = s.replace(old_sale,new_sale,1)
 
+# The current offers list uses a compact price Text rather than the legacy old_sale template.
+old_price_text = """Text('${(sale ?? product.price).toStringAsFixed(0)} د.ل',
+                                        style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),"""
+new_price_text = """Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text('${(sale ?? product.price).toStringAsFixed(0)} د.ل',
+                                            style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                                          if (sale != null && product.price > sale && product.price > 0) ...[
+                                            const SizedBox(height: 3),
+                                            Text('${product.price.toStringAsFixed(0)} د.ل',
+                                              style: const TextStyle(color: Colors.grey, fontSize: 11, decoration: TextDecoration.lineThrough)),
+                                            const SizedBox(height: 3),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                              decoration: BoxDecoration(color: const Color(0xFFFFE4E8), borderRadius: BorderRadius.circular(6)),
+                                              child: Text('${(((product.price - sale) / product.price) * 100).round()}% خصم',
+                                                style: const TextStyle(color: Color(0xFFD92D42), fontSize: 10, fontWeight: FontWeight.w900)),
+                                            ),
+                                          ],
+                                        ],
+                                      ),"""
+if old_price_text in s:
+    s = s.replace(old_price_text, new_price_text, 1)
+
+
 old_cover = """                          child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.card_giftcard, size: 42))),"""
 new_cover = """                          child: InkWell(
