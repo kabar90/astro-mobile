@@ -78,7 +78,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                     final activeOffers = (_cachedHomeOffers).where((offer) {
                       final starts = DateTime.tryParse('${offer['starts_at'] ?? ''}');
                       final ends = DateTime.tryParse('${offer['ends_at'] ?? ''}');
-                      return offer['is_active'] == true && offer['show_on_home'] == true && starts != null && ends != null &&
+                      return offer['is_active'] == true && starts != null && ends != null &&
                           !now.isBefore(starts) && now.isBefore(ends);
                     }).toList();
 
@@ -89,6 +89,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                         if (itemSnapshot.hasData) _cachedHomeOfferItems = itemSnapshot.data!;
                         final offerItems = _cachedHomeOfferItems;
                         final offerSections = <Widget>[];
+                        final featuredOfferSections = <Widget>[];
                         // Newer campaigns take priority when multiple active campaigns include the same product.
                         final orderedOffers = [...activeOffers]
                           ..sort((a, b) => (DateTime.tryParse('${b['created_at'] ?? ''}') ?? DateTime.fromMillisecondsSinceEpoch(0))
@@ -439,6 +440,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                   ),
                                 ),
                               );
+                              if (offer['show_on_home'] == true) featuredOfferSections.add(offerSections.last);
                             }
                             continue;
                           }
@@ -646,13 +648,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 ),
                               ),
                             );
+                              if (offer['show_on_home'] == true) featuredOfferSections.add(offerSections.last);
                           }
                         }
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (offerSections.isNotEmpty)
+                            if (featuredOfferSections.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
                                 child: Row(
@@ -668,7 +671,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                   ],
                                 ),
                               ),
-                            if (offerSections.isEmpty)
+                            if (featuredOfferSections.isEmpty)
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 10),
                                 child: Container(
@@ -689,14 +692,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: offerSections.length > 2 ? 2 : offerSections.length,
+                                  itemCount: featuredOfferSections.length > 2 ? 2 : featuredOfferSections.length,
                                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 1,
                                     crossAxisSpacing: 0,
                                     mainAxisSpacing: 8,
                                     childAspectRatio: 2.35,
                                   ),
-                                  itemBuilder: (context, index) => offerSections[index],
+                                  itemBuilder: (context, index) => featuredOfferSections[index],
                                 ),
                               ),
                           ],
