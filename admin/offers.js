@@ -404,7 +404,21 @@ function renderOffers() {
     remove.style.fontWeight = "700";
     remove.style.order = "10";
 
-    card.append(info, edit, toggle, remove);
+    const actions = document.createElement("div");
+    actions.className = "offer-admin-actions";
+    actions.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;width:100%;margin-top:10px;align-items:center";
+    [edit, toggle, remove].forEach(action => {
+      action.style.display = "inline-flex";
+      action.style.visibility = "visible";
+      action.style.opacity = "1";
+      action.style.flex = "1 1 110px";
+      action.style.minHeight = "42px";
+      action.style.justifyContent = "center";
+      actions.append(action);
+    });
+    remove.textContent = "🗑 حذف العرض";
+    remove.style.cssText = "background:#c62828;color:#fff;border:1px solid #a51f1f;display:inline-flex;visibility:visible;opacity:1;flex:1 1 110px;min-height:42px;justify-content:center;font-weight:700";
+    card.append(info, actions);
     container.append(card);
   });
 }
