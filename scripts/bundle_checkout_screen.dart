@@ -169,7 +169,7 @@ class BundleDetailsScreen extends StatelessWidget {
   final int offerId;
   final String offerName;
   final double bundlePrice;
-  final List<Product> products;
+  final List<Map<String, dynamic>> products;
 
   const BundleDetailsScreen({
     super.key,
@@ -207,7 +207,7 @@ class BundleDetailsScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(9),
                             child: SizedBox(width: 76, height: 76,
-                              child: Image.network(product.imageUrl, fit: BoxFit.cover,
+                              child: Image.network((product['imageUrl'] ?? '').toString(), fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported))),
                           ),
                           const SizedBox(width: 12),
@@ -215,10 +215,10 @@ class BundleDetailsScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(product.name, textAlign: TextAlign.right,
+                                Text((product['name'] ?? '').toString(), textAlign: TextAlign.right,
                                   style: const TextStyle(fontWeight: FontWeight.w900, color: astroNavy)),
-                                if (product.description.trim().isNotEmpty)
-                                  Text(product.description, maxLines: 3, overflow: TextOverflow.ellipsis,
+                                if ((product['description'] ?? '').toString().trim().isNotEmpty)
+                                  Text((product['description'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
                                     style: const TextStyle(fontSize: 12, color: Colors.blueGrey)),
                               ],
