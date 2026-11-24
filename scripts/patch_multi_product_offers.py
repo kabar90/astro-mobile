@@ -182,7 +182,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           crossAxisCount: 1,
                                           crossAxisSpacing: 0,
                                           mainAxisSpacing: 0,
-                                          childAspectRatio: 1.65,
+                                          childAspectRatio: 0.90,
                                         ),
                                         itemBuilder: (context, index) {
                                           return Container(
