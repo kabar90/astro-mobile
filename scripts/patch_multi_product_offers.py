@@ -822,12 +822,49 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 
 """
     home = home[:card_start] + grid_card + home[card_end:]
-    if "class _AllOffersScreen extends StatelessWidget" not in home:
-        home += """
+    # The all-offers page owns its database reads. Never pass prebuilt widgets
+    # from the home page: that builder is not mounted when the user opens the
+    # Categories tab, which left the offers route with an empty widget list.
+    all_offers_screen = """
+class _AllOffersScreen extends StatefulWidget {
+  final List<Product> products;
+  const _AllOffersScreen({required this.products});
 
-class _AllOffersScreen extends StatelessWidget {
-  final List<Widget> offers;
-  const _AllOffersScreen({required this.offers});
+  @override
+  State<_AllOffersScreen> createState() => _AllOffersScreenState();
+}
+
+class _AllOffersScreenState extends State<_AllOffersScreen> {
+  late Future<List<Map<String, dynamic>>> _offersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _offersFuture = _loadOffers();
+  }
+
+  Future<List<Map<String, dynamic>>> _loadOffers() async {
+    final client = Supabase.instance.client;
+    final results = await Future.wait([
+      client.from('offers').select('*').eq('is_active', true).order('created_at', ascending: false),
+      client.from('offer_items').select('*'),
+    ]);
+    final now = DateTime.now();
+    final allOffers = List<Map<String, dynamic>>.from(results[0] as List);
+    final allItems = List<Map<String, dynamic>>.from(results[1] as List);
+    return allOffers.where((offer) {
+      final starts = DateTime.tryParse('${offer['starts_at'] ?? ''}')?.toLocal();
+      final ends = DateTime.tryParse('${offer['ends_at'] ?? ''}')?.toLocal();
+      return starts != null && ends != null && !now.isBefore(starts) && now.isBefore(ends);
+    }).map((offer) {
+      final id = '${offer['id']}';
+      return <String, dynamic>{
+        ...offer,
+        '_items': allItems.where((item) => '${item['offer_id']}' == id).toList(),
+      };
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -838,18 +875,120 @@ class _AllOffersScreen extends StatelessWidget {
         foregroundColor: astroNavy,
         elevation: 0,
       ),
-      body: offers.isEmpty
-          ? const Center(child: Text('لا توجد عروض متاحة حالياً'))
-          : ListView.separated(
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _offersFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('تعذر تحميل العروض: ${snapshot.error}', textAlign: TextAlign.center),
+            ));
+          }
+          final offers = snapshot.data ?? [];
+          if (offers.isEmpty) {
+            return const Center(child: Text('لا توجد عروض نشطة حالياً'));
+          }
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() { _offersFuture = _loadOffers(); });
+              await _offersFuture;
+            },
+            child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
               itemCount: offers.length,
               separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (context, index) => offers[index],
+              itemBuilder: (context, index) {
+                final offer = offers[index];
+                final name = '${offer['name'] ?? 'عرض خاص'}';
+                final type = '${offer['offer_type'] ?? ''}';
+                final cover = '${offer['cover_image_url'] ?? ''}'.trim();
+                final items = List<Map<String, dynamic>>.from(offer['_items'] as List);
+                final productEntries = <Map<String, dynamic>>[];
+                for (final item in items) {
+                  final productId = '${item['product_id'] ?? ''}';
+                  Product? product;
+                  for (final candidate in widget.products) {
+                    if (candidate.id == productId) { product = candidate; break; }
+                  }
+                  if (product != null) {
+                    productEntries.add({'product': product, 'item': item});
+                  }
+                }
+                final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}');
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFDCE6F1)),
+                    boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 9, offset: Offset(0, 3))],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (cover.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.card_giftcard, size: 42))),
+                        ),
+                      const SizedBox(height: 10),
+                      Text(name, textAlign: TextAlign.right,
+                        style: const TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900)),
+                      if (type == 'bundle' && bundlePrice != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Text('${bundlePrice.toStringAsFixed(2)} د.ل',
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(color: Color(0xFFD92D42), fontSize: 19, fontWeight: FontWeight.w900)),
+                        ),
+                      if (productEntries.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        for (final entry in productEntries)
+                          Builder(builder: (context) {
+                            final product = entry['product'] as Product;
+                            final item = entry['item'] as Map<String, dynamic>;
+                            final sale = double.tryParse('${item['offer_price'] ?? ''}');
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: SizedBox(width: 64, height: 64,
+                                      child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover)),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700))),
+                                  if (sale != null)
+                                    Text('${sale.toStringAsFixed(0)} د.ل',
+                                      style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                                ],
+                              ),
+                            );
+                          }),
+                      ],
+                      if (type == 'category')
+                        Text('خصم ${offer['discount_value'] ?? ''}% على قسم ${offer['category_name'] ?? ''}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                );
+              },
             ),
+          );
+        },
+      ),
     );
   }
 }
 """
+    home += "\\n" + all_offers_screen + "\\n"
 
     if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
         home += """
