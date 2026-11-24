@@ -7,6 +7,13 @@ cart_path = Path("astro_mobile/lib/services/cart_service.dart")
 home = home_path.read_text()
 cart = cart_path.read_text()
 
+if "final GlobalKey _homeOffersSectionKey" not in home:
+    home = home.replace(
+        "  int nav = 0;",
+        "  int nav = 0;\n  final GlobalKey _homeOffersSectionKey = GlobalKey();",
+        1,
+    )
+
 # Install the dedicated bundle checkout screen (cash or bank transfer only).
 import shutil
 checkout_source = Path("scripts/bundle_checkout_screen.dart")
@@ -31,6 +38,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 
     block = """              // ASTRO_MULTI_PRODUCT_OFFERS_PATCH
               SliverToBoxAdapter(
+                key: _homeOffersSectionKey,
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: Supabase.instance.client.from('offers').stream(primaryKey: ['id']),
                   builder: (context, offerSnapshot) {
@@ -533,7 +541,19 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                 ),
                               )
                             else
-                              ...offerSections,
+                              SizedBox(
+                                height: 460,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: offerSections.length,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                  itemBuilder: (context, index) => SizedBox(
+                                    width: 318,
+                                    child: offerSections[index],
+                                  ),
+                                ),
+                              ),
                           ],
                         );
                       },
