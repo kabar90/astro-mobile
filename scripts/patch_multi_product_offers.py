@@ -578,49 +578,63 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                             ? coverUrl
                                             : (firstProduct?.imageUrl ?? '');
                                         return Container(
-                                          margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                                          padding: const EdgeInsets.all(7),
+                                          margin: const EdgeInsets.fromLTRB(12, 2, 12, 14),
+                                          padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius: BorderRadius.circular(18),
+                                            borderRadius: BorderRadius.circular(22),
                                             border: Border.all(color: const Color(0xFFDCE6F1)),
-                                            boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 9, offset: Offset(0, 3))],
+                                            boxShadow: const [BoxShadow(color: Color(0x1212345A), blurRadius: 14, offset: Offset(0, 5))],
                                           ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.stretch,
                                             children: [
-                                              SizedBox(
-                                                height: 76,
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(10),
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(15),
+                                                child: AspectRatio(
+                                                  aspectRatio: 1.65,
                                                   child: imageUrl.isEmpty
                                                       ? Container(
                                                           color: const Color(0xFFF1F4FA),
-                                                          child: const Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 38),
+                                                          child: const Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 42),
                                                         )
-                                                      : AstroCachedImage(
-                                                          imageUrl: imageUrl,
-                                                          fit: BoxFit.cover,
-                                                          placeholder: const ColoredBox(
-                                                            color: Color(0xFFF1F4FA),
-                                                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                                          ),
-                                                          errorWidget: Container(
-                                                            color: const Color(0xFFF1F4FA),
-                                                            child: const Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 38),
+                                                      : Container(
+                                                          color: const Color(0xFF071B3B),
+                                                          alignment: Alignment.center,
+                                                          child: AstroCachedImage(
+                                                            imageUrl: imageUrl,
+                                                            fit: BoxFit.contain,
+                                                            placeholder: const ColoredBox(
+                                                              color: Color(0xFF071B3B),
+                                                              child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                                                            ),
+                                                            errorWidget: const ColoredBox(
+                                                              color: Color(0xFFF1F4FA),
+                                                              child: Center(child: Icon(Icons.local_offer_rounded, color: Color(0xFF8A9AAF), size: 42)),
+                                                            ),
                                                           ),
                                                         ),
                                                 ),
                                               ),
-                                              const SizedBox(height: 5),
-                                              Text(offerName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(color: astroNavy, fontSize: 12, fontWeight: FontWeight.w900)),
-                                              const SizedBox(height: 2),
-                                              Text('${offerCards.length} منتجات ضمن العرض',
-                                                style: const TextStyle(color: Colors.blueGrey, fontSize: 10, fontWeight: FontWeight.w700)),
-                                              const SizedBox(height: 5),
+                                              const SizedBox(height: 12),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(offerName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                                      style: const TextStyle(color: astroNavy, fontSize: 16, fontWeight: FontWeight.w900)),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                    decoration: BoxDecoration(color: const Color(0xFFEAF3FF), borderRadius: BorderRadius.circular(20)),
+                                                    child: Text('${offerCards.length} منتجات',
+                                                      style: const TextStyle(color: Color(0xFF1765C5), fontSize: 11, fontWeight: FontWeight.w900)),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 10),
                                               SizedBox(
-                                                height: 42,
+                                                height: 46,
                                                 child: ElevatedButton(
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: const Color(0xFF1765C5),
