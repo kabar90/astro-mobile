@@ -30,8 +30,11 @@ s = s.replace(
 )
 # Add a dedicated Offers shortcut beside the database-driven main categories.
 count_marker = '                    itemCount: homeCategoryTiles.length,'
-if s.count(count_marker) != 1: raise SystemExit('Category carousel itemCount anchor mismatch')
-s = s.replace(count_marker, '                    itemCount: homeCategoryTiles.length + 1,', 1)
+count_marker_patched = '                    itemCount: homeCategoryTiles.length + 1,'
+if s.count(count_marker) == 1:
+    s = s.replace(count_marker, count_marker_patched, 1)
+elif s.count(count_marker_patched) != 1:
+    raise SystemExit('Category carousel itemCount anchor mismatch')
 item_marker = '                      final item = homeCategoryTiles[index - 1];'
 offer_tile = '''                      if (index == 0) {
                         return SizedBox(width: 164, child: Material(color: Colors.transparent, child: InkWell(
