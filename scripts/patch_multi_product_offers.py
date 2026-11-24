@@ -964,9 +964,27 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700))),
-                                  if (sale != null)
-                                    Text('${sale.toStringAsFixed(0)} د.ل',
-                                      style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('${(sale ?? product.price).toStringAsFixed(0)} د.ل',
+                                        style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                                      const SizedBox(height: 5),
+                                      ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: astroBlue,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                          minimumSize: const Size(0, 34),
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        onPressed: () => _addOfferProduct(product, sale ?? product.price),
+                                        icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
+                                        label: const Text('أضف للسلة', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             );
