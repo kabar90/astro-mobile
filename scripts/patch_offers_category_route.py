@@ -43,7 +43,7 @@ carousel_new = """                            onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => _AllOffersScreen(offers: _allActiveOfferWidgets),
+                                    builder: (_) => _AllOffersScreen(products: products),
                                   ),
                                 );
                                 return;
