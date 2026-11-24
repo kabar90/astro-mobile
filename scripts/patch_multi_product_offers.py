@@ -658,7 +658,7 @@ if "static List<Product> _cachedHomeProducts = [];" not in home:
     cache_marker = "  static List<Map<String, dynamic>> _cachedHomeOfferItems = [];"
     if home.count(cache_marker) != 1:
         raise SystemExit("Could not locate the home offers cache fields")
-    home = home.replace(cache_marker, cache_marker + "\\n  static List<Product> _cachedHomeProducts = [];", 1)
+    home = home.replace(cache_marker, cache_marker + "\n  static List<Product> _cachedHomeProducts = [];", 1)
 
 old_products_stream = """        return StreamBuilder<List<Product>>(
           stream: _productsStream,
