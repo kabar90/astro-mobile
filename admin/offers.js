@@ -104,6 +104,12 @@ function setTypeFields() {
     type !== "bundle"
   );
 
+  // الصورة مطلوبة لنوعي العرض اللذين يعرضان بطاقة باقة مستقلة.
+  $("offerCoverFields").classList.toggle(
+    "hide",
+    type !== "bundle" && type !== "product"
+  );
+
   $("multiProductOfferFields").classList.toggle(
     "hide",
     type !== "product"
