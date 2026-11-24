@@ -196,7 +196,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.stretch,
                                               children: [
-                                                Expanded(
+                                                SizedBox(
+                                                  height: 148,
                                                   child: Stack(
                                                     children: [
                                                       Positioned.fill(
@@ -204,13 +205,13 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                           builder: (context) {
                                                             final coverUrl = (offer['cover_image_url'] ?? '').toString().trim();
                                                             if (coverUrl.isNotEmpty) {
-                                                              // Load the uploaded WebP cover directly. This avoids a stale or
-                                                              // failed custom-cache entry hiding the bundle's main image.
+                                                              // Preserve the full uploaded bundle cover without cropping it.
+                                                              // Contain keeps text and product details inside wide promotional images visible.
                                                               return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
                                                                 child: Image.network(
                                                                   coverUrl,
-                                                                  fit: BoxFit.cover,
+                                                                  fit: BoxFit.contain,
                                                                   width: double.infinity,
                                                                   height: double.infinity,
                                                                   loadingBuilder: (context, child, progress) {
