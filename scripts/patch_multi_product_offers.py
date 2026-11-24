@@ -552,13 +552,18 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                           );
                                         },
                                       ),
-                                    SizedBox(
-                                      height: 164,
-                                      child: ListView.separated(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                                        scrollDirection: Axis.horizontal,
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(14, 2, 14, 16),
+                                      child: GridView.builder(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
                                         itemCount: offerCards.length,
-                                        separatorBuilder: (_, __) => const SizedBox(width: 11),
+                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 12,
+                                          childAspectRatio: 0.70,
+                                        ),
                                         itemBuilder: (_, index) => offerCards[index],
                                       ),
                                     ),
@@ -647,6 +652,81 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
     if old_tap not in card_tail:
         raise SystemExit("Could not find offer card navigation to pass sale price")
     home = home[:card_start] + card_tail.replace(old_tap, new_tap, 1)
+
+    # Use a compact portrait product tile that fits a two-column home grid.
+    card_start = home.find(card_marker)
+    card_end = home.find("\n  Widget _homeProductSection", card_start)
+    if card_start < 0 or card_end < 0:
+        raise SystemExit("Could not isolate the offer product card for grid redesign")
+    grid_card = """  Widget _offerProductCard(Product product, double salePrice, String label) {
+    final discount = product.price > 0
+        ? (((product.price - salePrice) / product.price) * 100).round()
+        : 0;
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: _productAtOfferPrice(product, salePrice)))),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFD8DD)),
+            boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 7, offset: Offset(0, 2))],
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 6,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(11),
+                        child: product.imageUrl.isEmpty
+                            ? _placeholder(product.category, false)
+                            : AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.contain,
+                                errorWidget: _placeholder(product.category, false)),
+                      ),
+                    ),
+                    Positioned(
+                      top: 6, right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFFE44755), borderRadius: BorderRadius.circular(20)),
+                        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: astroNavy, fontSize: 11, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  Flexible(child: Text('\${salePrice.toStringAsFixed(0)} د.ل',
+                    maxLines: 1, style: const TextStyle(color: Color(0xFFD92D42), fontSize: 14, fontWeight: FontWeight.w900))),
+                  const SizedBox(width: 5),
+                  if (discount > 0) Text('-\$discount%',
+                    style: const TextStyle(color: Color(0xFFD92D42), fontSize: 10, fontWeight: FontWeight.w800)),
+                ],
+              ),
+              Text('\${product.price.toStringAsFixed(0)} د.ل',
+                style: const TextStyle(color: Colors.black38, fontSize: 10, decoration: TextDecoration.lineThrough)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+"""
+    home = home[:card_start] + grid_card + home[card_end:]
     if "class _OfferProductsGridScreen extends StatelessWidget" not in home:
         home += "\n" + "\nclass _OfferProductsGridScreen extends StatelessWidget {\n  final String title;\n  final List<Widget> products;\n\n  const _OfferProductsGridScreen({\n    required this.title,\n    required this.products,\n  });\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF3F6FC),\n      appBar: AppBar(\n        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),\n        backgroundColor: Colors.white,\n        foregroundColor: astroNavy,\n        elevation: 0,\n      ),\n      body: products.isEmpty\n          ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض'))\n          : GridView.builder(\n              padding: const EdgeInsets.all(12),\n              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(\n                crossAxisCount: 2,\n                crossAxisSpacing: 10,\n                mainAxisSpacing: 12,\n                childAspectRatio: 0.72,\n              ),\n              itemCount: products.length,\n              itemBuilder: (context, index) => products[index],\n            ),\n    );\n  }\n}\n\n"
     home_path.write_text(home)
