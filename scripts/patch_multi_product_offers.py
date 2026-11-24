@@ -542,7 +542,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               )
                             else
                               SizedBox(
-                                height: 460,
+                                height: 300,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
