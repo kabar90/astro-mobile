@@ -204,29 +204,42 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                           builder: (context) {
                                                             final coverUrl = (offer['cover_image_url'] ?? '').toString().trim();
                                                             if (coverUrl.isNotEmpty) {
+                                                              // Load the uploaded WebP cover directly. This avoids a stale or
+                                                              // failed custom-cache entry hiding the bundle's main image.
                                                               return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
-                                                                child: AstroCachedImage(
-                                                                  imageUrl: coverUrl,
+                                                                child: Image.network(
+                                                                  coverUrl,
+                                                                  width: double.infinity,
+                                                                  height: double.infinity,
                                                                   fit: BoxFit.cover,
-                                                                  placeholder: const ColoredBox(
-                                                                    color: Color(0xFFF3F6FC),
-                                                                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                                                  ),
-                                                                  errorWidget: Row(
-                                                                    children: [
-                                                                      for (final product in bundleProducts.take(3))
-                                                                        Expanded(
-                                                                          child: Padding(
-                                                                            padding: const EdgeInsets.all(2),
-                                                                            child: ClipRRect(
-                                                                              borderRadius: BorderRadius.circular(9),
-                                                                              child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover),
+                                                                  gaplessPlayback: true,
+                                                                  loadingBuilder: (context, child, progress) {
+                                                                    if (progress == null) return child;
+                                                                    return const ColoredBox(
+                                                                      color: Color(0xFFF3F6FC),
+                                                                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                                                    );
+                                                                  },
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return Row(
+                                                                      children: [
+                                                                        for (final product in bundleProducts.take(3))
+                                                                          Expanded(
+                                                                            child: Padding(
+                                                                              padding: const EdgeInsets.all(2),
+                                                                              child: ClipRRect(
+                                                                                borderRadius: BorderRadius.circular(9),
+                                                                                child: AstroCachedImage(
+                                                                                  imageUrl: product.imageUrl,
+                                                                                  fit: BoxFit.cover,
+                                                                                ),
+                                                                              ),
                                                                             ),
                                                                           ),
-                                                                        ),
-                                                                    ],
-                                                                  ),
+                                                                      ],
+                                                                    );
+                                                                  },
                                                                 ),
                                                               );
                                                             }
