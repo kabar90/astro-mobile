@@ -961,7 +961,7 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                                       offerId: offerId,
                                       offerName: name,
                                       bundlePrice: bundlePrice,
-                                      products: productEntries.map((e) => e['product'] as Product).toList(),
+                                      products: productEntries.map((e) { final p = e['product'] as Product; return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description}; }).toList(),
                                     )));
                                   }
                                 : null,
