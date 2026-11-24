@@ -7,10 +7,29 @@ cart_path = Path("astro_mobile/lib/services/cart_service.dart")
 home = home_path.read_text()
 cart = cart_path.read_text()
 
+# Keep offer streams and their last successful snapshots stable across rebuilds
+# and navigation away from / back to the home screen.
+if "static late final Stream<List<Map<String, dynamic>>> _astroHomeOffersStream" not in home:
+    nav_marker = "  int nav = 0;"
+    if home.count(nav_marker) != 1:
+        raise SystemExit("Could not locate the home state navigation field exactly once")
+    home = home.replace(
+        nav_marker,
+        nav_marker + """
+  static late final Stream<List<Map<String, dynamic>>> _astroHomeOffersStream =
+      Supabase.instance.client.from('offers').stream(primaryKey: ['id']);
+  static late final Stream<List<Map<String, dynamic>>> _astroHomeOfferItemsStream =
+      Supabase.instance.client.from('offer_items').stream(primaryKey: ['id']);
+  static List<Map<String, dynamic>> _cachedHomeOffers = [];
+  static List<Map<String, dynamic>> _cachedHomeOfferItems = [];
+""",
+        1,
+    )
+
 if "final GlobalKey _homeOffersSectionKey" not in home:
     home = home.replace(
         "  int nav = 0;",
-        "  int nav = 0;\n  final GlobalKey _homeOffersSectionKey = GlobalKey();\n  List<Map<String, dynamic>> _cachedHomeOffers = [];\n  List<Map<String, dynamic>> _cachedHomeOfferItems = [];",
+        "  int nav = 0;\n  final GlobalKey _homeOffersSectionKey = GlobalKey();",
         1,
     )
 
@@ -47,7 +66,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
               SliverToBoxAdapter(
                 key: _homeOffersSectionKey,
                 child: StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: Supabase.instance.client.from('offers').stream(primaryKey: ['id']),
+                  stream: _astroHomeOffersStream,
                   builder: (context, offerSnapshot) {
                     if (offerSnapshot.hasData) _cachedHomeOffers = offerSnapshot.data!;
                     final now = DateTime.now();
@@ -59,7 +78,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                     }).toList();
 
                     return StreamBuilder<List<Map<String, dynamic>>>(
-                      stream: Supabase.instance.client.from('offer_items').stream(primaryKey: ['id']),
+                      stream: _astroHomeOfferItemsStream,
                       builder: (context, itemSnapshot) {
                         if (itemSnapshot.hasData) _cachedHomeOfferItems = itemSnapshot.data!;
                         final offerItems = _cachedHomeOfferItems;
