@@ -78,7 +78,7 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                     final activeOffers = (_cachedHomeOffers).where((offer) {
                       final starts = DateTime.tryParse('${offer['starts_at'] ?? ''}');
                       final ends = DateTime.tryParse('${offer['ends_at'] ?? ''}');
-                      return offer['is_active'] == true && starts != null && ends != null &&
+                      return offer['is_active'] == true && offer['show_on_home'] == true && starts != null && ends != null &&
                           !now.isBefore(starts) && now.isBefore(ends);
                     }).toList();
 
