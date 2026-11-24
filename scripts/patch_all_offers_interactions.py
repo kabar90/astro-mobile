@@ -61,7 +61,7 @@ if old_name in s: s = s.replace(old_name,new_name,1)
 old_sale = """if (sale != null)
                                     Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),"""
-new_sale = """if (sale != null) ...[
+new_sale = """if (sale != null && type != 'bundle') ...[
                                     Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
                                     IconButton(
@@ -93,6 +93,34 @@ if old_cover in s:
                         ),
                       const SizedBox(height: 10),
                       Text(name,""",1)
+
+
+bundle_button = """                      if (type == 'bundle' && bundlePrice != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SizedBox(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: astroBlue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () {
+                                final offerId = int.tryParse('${offer['id']}');
+                                if (offerId == null) return;
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
+                                  offerId: offerId, offerName: name, bundlePrice: bundlePrice)));
+                              },
+                              icon: const Icon(Icons.card_giftcard_rounded),
+                              label: const Text('شراء الباقة كاملة', style: TextStyle(fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                        ),
+"""
+anchor = """                      if (type == 'category')"""
+if bundle_button not in s and anchor in s:
+    s = s.replace(anchor, bundle_button + anchor, 1)
 
 p.write_text(s,encoding="utf-8")
 print("Offer product rows now open details and include sale-price add-to-cart buttons.")
