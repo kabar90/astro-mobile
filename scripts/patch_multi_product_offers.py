@@ -208,14 +208,19 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                                               // failed custom-cache entry hiding the bundle's main image.
                                                               return ClipRRect(
                                                                 borderRadius: BorderRadius.circular(10),
-                                                                child: AstroCachedImage(
-                                                                  imageUrl: coverUrl,
+                                                                child: Image.network(
+                                                                  coverUrl,
                                                                   fit: BoxFit.cover,
-                                                                  placeholder: const ColoredBox(
-                                                                    color: Color(0xFFF3F6FC),
-                                                                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                                                  ),
-                                                                  errorWidget: Row(
+                                                                  width: double.infinity,
+                                                                  height: double.infinity,
+                                                                  loadingBuilder: (context, child, progress) {
+                                                                    if (progress == null) return child;
+                                                                    return const ColoredBox(
+                                                                      color: Color(0xFFF3F6FC),
+                                                                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                                                    );
+                                                                  },
+                                                                  errorBuilder: (context, error, stackTrace) => Row(
                                                                     children: [
                                                                       for (final product in bundleProducts.take(3))
                                                                         Expanded(
