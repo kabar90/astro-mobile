@@ -28,15 +28,12 @@ s = s.replace(
     "height: 196,\n                child: ListView.separated(",
     1,
 )
-# Add an Offers shortcut beside the database-driven main categories.
-tile = """                    itemCount: homeCategoryTiles.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
-                      final item = homeCategoryTiles[index];"""
-tile_new = """                    itemCount: homeCategoryTiles.length + 1,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
-                      if (index == homeCategoryTiles.length) {
+# Add a dedicated Offers shortcut beside the database-driven main categories.
+count_marker = '                    itemCount: homeCategoryTiles.length,'
+if s.count(count_marker) != 1: raise SystemExit('Category carousel itemCount anchor mismatch')
+s = s.replace(count_marker, '                    itemCount: homeCategoryTiles.length + 1,', 1)
+item_marker = '                      final item = homeCategoryTiles[index];'
+offer_tile = '''                      if (index == homeCategoryTiles.length) {
                         return SizedBox(width: 164, child: Material(color: Colors.transparent, child: InkWell(
                           borderRadius: BorderRadius.circular(20),
                           onTap: () {
@@ -50,9 +47,10 @@ tile_new = """                    itemCount: homeCategoryTiles.length + 1,
                           ])),
                         )));
                       }
-                      final item = homeCategoryTiles[index];"""
-s = s.replace(tile, tile_new, 1)
-
+                      final item = homeCategoryTiles[index];
+'''
+if s.count(item_marker) != 1: raise SystemExit('Category itemBuilder anchor mismatch')
+s = s.replace(item_marker, offer_tile, 1)
 # Increase the featured section's top and bottom padding. This is separate
 # from the grid cell-height fix and prevents the heading from crowding the grid.
 s = s.replace(
