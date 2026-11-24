@@ -105,7 +105,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                       StreamBuilder<int>(
                                         stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
                                         builder: (context, snapshot) {
-                                          final remaining = endDate.difference(DateTime.now());
+                                          final remaining = endDate?.difference(DateTime.now());
+                                          if (remaining == null) return const SizedBox.shrink();
                                           if (remaining.isNegative || remaining.inSeconds == 0) {
                                             return const Padding(
                                               padding: EdgeInsets.only(bottom: 8),
@@ -470,7 +471,8 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                                       StreamBuilder<int>(
                                         stream: Stream.periodic(const Duration(seconds: 1), (tick) => tick),
                                         builder: (context, snapshot) {
-                                          final remaining = endDate.difference(DateTime.now());
+                                          final remaining = endDate?.difference(DateTime.now());
+                                          if (remaining == null) return const SizedBox.shrink();
                                           if (remaining.isNegative || remaining.inSeconds == 0) {
                                             return const Padding(
                                               padding: EdgeInsets.only(bottom: 8),
