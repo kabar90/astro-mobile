@@ -176,7 +176,7 @@ jobs:
         run: |
           set -e
           python3 scripts/patch_offers_category_route.py
-          grep -q "offers: _allActiveOfferWidgets" astro_mobile/lib/screens/home_screen.dart
+          grep -q "_AllOffersScreen(products: products)" astro_mobile/lib/screens/home_screen.dart
           grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
           echo "Offers category routing uses the database category without duplicate hardcoded shortcut."
 
