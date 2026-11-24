@@ -395,6 +395,14 @@ function renderOffers() {
     );
     remove.style.background = "#c62828";
     remove.style.color = "#fff";
+    remove.style.border = "1px solid #a51f1f";
+    remove.style.display = "block";
+    remove.style.flex = "0 0 100%";
+    remove.style.width = "100%";
+    remove.style.marginTop = "6px";
+    remove.style.padding = "11px";
+    remove.style.fontWeight = "700";
+    remove.style.order = "10";
 
     card.append(info, edit, toggle, remove);
     container.append(card);
