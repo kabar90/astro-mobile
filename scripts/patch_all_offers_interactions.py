@@ -62,8 +62,29 @@ old_sale = """if (sale != null)
                                     Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),"""
 new_sale = """if (sale != null && type != 'bundle') ...[
-                                    Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
-                                      style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text('""" + dollar + """{sale.toStringAsFixed(0)} د.ل',
+                                          style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900, fontSize: 16)),
+                                        if (product.price > sale)
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text('""" + dollar + """{product.price.toStringAsFixed(0)}',
+                                                style: const TextStyle(color: Colors.grey, fontSize: 12, decoration: TextDecoration.lineThrough)),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                                decoration: BoxDecoration(color: const Color(0xFFFFE4E8), borderRadius: BorderRadius.circular(6)),
+                                                child: Text(
+                                                  '${(((product.price - sale) / product.price) * 100).round()}% خصم',
+                                                  style: const TextStyle(color: Color(0xFFD92D42), fontSize: 11, fontWeight: FontWeight.w900)),
+                                              ),
+                                            ],
+                                          ),
+                                      ],
+                                    ),
                                     IconButton(
                                       tooltip: 'إضافة إلى السلة',
                                       visualDensity: VisualDensity.compact,
