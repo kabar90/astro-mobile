@@ -45,7 +45,7 @@ if "void _addOfferProduct(Product p, double? sale)" not in s:
 old_image = """child: SizedBox(width: 64, height: 64,
                                       child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover)),"""
 new_image = """child: InkWell(
-                                      onTap: () => _openOfferProduct(product, sale),
+                                      onTap: type == 'bundle' ? null : () => _openOfferProduct(product, sale),
                                       child: SizedBox(width: 64, height: 64,
                                         child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover))),"""
 if old_image in s: s = s.replace(old_image,new_image,1)
@@ -53,7 +53,7 @@ if old_image in s: s = s.replace(old_image,new_image,1)
 old_name = """Expanded(child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700))),"""
 new_name = """Expanded(child: InkWell(
-                                    onTap: () => _openOfferProduct(product, sale),
+                                    onTap: type == 'bundle' ? null : () => _openOfferProduct(product, sale),
                                     child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700)))),"""
 if old_name in s: s = s.replace(old_name,new_name,1)
@@ -79,7 +79,21 @@ new_cover = """                          child: InkWell(
                               final first = productEntries.first;
                               final p = first['product'] as Product;
                               final item = first['item'] as Map<String, dynamic>;
-                              _openOfferProduct(p, double.tryParse('""" + dollar + """{item['offer_price'] ?? ''}'));
+                              if (type == 'bundle' && bundlePrice != null) {
+                                final offerId = int.tryParse('${offer['id']}');
+                                if (offerId == null) return;
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => BundleDetailsScreen(
+                                  offerId: offerId,
+                                  offerName: name,
+                                  bundlePrice: bundlePrice,
+                                  products: productEntries.map((e) {
+                                    final p = e['product'] as Product;
+                                    return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description};
+                                  }).toList(),
+                                )));
+                              } else {
+                                _openOfferProduct(p, double.tryParse('""" + dollar + """{item['offer_price'] ?? ''}'));
+                              }
                             },
                             child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.card_giftcard, size: 42))),"""
