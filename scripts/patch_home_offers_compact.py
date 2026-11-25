@@ -9,7 +9,7 @@ replacements = [
                                   height: 370,
                                   child: ListView.separated(''',
      '''                                child: SizedBox(
-                                  height: 258,
+                                  height: 320,
                                   child: ListView.separated(''',
      'carousel height'),
     ('''                                    itemBuilder: (context, index) => SizedBox(
@@ -18,7 +18,7 @@ replacements = [
                                     ),''',
      '''                                    itemBuilder: (context, index) => SizedBox(
                                       width: 174,
-                                      height: 258,
+                                      height: 320,
                                       child: featuredOfferSections[index],
                                     ),''',
      'carousel width'),
