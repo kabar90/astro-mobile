@@ -117,10 +117,10 @@ bundle = """if (offer['show_on_home'] == true) {
                                   context: context,
                                   title: offerName,
                                   imageUrl: (offer['cover_image_url'] ?? '').toString(),
-                                  meta: '\${bundlePrice.toStringAsFixed(2)} د.ل',
+                                  meta: '${bundlePrice.toStringAsFixed(2)} د.ل',
                                   actionLabel: 'شراء الباقة',
                                   onTap: () {
-                                    final id = int.tryParse('\${offer['id']}');
+                                    final id = int.tryParse('${offer['id']}');
                                     if (id == null) return;
                                     Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
                                       offerId: id,
@@ -143,7 +143,7 @@ product = """if (offer['show_on_home'] == true) {
                                   context: context,
                                   title: offerName,
                                   imageUrl: cover.isNotEmpty ? cover : (firstProduct?.imageUrl ?? ''),
-                                  meta: '\${offerCards.length} منتجات',
+                                  meta: '${offerCards.length} منتجات',
                                   actionLabel: 'تصفح العرض',
                                   onTap: () => Navigator.push(context, MaterialPageRoute(
                                     builder: (_) => _OfferProductsGridScreen(title: offerName, products: offerCards),
