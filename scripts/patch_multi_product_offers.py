@@ -909,8 +909,8 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF3F6FC),
-    appBar: AppBar(title: const Text('العروض والخصومات'), backgroundColor: Colors.white, foregroundColor: astroNavy, elevation: 0),
+    backgroundColor: astroBackground,
+    appBar: AppBar(title: const Text('العروض والخصومات'), backgroundColor: astroBackground, foregroundColor: Colors.white, elevation: 0),
     body: FutureBuilder<List<Map<String, dynamic>>>(
       future: _offersFuture,
       builder: (context, snapshot) {
