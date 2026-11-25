@@ -46,7 +46,7 @@ replacements = [
     ('''                                                      minimumSize: const Size(double.infinity, 46),''',
      '''                                                      minimumSize: const Size(double.infinity, 34),''',
      'bundle details button minimum'),
-    ('''                                                  aspectRatio: 1.45,''',
+    ('''                                                  aspectRatio: 1.65,''',
      '''                                                  aspectRatio: 1.8,''',
      'regular offer cover ratio'),
     ('''                                              const SizedBox(height: 12),
