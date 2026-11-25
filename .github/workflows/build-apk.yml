@@ -204,7 +204,8 @@ jobs:
           grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
           grep -q "width: 174" astro_mobile/lib/screens/home_screen.dart
           grep -q "childAspectRatio: 1.0" astro_mobile/lib/screens/home_screen.dart
-          grep -q "Featured home offers resized to compact" <(python3 scripts/patch_home_offers_compact.py 2>&1)
+          grep -q "height: 70" astro_mobile/lib/screens/home_screen.dart
+          grep -q "aspectRatio: 1.8" astro_mobile/lib/screens/home_screen.dart
           echo "Featured offers now match the compact latest-products card size."
 
       - name: Upload extracted Flutter source for safe inspection
