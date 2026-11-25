@@ -937,9 +937,17 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
               if (items.isNotEmpty) {
                 for (final p in widget.products) { if (p.id == '${items.first['product_id'] ?? ''}') { firstProduct = p; break; } }
               }
-              final imageUrl = cover.isNotEmpty ? cover : (firstProduct?.imageUrl ?? '');
+              final fallbackImageUrl = (firstProduct?.imageUrl ?? '').trim();
+              final imageUrl = cover.isNotEmpty ? cover : fallbackImageUrl;
+              final fallbackImage = fallbackImageUrl.isEmpty
+                  ? const ColoredBox(color: Color(0xFF0B1B49), child: Center(child: Icon(Icons.local_offer_rounded, size: 44, color: astroBlue)))
+                  : AstroCachedImage(
+                      imageUrl: fallbackImageUrl,
+                      fit: BoxFit.contain,
+                      errorWidget: const ColoredBox(color: Color(0xFF0B1B49), child: Center(child: Icon(Icons.local_offer_rounded, size: 44, color: astroBlue))),
+                    );
               return Material(
-                color: Colors.white, borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF0B1B49), borderRadius: BorderRadius.circular(20),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20), onTap: () => _openOffer(offer),
                   child: Container(
@@ -948,9 +956,12 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: AspectRatio(aspectRatio: 1.65, child: imageUrl.isEmpty
-                          ? Container(color: const Color(0xFFF1F4FA), child: const Icon(Icons.local_offer_rounded, size: 44, color: astroBlue))
-                          : AstroCachedImage(imageUrl: imageUrl, fit: BoxFit.contain)),
+                        child: AspectRatio(
+                          aspectRatio: 1.65,
+                          child: imageUrl.isEmpty
+                              ? fallbackImage
+                              : AstroCachedImage(imageUrl: imageUrl, fit: BoxFit.contain, errorWidget: fallbackImage),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Row(children: [
