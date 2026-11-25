@@ -208,6 +208,14 @@ jobs:
           grep -q "aspectRatio: 1.8" astro_mobile/lib/screens/home_screen.dart
           echo "Featured offers now match the compact latest-products card size."
 
+      - name: Normalize every featured offer into one consistent card
+        run: |
+          set -e
+          python3 scripts/patch_home_offers_uniform.py
+          grep -q "_homeOfferPreviewCard" astro_mobile/lib/screens/home_screen.dart
+          grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
+          echo "All featured offers use the same compact card template."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
