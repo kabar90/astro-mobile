@@ -31,6 +31,7 @@ patch_file("product_detail_screen.dart", [
 
 patch_file("checkout_screen.dart", [
     ("fillColor: Colors.white,", "fillColor: astroSurfaceAlt,", "dark search and customer fields"),
+    ("fillColor: Colors.white,", "fillColor: astroSurfaceAlt,", "second customer field surface"),
     ("border: Border.all(color: const Color(0xFFE2E8F0)),", "border: Border.all(color: astroPurple.withOpacity(.62)),", "city list neon border"),
     ("title: Text(city['city_name'].toString(), style: const TextStyle(fontWeight: FontWeight.w700)),",
      "title: Text(city['city_name'].toString(), style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w800)),", "city text contrast"),
@@ -39,6 +40,7 @@ patch_file("checkout_screen.dart", [
     ("separatorBuilder: (_, __) => const Divider(height: 1, indent: 14, endIndent: 14),",
      "separatorBuilder: (_, __) => Divider(height: 1, indent: 14, endIndent: 14, color: astroPurple.withOpacity(.28)),", "city list separators"),
     ("border: Border.all(color: const Color(0xFFE1EAF5)),", "border: Border.all(color: astroPurple.withOpacity(.58)),", "checkout card borders"),
+    ("border: Border.all(color: const Color(0xFFE1EAF5)),", "border: Border.all(color: astroPurple.withOpacity(.58)),", "second checkout card border"),
 ])
 
 patch_file("account_screen.dart", [
