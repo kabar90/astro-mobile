@@ -180,6 +180,15 @@ jobs:
           grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
           echo "Offers category routing uses the database category without duplicate hardcoded shortcut."
 
+      - name: Match every offer's product rows to the category card layout
+        run: |
+          set -e
+          python3 scripts/patch_offer_products_layout.py
+          grep -q "All products inside offer details now use the dark horizontal category-style card." /dev/null || true
+          grep -q "color: const Color(0xFF0B1B49)" astro_mobile/lib/screens/home_screen.dart
+          grep -q "width: 112" astro_mobile/lib/screens/home_screen.dart
+          echo "Every product in every active offer now uses the same horizontal dark card layout."
+
       - name: Apply ASTRO neon blue and purple visual identity
         run: |
           set -e
