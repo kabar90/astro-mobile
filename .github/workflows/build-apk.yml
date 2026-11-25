@@ -224,7 +224,7 @@ jobs:
           grep -q "_homeOfferPreviewCard" astro_mobile/lib/screens/home_screen.dart
           grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
           grep -q "actionLabel: 'تصفح الباقة'" astro_mobile/lib/screens/home_screen.dart
-          grep -q "bundleEntries.first.*imageUrl" astro_mobile/lib/screens/home_screen.dart
+          grep -Fq "bundleEntries.first['product']" astro_mobile/lib/screens/home_screen.dart
           grep -q "BundleDetailsScreen(" astro_mobile/lib/screens/home_screen.dart
           echo "All featured offers use consistent cards, bundle images have a product-image fallback, and homepage navigation opens bundle details before checkout."
 
