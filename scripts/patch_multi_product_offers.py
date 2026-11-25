@@ -845,19 +845,14 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
 class _AllOffersScreen extends StatefulWidget {
   final List<Product> products;
   const _AllOffersScreen({required this.products});
-
   @override
   State<_AllOffersScreen> createState() => _AllOffersScreenState();
 }
 
 class _AllOffersScreenState extends State<_AllOffersScreen> {
   late Future<List<Map<String, dynamic>>> _offersFuture;
-
   @override
-  void initState() {
-    super.initState();
-    _offersFuture = _loadOffers();
-  }
+  void initState() { super.initState(); _offersFuture = _loadOffers(); }
 
   Future<List<Map<String, dynamic>>> _loadOffers() async {
     final client = Supabase.instance.client;
@@ -874,186 +869,162 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
       return starts != null && ends != null && !now.isBefore(starts) && now.isBefore(ends);
     }).map((offer) {
       final id = '${offer['id']}';
-      return <String, dynamic>{
-        ...offer,
-        '_items': allItems.where((item) => '${item['offer_id']}' == id).toList(),
-      };
+      return <String, dynamic>{...offer, '_items': allItems.where((item) => '${item['offer_id']}' == id).toList()};
     }).toList();
   }
 
+  void _openOffer(Map<String, dynamic> offer) {
+    final type = '${offer['offer_type'] ?? ''}';
+    final items = List<Map<String, dynamic>>.from(offer['_items'] as List);
+    final entries = <Map<String, dynamic>>[];
+    for (final item in items) {
+      for (final product in widget.products) {
+        if (product.id == '${item['product_id'] ?? ''}') {
+          entries.add({'product': product, 'item': item});
+          break;
+        }
+      }
+    }
+    final name = '${offer['name'] ?? 'عرض خاص'}';
+    final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}');
+    if (type == 'bundle' && bundlePrice != null) {
+      final offerId = int.tryParse('${offer['id']}');
+      if (offerId == null) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => BundleDetailsScreen(
+        offerId: offerId, offerName: name, bundlePrice: bundlePrice,
+        products: entries.map((e) {
+          final p = e['product'] as Product;
+          return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description};
+        }).toList(),
+      )));
+      return;
+    }
+    final categoryProducts = type == 'category'
+        ? widget.products.where((p) => p.category == '${offer['category_name'] ?? ''}').toList()
+        : <Product>[];
+    Navigator.push(context, MaterialPageRoute(builder: (_) => _OfferContentsScreen(
+      title: name, offer: offer, entries: entries, categoryProducts: categoryProducts,
+    )));
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFFF3F6FC),
+    appBar: AppBar(title: const Text('العروض والخصومات'), backgroundColor: Colors.white, foregroundColor: astroNavy, elevation: 0),
+    body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: _offersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('تعذر تحميل العروض: ${snapshot.error}', textAlign: TextAlign.center)));
+        final offers = snapshot.data ?? [];
+        if (offers.isEmpty) return const Center(child: Text('لا توجد عروض نشطة حالياً'));
+        return RefreshIndicator(
+          onRefresh: () async { setState(() { _offersFuture = _loadOffers(); }); await _offersFuture; },
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 28), itemCount: offers.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final offer = offers[index];
+              final name = '${offer['name'] ?? 'عرض خاص'}';
+              final type = '${offer['offer_type'] ?? ''}';
+              final cover = '${offer['cover_image_url'] ?? ''}'.trim();
+              final items = List<Map<String, dynamic>>.from(offer['_items'] as List);
+              final count = type == 'category'
+                  ? widget.products.where((p) => p.category == '${offer['category_name'] ?? ''}').length
+                  : items.length;
+              final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}');
+              Product? firstProduct;
+              if (items.isNotEmpty) {
+                for (final p in widget.products) { if (p.id == '${items.first['product_id'] ?? ''}') { firstProduct = p; break; } }
+              }
+              final imageUrl = cover.isNotEmpty ? cover : (firstProduct?.imageUrl ?? '');
+              return Material(
+                color: Colors.white, borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20), onTap: () => _openOffer(offer),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFDCE6F1)), boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 8, offset: Offset(0, 3))]),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: AspectRatio(aspectRatio: 1.65, child: imageUrl.isEmpty
+                          ? Container(color: const Color(0xFFF1F4FA), child: const Icon(Icons.local_offer_rounded, size: 44, color: astroBlue))
+                          : AstroCachedImage(imageUrl: imageUrl, fit: BoxFit.contain)),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(children: [
+                        Expanded(child: Text(name, textAlign: TextAlign.right, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900))),
+                        const SizedBox(width: 8),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: const Color(0xFFEAF3FF), borderRadius: BorderRadius.circular(20)), child: Text('$count منتجات', style: const TextStyle(color: astroBlue, fontSize: 12, fontWeight: FontWeight.w800))),
+                      ]),
+                      if (type == 'bundle' && bundlePrice != null)
+                        Padding(padding: const EdgeInsets.only(top: 5), child: Text('${bundlePrice.toStringAsFixed(2)} د.ل', textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFD92D42), fontSize: 19, fontWeight: FontWeight.w900))),
+                      const SizedBox(height: 10),
+                      SizedBox(height: 48, child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1765C5), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        onPressed: () => _openOffer(offer), child: const Text('تصفح العرض', style: TextStyle(fontWeight: FontWeight.w900)),
+                      )),
+                    ]),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class _OfferContentsScreen extends StatelessWidget {
+  final String title;
+  final Map<String, dynamic> offer;
+  final List<Map<String, dynamic>> entries;
+  final List<Product> categoryProducts;
+  const _OfferContentsScreen({required this.title, required this.offer, required this.entries, required this.categoryProducts});
+
+  Product _atPrice(Product p, double price) => Product(
+    id: p.id, name: p.name, category: p.category, subcategoryId: p.subcategoryId, price: price,
+    imageUrl: p.imageUrl, images: p.images, description: p.description, isActive: p.isActive,
+    colors: p.colors, brand: p.brand, rating: p.rating, reviewCount: p.reviewCount,
+    stockQuantity: p.stockQuantity, isNew: p.isNew, rewardPoints: p.rewardPoints,
+    salesCount: p.salesCount, allowPointsPayment: p.allowPointsPayment, specifications: p.specifications,
+  );
+
   @override
   Widget build(BuildContext context) {
+    final type = '${offer['offer_type'] ?? ''}';
+    final discount = double.tryParse('${offer['discount_value'] ?? ''}') ?? 0;
+    final rows = entries.isNotEmpty ? entries : categoryProducts.map((p) => <String, dynamic>{'product': p, 'item': <String, dynamic>{}}).toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FC),
-      appBar: AppBar(
-        title: const Text('العروض والخصومات'),
-        backgroundColor: Colors.white,
-        foregroundColor: astroNavy,
-        elevation: 0,
-      ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _offersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text('تعذر تحميل العروض: ${snapshot.error}', textAlign: TextAlign.center),
-            ));
-          }
-          final offers = snapshot.data ?? [];
-          if (offers.isEmpty) {
-            return const Center(child: Text('لا توجد عروض نشطة حالياً'));
-          }
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() { _offersFuture = _loadOffers(); });
-              await _offersFuture;
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
-              itemCount: offers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                final offer = offers[index];
-                final name = '${offer['name'] ?? 'عرض خاص'}';
-                final type = '${offer['offer_type'] ?? ''}';
-                final cover = '${offer['cover_image_url'] ?? ''}'.trim();
-                final items = List<Map<String, dynamic>>.from(offer['_items'] as List);
-                final productEntries = <Map<String, dynamic>>[];
-                for (final item in items) {
-                  final productId = '${item['product_id'] ?? ''}';
-                  Product? product;
-                  for (final candidate in widget.products) {
-                    if (candidate.id == productId) { product = candidate; break; }
-                  }
-                  if (product != null) {
-                    productEntries.add({'product': product, 'item': item});
-                  }
-                }
-                final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}');
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFDCE6F1)),
-                    boxShadow: const [BoxShadow(color: Color(0x0A12345A), blurRadius: 9, offset: Offset(0, 3))],
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (cover.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(cover, height: 210, width: double.infinity, fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Icon(Icons.card_giftcard, size: 42))),
-                        ),
-                      const SizedBox(height: 10),
-                      Text(name, textAlign: TextAlign.right,
-                        style: const TextStyle(color: astroNavy, fontSize: 18, fontWeight: FontWeight.w900)),
-                      if (type == 'bundle' && bundlePrice != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text('${bundlePrice.toStringAsFixed(2)} د.ل',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(color: Color(0xFFD92D42), fontSize: 19, fontWeight: FontWeight.w900)),
-                        ),
-                      if (productEntries.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        for (final entry in productEntries)
-                          Builder(builder: (context) {
-                            final product = entry['product'] as Product;
-                            final item = entry['item'] as Map<String, dynamic>;
-                            final sale = double.tryParse('${item['offer_price'] ?? ''}');
-                            return InkWell(
-                              onTap: type == 'bundle' && bundlePrice != null
-                                ? () {
-                                    final offerId = int.tryParse('${offer['id']}');
-                                    if (offerId == null) return;
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => BundleDetailsScreen(
-                                      offerId: offerId,
-                                      offerName: name,
-                                      bundlePrice: bundlePrice,
-                                      products: productEntries.map((e) { final p = e['product'] as Product; return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description}; }).toList(),
-                                    )));
-                                  }
-                                : null,
-                              child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              child: Row(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: SizedBox(width: 64, height: 64,
-                                      child: AstroCachedImage(imageUrl: product.imageUrl, fit: BoxFit.cover)),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w700))),
-                                  if (type != 'bundle') Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('${(sale ?? product.price).toStringAsFixed(0)} د.ل',
-                                        style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
-                                      const SizedBox(height: 5),
-                                      ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: astroBlue,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                          minimumSize: const Size(0, 34),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () => _addOfferProduct(product, sale ?? product.price),
-                                        icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
-                                        label: const Text('أضف للسلة', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ));
-                          }),
-                      ],
-                      if (type == 'bundle' && bundlePrice != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: SizedBox(
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: astroBlue,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              onPressed: () {
-                                final offerId = int.tryParse('${offer['id']}');
-                                if (offerId == null) return;
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
-                                  offerId: offerId,
-                                  offerName: name,
-                                  bundlePrice: bundlePrice,
-                                )));
-                              },
-                              icon: const Icon(Icons.card_giftcard_rounded),
-                              label: const Text('شراء الباقة كاملة', style: TextStyle(fontWeight: FontWeight.w900)),
-                            ),
-                          ),
-                        ),
-                      if (type == 'category')
-                        Text('خصم ${offer['discount_value'] ?? ''}% على قسم ${offer['category_name'] ?? ''}',
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                );
-              },
-            ),
-          );
+      appBar: AppBar(title: Text(title), backgroundColor: Colors.white, foregroundColor: astroNavy, elevation: 0),
+      body: rows.isEmpty ? const Center(child: Text('لا توجد منتجات متاحة في هذا العرض')) : ListView.separated(
+        padding: const EdgeInsets.all(14), itemCount: rows.length, separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final p = rows[index]['product'] as Product;
+          final item = rows[index]['item'] as Map<String, dynamic>;
+          final explicitSale = double.tryParse('${item['offer_price'] ?? ''}');
+          final sale = explicitSale ?? (type == 'category' && discount > 0 ? p.price * (1 - discount / 100) : p.price);
+          final discounted = sale > 0 && sale < p.price;
+          return Material(color: Colors.white, borderRadius: BorderRadius.circular(16), child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: discounted ? _atPrice(p, sale) : p))),
+            child: Padding(padding: const EdgeInsets.all(10), child: Row(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 82, height: 82, child: AstroCachedImage(imageUrl: p.imageUrl, fit: BoxFit.cover))),
+              const SizedBox(width: 12),
+              Expanded(child: Text(p.name, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: astroNavy, fontWeight: FontWeight.w800))),
+              const SizedBox(width: 8),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text('${sale.toStringAsFixed(0)} د.ل', style: const TextStyle(color: Color(0xFFD92D42), fontWeight: FontWeight.w900)),
+                if (discounted) ...[
+                  Text('${p.price.toStringAsFixed(0)} د.ل', style: const TextStyle(color: Colors.grey, fontSize: 11, decoration: TextDecoration.lineThrough)),
+                  Text('خصم ${(((p.price - sale) / p.price) * 100).round()}%', style: const TextStyle(color: Color(0xFFD92D42), fontSize: 11, fontWeight: FontWeight.w800)),
+                ],
+              ]),
+            ])),
+          ));
         },
       ),
     );
