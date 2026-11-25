@@ -704,10 +704,9 @@ if "ASTRO_MULTI_PRODUCT_OFFERS_PATCH" not in home:
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(8, 2, 8, 16),
                                 child: SizedBox(
-                                  height: 470,
+                                  height: 370,
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
-                                    reverse: true,
                                     physics: const BouncingScrollPhysics(),
                                     padding: const EdgeInsets.symmetric(horizontal: 6),
                                     itemCount: featuredOfferSections.length,
