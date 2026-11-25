@@ -3,7 +3,7 @@ from pathlib import Path
 home = Path('astro_mobile/lib/screens/home_screen.dart')
 s = home.read_text(encoding='utf-8')
 
-marker = '  Product _offerPricedProduct(Product p, double? sale) => Product('
+marker = '  int nav = 0;'
 helper = r"""
   Widget _homeOfferPreviewCard({
     required BuildContext context,
@@ -108,7 +108,7 @@ helper = r"""
 """
 if '_homeOfferPreviewCard({' not in s:
     if marker not in s:
-        raise SystemExit('Could not find helper insertion point')
+        raise SystemExit('Could not find HomeScreenState insertion point')
     s = s.replace(marker, helper + marker, 1)
 
 old_bundle = "if (offer['show_on_home'] == true) featuredOfferSections.add(offerSections.last);"
