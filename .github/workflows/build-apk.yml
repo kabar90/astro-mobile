@@ -188,6 +188,15 @@ jobs:
           grep -q "scaffoldBackgroundColor: astroBackground" astro_mobile/lib/main.dart
           echo "Neon blue/purple theme applied across all app screens."
 
+      - name: Fix remaining low-contrast white controls
+        run: |
+          set -e
+          python3 scripts/patch_neon_form_controls.py
+          grep -q "fillColor: astroSurfaceAlt" astro_mobile/lib/screens/checkout_screen.dart
+          grep -q "backgroundColor: astroBlue" astro_mobile/lib/screens/account_screen.dart
+          grep -q "astroPurple.withOpacity(.72)" astro_mobile/lib/screens/home_screen.dart
+          echo "Product details, login, checkout, transfer and category filters use readable neon controls."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
