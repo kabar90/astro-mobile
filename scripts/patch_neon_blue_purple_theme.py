@@ -164,3 +164,122 @@ for path in (root / "lib/screens").glob("*.dart"):
     path.write_text(text)
 
 print("ASTRO neon-blue/purple theme applied to the app and all screen surfaces.")
+
+# Harmonize category cards with the dark neon identity. The first neon build
+# still left the category tiles with pastel/white surfaces; replace those
+# surfaces while preserving category images, labels, navigation and layout.
+home = root / "lib/screens/home_screen.dart"
+h = home.read_text(encoding="utf-8")
+
+old_palette = """                      final palette = const [
+                        Color(0xFFDCEEFF), Color(0xFFDDF5E8), Color(0xFFEFE2FF),
+                        Color(0xFFFFE8D5), Color(0xFFFFE1EA), Color(0xFFE3EAFF),
+                        Color(0xFFDDF5F7), Color(0xFFFFF1D9),
+                      ];
+"""
+if old_palette in h:
+    h = h.replace(old_palette, "", 1)
+old_carousel = """                              decoration: BoxDecoration(
+                                color: palette[index % palette.length],
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFFD5E4F3)),
+                              ),
+"""
+new_carousel = """                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [astroSurfaceAlt, astroSurface, Color(0xFF17265B)],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: astroPurple.withOpacity(.72), width: 1.15),
+                                boxShadow: [
+                                  BoxShadow(color: astroBlue.withOpacity(.16), blurRadius: 16, offset: const Offset(0, 5)),
+                                ],
+                              ),
+"""
+if old_carousel in h:
+    h = h.replace(old_carousel, new_carousel, 1)
+elif "colors: [astroSurfaceAlt, astroSurface, Color(0xFF17265B)]" not in h:
+    raise SystemExit("Home category carousel surface anchor mismatch")
+
+old_grid = """                              gradient: const LinearGradient(
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
+                                colors: [Colors.white, Color(0xFFF0F7FF)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFDCE9F6),
+                                width: 1.1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: astroNavy.withOpacity(.055),
+                                  blurRadius: 13,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+"""
+new_grid = """                              gradient: const LinearGradient(
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
+                                colors: [Color(0xFF14275B), astroSurface, Color(0xFF080F2B)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: astroPurple.withOpacity(.78),
+                                width: 1.25,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: astroBlue.withOpacity(.18),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+"""
+if old_grid in h:
+    h = h.replace(old_grid, new_grid, 1)
+elif "colors: [Color(0xFF14275B), astroSurface, Color(0xFF080F2B)]" not in h:
+    raise SystemExit("All-categories card surface anchor mismatch")
+
+old_icon = """                                    gradient: const LinearGradient(
+                                      colors: [astroSurfaceAlt, Color(0xFFDCEEFF)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(19),
+"""
+new_icon = """                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF244A91), Color(0xFF17204F), Color(0xFF552B83)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(19),
+                                    border: Border.all(color: astroSky.withOpacity(.62), width: 1.0),
+"""
+if old_icon in h:
+    h = h.replace(old_icon, new_icon, 1)
+elif "Color(0xFF552B83)" not in h:
+    raise SystemExit("Category icon frame anchor mismatch")
+
+old_badge = """                                    color: Colors.white.withOpacity(.9),
+                                    borderRadius: BorderRadius.circular(20),
+"""
+new_badge = """                                    color: const Color(0xFF0D1A42).withOpacity(.94),
+                                    border: Border.all(color: astroPurple.withOpacity(.48)),
+                                    borderRadius: BorderRadius.circular(20),
+"""
+if old_badge in h:
+    h = h.replace(old_badge, new_badge, 1)
+elif "Color(0xFF0D1A42).withOpacity(.94)" not in h:
+    raise SystemExit("Category sublabel surface anchor mismatch")
+
+h = h.replace(
+    "color: const Color(0xFF6B7F93),",
+    "color: const Color(0xFFB8C8E8),",
+    1,
+)
+home.write_text(h, encoding="utf-8")
+print("Category cards and image frames now use coordinated neon navy/blue/purple surfaces.")
