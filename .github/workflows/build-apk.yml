@@ -180,6 +180,42 @@ jobs:
           grep -q "تصفح العروض النشطة" astro_mobile/lib/screens/home_screen.dart
           echo "Offers category routing uses the database category without duplicate hardcoded shortcut."
 
+      - name: Apply ASTRO neon blue and purple visual identity
+        run: |
+          set -e
+          python3 scripts/patch_neon_blue_purple_theme.py
+          grep -q "astroPurple = Color(0xFFB45CFF)" astro_mobile/lib/main.dart
+          grep -q "scaffoldBackgroundColor: astroBackground" astro_mobile/lib/main.dart
+          echo "Neon blue/purple theme applied across all app screens."
+
+      - name: Fix remaining low-contrast white controls
+        run: |
+          set -e
+          python3 scripts/patch_neon_form_controls.py
+          grep -q "fillColor: astroSurfaceAlt" astro_mobile/lib/screens/checkout_screen.dart
+          grep -q "backgroundColor: astroBlue" astro_mobile/lib/screens/account_screen.dart
+          grep -q "astroPurple.withOpacity(.72)" astro_mobile/lib/screens/home_screen.dart
+          echo "Product details, login, checkout, transfer and category filters use readable neon controls."
+
+      - name: Compact featured offers on the home page
+        run: |
+          set -e
+          python3 scripts/patch_home_offers_compact.py
+          grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
+          grep -q "width: 174" astro_mobile/lib/screens/home_screen.dart
+          grep -q "childAspectRatio: 1.0" astro_mobile/lib/screens/home_screen.dart
+          grep -q "height: 70" astro_mobile/lib/screens/home_screen.dart
+          grep -q "aspectRatio: 1.8" astro_mobile/lib/screens/home_screen.dart
+          echo "Featured offers now match the compact latest-products card size."
+
+      - name: Normalize every featured offer into one consistent card
+        run: |
+          set -e
+          python3 scripts/patch_home_offers_uniform.py
+          grep -q "_homeOfferPreviewCard" astro_mobile/lib/screens/home_screen.dart
+          grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
+          echo "All featured offers use the same compact card template."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
@@ -461,6 +497,7 @@ jobs:
           path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Publish updated APK to the existing download link
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
