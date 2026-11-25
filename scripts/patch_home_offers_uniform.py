@@ -9,6 +9,7 @@ helper = r"""
     required BuildContext context,
     required String title,
     required String imageUrl,
+    required String fallbackImageUrl,
     required String meta,
     required String actionLabel,
     required VoidCallback onTap,
@@ -33,22 +34,31 @@ helper = r"""
               borderRadius: BorderRadius.circular(12),
               child: SizedBox(
                 height: 112,
-                child: imageUrl.trim().isEmpty
+                child: imageUrl.trim().isEmpty && fallbackImageUrl.trim().isEmpty
                     ? const ColoredBox(
                         color: astroSurfaceAlt,
                         child: Center(child: Icon(Icons.local_offer_rounded, size: 38, color: Color(0xFF1765C5))),
                       )
                     : AstroCachedImage(
-                        imageUrl: imageUrl,
+                        imageUrl: imageUrl.trim().isEmpty ? fallbackImageUrl : imageUrl,
                         fit: BoxFit.contain,
                         placeholder: const ColoredBox(
                           color: astroSurfaceAlt,
                           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                         ),
-                        errorWidget: const ColoredBox(
-                          color: astroSurfaceAlt,
-                          child: Center(child: Icon(Icons.local_offer_rounded, size: 38, color: Color(0xFF1765C5))),
-                        ),
+                        errorWidget: fallbackImageUrl.trim().isEmpty || fallbackImageUrl.trim() == imageUrl.trim()
+                            ? const ColoredBox(
+                                color: astroSurfaceAlt,
+                                child: Center(child: Icon(Icons.local_offer_rounded, size: 38, color: Color(0xFF1765C5))),
+                              )
+                            : AstroCachedImage(
+                                imageUrl: fallbackImageUrl,
+                                fit: BoxFit.contain,
+                                errorWidget: const ColoredBox(
+                                  color: astroSurfaceAlt,
+                                  child: Center(child: Icon(Icons.local_offer_rounded, size: 38, color: Color(0xFF1765C5))),
+                                ),
+                              ),
                       ),
               ),
             ),
@@ -117,15 +127,22 @@ bundle = """if (offer['show_on_home'] == true) {
                                   context: context,
                                   title: offerName,
                                   imageUrl: (offer['cover_image_url'] ?? '').toString(),
+                                  fallbackImageUrl: bundleEntries.isNotEmpty
+                                      ? ((bundleEntries.first['product'] as Product).imageUrl)
+                                      : '',
                                   meta: '${bundlePrice.toStringAsFixed(2)} د.ل',
-                                  actionLabel: 'شراء الباقة',
+                                  actionLabel: 'تصفح الباقة',
                                   onTap: () {
                                     final id = int.tryParse('${offer['id']}');
                                     if (id == null) return;
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => BundleCheckoutScreen(
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => BundleDetailsScreen(
                                       offerId: id,
                                       offerName: offerName,
                                       bundlePrice: bundlePrice,
+                                      products: bundleEntries.map((entry) {
+                                        final p = entry['product'] as Product;
+                                        return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description};
+                                      }).toList(),
                                     )));
                                   },
                                 ));
@@ -142,7 +159,8 @@ product = """if (offer['show_on_home'] == true) {
                                 featuredOfferSections.add(_homeOfferPreviewCard(
                                   context: context,
                                   title: offerName,
-                                  imageUrl: cover.isNotEmpty ? cover : (firstProduct?.imageUrl ?? ''),
+                                  imageUrl: cover,
+                                  fallbackImageUrl: firstProduct?.imageUrl ?? '',
                                   meta: '${offerCards.length} منتجات',
                                   actionLabel: 'تصفح العرض',
                                   onTap: () => Navigator.push(context, MaterialPageRoute(
