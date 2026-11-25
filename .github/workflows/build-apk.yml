@@ -223,7 +223,10 @@ jobs:
           python3 scripts/patch_home_offers_uniform.py
           grep -q "_homeOfferPreviewCard" astro_mobile/lib/screens/home_screen.dart
           grep -q "height: 258" astro_mobile/lib/screens/home_screen.dart
-          echo "All featured offers use the same compact card template."
+          grep -q "actionLabel: 'تصفح الباقة'" astro_mobile/lib/screens/home_screen.dart
+          grep -q "fallbackImageUrl: bundleEntries.first" astro_mobile/lib/screens/home_screen.dart
+          grep -q "BundleDetailsScreen(" astro_mobile/lib/screens/home_screen.dart
+          echo "All featured offers use consistent cards, bundle images have a product-image fallback, and homepage navigation opens bundle details before checkout."
 
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
