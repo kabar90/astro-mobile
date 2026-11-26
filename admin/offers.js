@@ -65,25 +65,42 @@ function addOption(select, value, label, disabled = false) {
   select.append(option);
 }
 
-function productOptions(select, selectedId = "") {
+function productOptions(select, selectedId = "", searchTerm = "") {
   select.replaceChildren();
   addOption(select, "", "اختر المنتج");
 
-  products.forEach(product => {
+  const query = String(searchTerm || "").trim().toLocaleLowerCase();
+  const filtered = products.filter(product =>
+    !query || String(product.name || "").toLocaleLowerCase().includes(query)
+  );
+
+  filtered.forEach(product => {
     const label =
       `${product.name} — ${money(product.price)} — المخزون: ${product.stock}`;
-
-    addOption(
-      select,
-      product.id,
-      product.is_active === false
-        ? `${label} (متوقف)`
-        : label,
-      product.is_active === false
-    );
+    addOption(select, product.id,
+      product.is_active === false ? `${label} (متوقف)` : label,
+      product.is_active === false);
   });
 
+  if (selectedId && !filtered.some(product => String(product.id) === String(selectedId))) {
+    const selected = selectedProduct(selectedId);
+    if (selected) addOption(select, selected.id,
+      `${selected.name} — ${money(selected.price)} — المخزون: ${selected.stock}`,
+      selected.is_active === false);
+  }
+
   select.value = selectedId ? String(selectedId) : "";
+}
+
+function makeProductSearch(select, selectedId = "") {
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = "ابحث باسم المنتج...";
+  search.setAttribute("aria-label", "ابحث باسم المنتج");
+  search.addEventListener("input", () => {
+    productOptions(select, select.value || selectedId, search.value);
+  });
+  return search;
 }
 
 function setTypeFields() {
@@ -224,6 +241,7 @@ function renderBundleRows() {
     const select = document.createElement("select");
     select.required = false;
     productOptions(select, row.productId);
+    const search = makeProductSearch(select, row.productId);
 
     select.addEventListener("change", () => {
       row.productId = select.value;
@@ -247,7 +265,7 @@ function renderBundleRows() {
 
     const productLabel = document.createElement("label");
     productLabel.textContent = "المنتج";
-    productLabel.append(select);
+    productLabel.append(search, select);
 
     const quantityLabel = document.createElement("label");
     quantityLabel.textContent = "الكمية";
@@ -286,6 +304,7 @@ function renderMultiProductRows() {
     const select = document.createElement("select");
     select.required = true;
     productOptions(select, row.productId);
+    const search = makeProductSearch(select, row.productId);
     select.addEventListener("change", () => {
       row.productId = select.value;
       const product = selectedProduct(row.productId);
@@ -306,7 +325,7 @@ function renderMultiProductRows() {
 
     const productLabel = document.createElement("label");
     productLabel.textContent = "المنتج";
-    productLabel.append(select);
+    productLabel.append(search, select);
 
     const priceLabel = document.createElement("label");
     priceLabel.textContent = "سعر هذا المنتج في العرض (د.ل)";
@@ -993,6 +1012,11 @@ $("offerCancel")?.addEventListener("click", () => {
 $("offerType")?.addEventListener("change", () => {
   setTypeFields();
   setDiscountFields();
+});
+
+$("offerProductSearch")?.addEventListener("input", () => {
+  const select = $("offerProduct");
+  if (select) productOptions(select, select.value, $("offerProductSearch").value);
 });
 
 $("bundleCoverFile")?.addEventListener("change", () => {
