@@ -179,8 +179,17 @@ class BundleDetailsScreen extends StatelessWidget {
     required this.products,
   });
 
+  double get originalTotal => products.fold<double>(0, (sum, product) {
+    final rawPrice = product['price'];
+    final price = rawPrice is num ? rawPrice.toDouble() : (double.tryParse('${rawPrice ?? ''}') ?? 0);
+    final rawQuantity = product['quantity'];
+    final quantity = rawQuantity is num ? rawQuantity.toInt() : (int.tryParse('${rawQuantity ?? 1}') ?? 1);
+    return sum + price * quantity;
+  });
+
   @override
   Widget build(BuildContext context) {
+    final saved = originalTotal - bundlePrice;
     return Scaffold(
       backgroundColor: astroBackground,
       appBar: AppBar(title: const Text('تفاصيل الباقة')),
@@ -217,6 +226,17 @@ class BundleDetailsScreen extends StatelessWidget {
                               children: [
                                 Text((product['name'] ?? '').toString(), textAlign: TextAlign.right,
                                   style: const TextStyle(fontWeight: FontWeight.w900, color: astroNavy)),
+                                Builder(builder: (context) {
+                                  final rawPrice = product['price'];
+                                  final price = rawPrice is num ? rawPrice.toDouble() : (double.tryParse('${rawPrice ?? ''}') ?? 0);
+                                  final rawQuantity = product['quantity'];
+                                  final quantity = rawQuantity is num ? rawQuantity.toInt() : (int.tryParse('${rawQuantity ?? 1}') ?? 1);
+                                  return Text(
+                                    'السعر الأصلي: ${(price * quantity).toStringAsFixed(2)} د.ل${quantity > 1 ? ' (الكمية: $quantity)' : ''}',
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF9CAAC8)),
+                                  );
+                                }),
                                 if ((product['description'] ?? '').toString().trim().isNotEmpty)
                                   Text((product['description'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.right,
@@ -228,11 +248,29 @@ class BundleDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   const Divider(height: 24),
-                  const Text('سعر المجموعة كاملة', textAlign: TextAlign.right,
+                  const Text('إجمالي الأسعار الأصلية وسعر الباقة', textAlign: TextAlign.right,
                     style: TextStyle(fontWeight: FontWeight.w800)),
-                  Text(bundlePrice.toStringAsFixed(2) + ' د.ل',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      Text(originalTotal.toStringAsFixed(2) + ' د.ل',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                          color: Color(0xFF9CAAC8), decoration: TextDecoration.lineThrough)),
+                      Text(bundlePrice.toStringAsFixed(2) + ' د.ل',
+                        style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Color(0xFFE44755))),
+                    ],
+                  ),
+                  if (saved > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Text('وفّرت ${saved.toStringAsFixed(2)} د.ل عند شراء الباقة',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF35C98A))),
+                    ),
                   const SizedBox(height: 6),
                   const Text('السعر يشمل المنتجات المذكورة معاً، ولا يمكن شراء كل منتج منفرداً من هذا العرض.',
                     textAlign: TextAlign.right, style: TextStyle(color: Colors.blueGrey)),
