@@ -105,5 +105,57 @@ footer{text-align:center;padding:12px 0 30px;color:#7898bd;font-size:11px}
 </main>
 <footer>ASTRO MOBILE © جميع الحقوق محفوظة</footer>
 </div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
+
+const astroAnalytics = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+function astroInstallId() {
+  const key = "astro_mobile_analytics_installation_id";
+  try {
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : "astro-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch (_) {
+    return "session-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+  }
+}
+const astroId = astroInstallId();
+const astroMeta = {
+  page: location.pathname,
+  referrer: document.referrer || "",
+  campaign: location.search || ""
+};
+async function astroTrack(eventName) {
+  try {
+    await astroAnalytics.from("astro_analytics_events").insert({
+      event_name: eventName,
+      installation_id: astroId,
+      source: "download_page",
+      metadata: astroMeta
+    });
+  } catch (error) {
+    console.warn("ASTRO analytics event was not recorded:", error);
+  }
+}
+astroTrack("download_page_view");
+document.querySelectorAll("a.download").forEach(link => {
+  link.addEventListener("click", async event => {
+    event.preventDefault();
+    const destination = link.href;
+    link.style.pointerEvents = "none";
+    const label = link.textContent;
+    link.textContent = "جارٍ تجهيز التحميل...";
+    await astroTrack("apk_download_click");
+    location.href = destination;
+    setTimeout(() => { link.style.pointerEvents = ""; link.textContent = label; }, 2500);
+  });
+});
+</script>
+
 </body>
 </html>
