@@ -238,6 +238,15 @@ jobs:
           grep -q "TextDecoration.lineThrough" astro_mobile/lib/screens/home_screen.dart
           echo "Homepage bundle cards show crossed-out original total beside bundle price; bundle details receive each product price and quantity."
 
+      - name: Add ASTRO analytics first-open and registration tracking
+        run: |
+          set -e
+          python3 scripts/patch_analytics_tracking.py
+          grep -q "AstroAnalyticsService.recordFirstOpen" astro_mobile/lib/main.dart
+          grep -q "astro_installation_id" astro_mobile/lib/screens/account_screen.dart
+          test -f astro_mobile/lib/services/astro_analytics_service.dart
+          echo "First-open and install attribution tracking applied."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
