@@ -518,6 +518,7 @@ document.querySelectorAll("nav button").forEach(button => {
       "categoryDisplaySettings",
       "storeContact",
       "notifications",
+      "analytics",
       "history",
       "productInquiries",
       "serviceInquiriesView"
@@ -560,6 +561,10 @@ document.querySelectorAll("nav button").forEach(button => {
 
     if (button.dataset.view === "storeContact") {
       await loadStoreContact();
+    }
+
+    if (button.dataset.view === "analytics") {
+      await window.ASTROAnalytics?.refresh?.();
     }
 
     if (
