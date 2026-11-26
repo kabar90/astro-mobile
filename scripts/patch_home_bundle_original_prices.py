@@ -38,7 +38,7 @@ new_meta = """            SizedBox(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '\${originalTotal.toStringAsFixed(2)} د.ل',
+                            '${originalTotal.toStringAsFixed(2)} د.ل',
                             style: const TextStyle(
                               color: Color(0xFF9CAAC8),
                               fontSize: 10,
@@ -48,7 +48,7 @@ new_meta = """            SizedBox(
                           ),
                           const SizedBox(width: 7),
                           Text(
-                            '\${bundlePrice.toStringAsFixed(2)} د.ل',
+                            '${bundlePrice.toStringAsFixed(2)} د.ل',
                             style: const TextStyle(color: Color(0xFFE44755), fontSize: 12, fontWeight: FontWeight.w900),
                           ),
                         ],
@@ -68,10 +68,10 @@ if s.count(old_meta) != 1:
     raise SystemExit(f'Expected one home card meta block, found {s.count(old_meta)}')
 s = s.replace(old_meta, new_meta, 1)
 
-old_bundle = """                              final bundlePrice = double.tryParse('\${offer['bundle_price'] ?? ''}') ?? 0;
+old_bundle = """                              final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}') ?? 0;
                               final bundleProducts = bundleEntries.map((entry) => entry['product'] as Product).toList();
 """
-new_bundle = """                              final bundlePrice = double.tryParse('\${offer['bundle_price'] ?? ''}') ?? 0;
+new_bundle = """                              final bundlePrice = double.tryParse('${offer['bundle_price'] ?? ''}') ?? 0;
                               final originalBundleTotal = bundleEntries.fold<double>(0, (sum, entry) {
                                 final product = entry['product'] as Product;
                                 final quantity = entry['quantity'] as int;
@@ -83,10 +83,10 @@ if s.count(old_bundle) != 1:
     raise SystemExit(f'Expected one bundle price calculation, found {s.count(old_bundle)}')
 s = s.replace(old_bundle, new_bundle, 1)
 
-old_call = """                                  meta: '\${bundlePrice.toStringAsFixed(2)} د.ل',
+old_call = """                                  meta: '${bundlePrice.toStringAsFixed(2)} د.ل',
                                   actionLabel: 'تصفح الباقة',
 """
-new_call = """                                  meta: '\${bundlePrice.toStringAsFixed(2)} د.ل',
+new_call = """                                  meta: '${bundlePrice.toStringAsFixed(2)} د.ل',
                                   originalTotal: originalBundleTotal,
                                   bundlePrice: bundlePrice,
                                   actionLabel: 'تصفح الباقة',
