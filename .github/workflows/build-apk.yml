@@ -42,13 +42,6 @@ jobs:
           test -f astro_mobile/pubspec.yaml
           echo "Flutter project found and extracted successfully."
 
-      - name: Set Android launcher app name to Astro Mobile
-        run: |
-          set -e
-          python3 scripts/patch_app_display_name.py
-          grep -q 'android:label="Astro Mobile"' astro_mobile/android/app/src/main/AndroidManifest.xml
-          echo "Android launcher name verified as Astro Mobile."
-
       - name: Add searchable delivery city picker
         run: |
           set -e
@@ -267,6 +260,13 @@ jobs:
       - name: Generate Android project
         working-directory: astro_mobile
         run: flutter create --platforms=android .
+
+      - name: Set Android launcher app name to Astro Mobile
+        run: |
+          set -e
+          python3 scripts/patch_app_display_name.py
+          grep -q 'android:label="Astro Mobile"' astro_mobile/android/app/src/main/AndroidManifest.xml
+          echo "Android launcher name verified as Astro Mobile."
 
       - name: Ensure Gradle plugin repositories
         run: |
