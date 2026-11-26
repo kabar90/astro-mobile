@@ -229,3 +229,13 @@ button:focus-visible,a:focus-visible{
 .analytics-grid .stat-card strong{display:block;color:#0755a5;font-size:28px;margin-top:8px}
 #analyticsNote{line-height:1.9;background:#fff8e7;padding:12px;border-radius:10px}
 @media(max-width:600px){.analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.analytics-grid .stat-card{padding:12px}.analytics-grid .stat-card strong{font-size:24px}}
+
+
+/* ASTRO — compact order list and dedicated order details */
+#orderList > button[ type="button" ]{font-family:inherit}
+#orderList article select{margin:8px 0;min-height:46px}
+#orderList article button{width:auto}
+@media(max-width:600px){
+  #orderList article{padding:13px!important}
+  #orderList article img{max-width:100%}
+}
