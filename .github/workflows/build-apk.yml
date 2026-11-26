@@ -228,6 +228,16 @@ jobs:
           grep -q "BundleDetailsScreen(" astro_mobile/lib/screens/home_screen.dart
           echo "All featured offers use consistent cards, bundle images have a product-image fallback, and homepage navigation opens bundle details before checkout."
 
+      - name: Show original and bundle prices on homepage bundle cards
+        run: |
+          set -e
+          python3 scripts/patch_home_bundle_original_prices.py
+          grep -q "originalTotal: originalBundleTotal" astro_mobile/lib/screens/home_screen.dart
+          grep -q "'price': p.price" astro_mobile/lib/screens/home_screen.dart
+          grep -q "'quantity': entry\['quantity'\]" astro_mobile/lib/screens/home_screen.dart
+          grep -q "TextDecoration.lineThrough" astro_mobile/lib/screens/home_screen.dart
+          echo "Homepage bundle cards show crossed-out original total beside bundle price; bundle details receive each product price and quantity."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
