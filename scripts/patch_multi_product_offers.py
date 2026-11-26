@@ -894,7 +894,14 @@ class _AllOffersScreenState extends State<_AllOffersScreen> {
         offerId: offerId, offerName: name, bundlePrice: bundlePrice,
         products: entries.map((e) {
           final p = e['product'] as Product;
-          return <String, dynamic>{'name': p.name, 'imageUrl': p.imageUrl, 'description': p.description};
+          final item = e['item'] as Map<String, dynamic>;
+          return <String, dynamic>{
+            'name': p.name,
+            'imageUrl': p.imageUrl,
+            'description': p.description,
+            'price': p.price,
+            'quantity': int.tryParse('${item['quantity'] ?? 1}') ?? 1,
+          };
         }).toList(),
       )));
       return;
