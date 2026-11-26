@@ -55,6 +55,7 @@
     <button data-view="delivery">مدن ورسوم التوصيل</button>
     <button data-view="bank">بيانات التحويل المصرفي</button>
     <button data-view="notifications">إرسال إشعار للعملاء</button>
+    <button data-view="analytics">إحصائيات التطبيق</button>
     <button data-view="history">سجل الإشعارات</button>
   </nav>
 
@@ -617,6 +618,34 @@
     <p id="notificationMsg" role="status"></p>
   </section>
 
+
+  <!-- إحصائيات التطبيق والتسويق -->
+  <section id="analytics" class="card hide">
+    <h2>إحصائيات ASTRO MOBILE</h2>
+    <p>تابع زيارات صفحة التحميل، ضغطات تحميل APK، مرات فتح التطبيق لأول مرة، الحسابات الجديدة والطلبات.</p>
+    <div class="analytics-toolbar">
+      <span id="analyticsUpdated" class="muted">لم يتم التحديث بعد</span>
+      <button id="refreshAnalytics" type="button">تحديث الإحصائيات</button>
+    </div>
+    <div class="analytics-grid">
+      <div class="stat-card"><span>زيارات صفحة التحميل</span><strong id="anPageViews">—</strong></div>
+      <div class="stat-card"><span>ضغطات تحميل APK</span><strong id="anDownloadClicks">—</strong></div>
+      <div class="stat-card"><span>تثبيتات / فتح أول مرة</span><strong id="anFirstOpens">—</strong></div>
+      <div class="stat-card"><span>حسابات جديدة</span><strong id="anAccounts">—</strong></div>
+      <div class="stat-card"><span>طلبات مسجلة</span><strong id="anOrders">—</strong></div>
+      <div class="stat-card"><span>أجهزة إشعارات Android</span><strong id="anDevices">—</strong></div>
+    </div>
+    <h3>آخر 7 أيام</h3>
+    <div class="analytics-grid">
+      <div class="stat-card"><span>زيارات صفحة التحميل</span><strong id="an7Views">—</strong></div>
+      <div class="stat-card"><span>ضغطات التحميل</span><strong id="an7Clicks">—</strong></div>
+      <div class="stat-card"><span>فتح التطبيق أول مرة</span><strong id="an7Opens">—</strong></div>
+      <div class="stat-card"><span>حسابات جديدة</span><strong id="an7Accounts">—</strong></div>
+    </div>
+    <p id="analyticsNote" class="muted">ملاحظة: ضغط زر التحميل لا يعني بالضرورة أن التطبيق تم تثبيته. سيظهر التثبيت/الفتح الأول بعد تحديث التطبيق وإضافة تسجيل الحدث من داخله.</p>
+    <p id="analyticsMsg" role="status"></p>
+  </section>
+
   <!-- سجل الإشعارات -->
   <section id="history" class="card hide">
     <h2>سجل الإشعارات</h2>
@@ -643,6 +672,7 @@
 <script type="module" src="password-reset.js"></script>
 <script type="module" src="product-inquiries.js?v=20261122-4"></script>
 <script type="module" src="service-inquiries.js?v=20261122-2"></script>
+<script type="module" src="analytics.js?v=20261126-1"></script>
 
 </body>
 </html>
