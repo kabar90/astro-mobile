@@ -1683,7 +1683,7 @@ async function loadProducts() {
 }
 
 // ========================================
-// تحميل الطلبات بالتفاصيل الكاملة وإدارة حالتها
+// الطلبات: قائمة مختصرة وصفحة مستقلة لتفاصيل كل طلب
 // ========================================
 
 const ORDER_STATUSES = [
@@ -1695,47 +1695,230 @@ const ORDER_STATUSES = [
   "ملغي"
 ];
 
+let selectedOrderId = null;
+let cachedOrders = [];
+let cachedOrderItems = new Map();
+let cachedProductImages = new Map();
+
 function addOrderField(parent, label, value) {
   const line = document.createElement("p");
-  line.style.cssText = "margin:10px 0;line-height:1.8;";
+  line.style.cssText = "margin:10px 0;line-height:1.8;overflow-wrap:anywhere;";
   const strong = document.createElement("strong");
   strong.textContent = `${label}: `;
-  line.append(strong, document.createTextNode(value || "غير محدد"));
+  line.append(strong, document.createTextNode(value === null || value === undefined || value === "" ? "غير محدد" : String(value)));
   parent.append(line);
   return line;
 }
 
-async function updateOrderStatus(orderId, newStatus, button, message) {
-  if (!currentUser) {
-    message.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
+function orderDisplayNumber(order) {
+  return order.order_number || String(order.id).slice(0, 8);
+}
+
+function renderOrdersList() {
+  const container = $("orderList");
+  if (!container) return;
+  container.replaceChildren();
+
+  if (!cachedOrders.length) {
+    container.textContent = "لا توجد طلبات حالياً.";
     return;
   }
 
-  button.disabled = true;
-  message.textContent = "جارٍ حفظ حالة الطلب...";
+  const toolbar = document.createElement("div");
+  toolbar.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 16px;";
+  const count = document.createElement("strong");
+  count.textContent = `عدد الطلبات: ${cachedOrders.length}`;
+  const refresh = document.createElement("button");
+  refresh.type = "button";
+  refresh.textContent = "تحديث الطلبات";
+  refresh.addEventListener("click", () => loadOrders());
+  toolbar.append(count, refresh);
+  container.append(toolbar);
 
-  try {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId);
+  cachedOrders.forEach(order => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.style.cssText = "display:block;width:100%;text-align:right;background:#fff;color:#173451;border:1px solid #d7e5f2;border-radius:14px;padding:15px;margin:10px 0;box-shadow:0 3px 12px rgba(8,44,92,.05);";
+    card.addEventListener("click", () => {
+      selectedOrderId = order.id;
+      renderOrderDetails(order);
+    });
 
-    if (error) throw error;
+    const top = document.createElement("div");
+    top.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;";
+    const number = document.createElement("strong");
+    number.textContent = `طلب رقم ${orderDisplayNumber(order)}`;
+    number.style.cssText = "font-size:17px;color:#082c5c;";
+    const status = document.createElement("span");
+    status.textContent = order.status || "جديد";
+    status.style.cssText = "display:inline-block;padding:4px 10px;border-radius:20px;background:#eaf4fc;color:#0755a5;font-size:13px;font-weight:bold;";
+    top.append(number, status);
+    card.append(top);
 
-    message.textContent = "تم تحديث حالة الطلب بنجاح.";
-    await loadOrders();
-
-  } catch (error) {
-    message.textContent = `تعذر تحديث الحالة: ${error.message || error}`;
-    button.disabled = false;
-  }
+    const customer = document.createElement("div");
+    customer.textContent = `العميل: ${order.customer_name || order.name || "غير محدد"}`;
+    customer.style.cssText = "margin:5px 0;";
+    const total = document.createElement("div");
+    total.textContent = `الإجمالي: ${order.total ?? order.total_price ?? "—"} د.ل`;
+    total.style.cssText = "font-weight:bold;margin:5px 0;";
+    const date = document.createElement("small");
+    date.textContent = order.created_at ? new Date(order.created_at).toLocaleString("ar-LY") : "تاريخ الطلب غير محدد";
+    date.style.cssText = "display:block;color:#66809a;margin-top:5px;";
+    const open = document.createElement("span");
+    open.textContent = "اضغط لعرض تفاصيل الطلب ←";
+    open.style.cssText = "display:block;color:#087fe5;font-weight:bold;margin-top:10px;";
+    card.append(customer, total, date, open);
+    container.append(card);
+  });
 }
 
-async function loadOrders() {
+function renderOrderDetails(order) {
   const container = $("orderList");
-
   if (!container) return;
+  container.replaceChildren();
 
+  const back = document.createElement("button");
+  back.type = "button";
+  back.textContent = "→ الرجوع إلى قائمة الطلبات";
+  back.style.cssText = "background:#eaf4fc;color:#082c5c;margin:0 0 14px;";
+  back.addEventListener("click", () => {
+    selectedOrderId = null;
+    renderOrdersList();
+  });
+  container.append(back);
+
+  const panel = document.createElement("article");
+  panel.style.cssText = "background:#fff;border:1px solid #d7e5f2;border-radius:14px;padding:16px;box-shadow:0 5px 18px rgba(8,44,92,.07);";
+  const heading = document.createElement("h3");
+  heading.textContent = `تفاصيل الطلب رقم ${orderDisplayNumber(order)}`;
+  heading.style.cssText = "color:#082c5c;margin:0 0 16px;";
+  panel.append(heading);
+
+  const statusBadge = document.createElement("p");
+  statusBadge.textContent = `الحالة الحالية: ${order.status || "جديد"}`;
+  statusBadge.style.cssText = "padding:10px;background:#eaf4fc;border-radius:9px;font-weight:bold;color:#0755a5;";
+  panel.append(statusBadge);
+
+  const customerTitle = document.createElement("h4");
+  customerTitle.textContent = "بيانات العميل";
+  panel.append(customerTitle);
+  addOrderField(panel, "العميل", order.customer_name || order.name);
+  addOrderField(panel, "الهاتف", order.customer_phone || order.phone);
+  addOrderField(panel, "العنوان", order.customer_address || order.address);
+  addOrderField(panel, "طريقة الاستلام", order.delivery_method === "pickup" ? "استلام من المتجر" : order.delivery_method === "delivery" ? "توصيل" : order.delivery_method);
+
+  if (order.delivery_method === "delivery") {
+    addOrderField(panel, "مدينة التوصيل", order.delivery_city);
+    addOrderField(panel, "رسوم التوصيل", `${Number(order.delivery_fee || 0).toFixed(2)} د.ل`);
+    addOrderField(panel, "مدة الوصول عند الطلب", order.delivery_estimate);
+  }
+
+  addOrderField(panel, "طريقة الدفع", order.payment_method === "cash" ? "نقداً عند الاستلام" : order.payment_method === "transfer" ? "تحويل مصرفي" : order.payment_method);
+  addOrderField(panel, "تاريخ الطلب", order.created_at ? new Date(order.created_at).toLocaleString("ar-LY") : "غير محدد");
+
+  const productTitle = document.createElement("h4");
+  productTitle.textContent = "المنتجات المطلوبة";
+  productTitle.style.cssText = "margin:20px 0 10px;color:#082c5c;";
+  panel.append(productTitle);
+
+  const orderItems = cachedOrderItems.get(order.id) || [];
+  if (!orderItems.length) {
+    addOrderField(panel, "المنتجات", "لا توجد تفاصيل منتجات مسجلة لهذا الطلب");
+  } else {
+    orderItems.forEach(item => {
+      const itemBox = document.createElement("div");
+      itemBox.style.cssText = "border:1px solid #d7e5f2;border-radius:10px;padding:12px;margin:10px 0;background:#fbfdff;";
+      const imageUrl = item.image_url || cachedProductImages.get(String(item.product_id));
+      if (imageUrl) {
+        const image = document.createElement("img");
+        image.src = imageUrl;
+        image.alt = item.product_name || "صورة المنتج";
+        image.loading = "lazy";
+        image.style.cssText = "display:block;width:100px;height:100px;object-fit:contain;border:1px solid #eee;border-radius:8px;margin:8px 0;background:#fff;";
+        image.onerror = () => image.remove();
+        itemBox.append(image);
+      }
+      addOrderField(itemBox, "المنتج", item.product_name);
+      addOrderField(itemBox, "اللون", item.color);
+      addOrderField(itemBox, "الكمية", item.quantity ?? 1);
+      addOrderField(itemBox, "سعر القطعة", `${item.unit_price ?? "—"} د.ل`);
+      panel.append(itemBox);
+    });
+  }
+
+  const total = order.total ?? order.total_price ?? "—";
+  const totalLine = addOrderField(panel, "الإجمالي", `${total} د.ل`);
+  totalLine.style.cssText += "font-weight:bold;font-size:18px;color:#082c5c;";
+
+  if (order.receipt_path) {
+    const receiptButton = document.createElement("button");
+    receiptButton.type = "button";
+    receiptButton.textContent = "عرض إيصال التحويل المصرفي";
+    receiptButton.addEventListener("click", async () => {
+      receiptButton.disabled = true;
+      try {
+        const { data, error } = await supabase.storage.from("receipts").createSignedUrl(order.receipt_path, 300);
+        if (error) throw error;
+        window.open(data.signedUrl, "_blank", "noopener");
+      } catch (error) {
+        alert(`تعذر فتح الإيصال: ${error.message || error}`);
+      } finally {
+        receiptButton.disabled = false;
+      }
+    });
+    panel.append(receiptButton);
+  }
+
+  const statusTitle = document.createElement("h4");
+  statusTitle.textContent = "تحديث حالة الطلب";
+  statusTitle.style.cssText = "margin:22px 0 8px;color:#082c5c;";
+  panel.append(statusTitle);
+
+  const statusSelect = document.createElement("select");
+  ORDER_STATUSES.forEach(status => {
+    const option = document.createElement("option");
+    option.value = status;
+    option.textContent = status;
+    statusSelect.append(option);
+  });
+  const currentStatus = order.status || "جديد";
+  if (!ORDER_STATUSES.includes(currentStatus)) {
+    const oldOption = document.createElement("option");
+    oldOption.value = currentStatus;
+    oldOption.textContent = currentStatus;
+    statusSelect.append(oldOption);
+  }
+  statusSelect.value = currentStatus;
+
+  const saveStatus = document.createElement("button");
+  saveStatus.type = "button";
+  saveStatus.textContent = "حفظ الحالة";
+  const statusMessage = document.createElement("p");
+  statusMessage.setAttribute("role", "status");
+  saveStatus.addEventListener("click", async () => {
+    if (!currentUser) {
+      statusMessage.textContent = "انتهت جلسة المدير. سجّل الدخول مجدداً.";
+      return;
+    }
+    saveStatus.disabled = true;
+    statusMessage.textContent = "جارٍ حفظ حالة الطلب...";
+    try {
+      const { error } = await supabase.from("orders").update({ status: statusSelect.value }).eq("id", order.id);
+      if (error) throw error;
+      statusMessage.textContent = "تم تحديث حالة الطلب بنجاح.";
+      await loadOrders(order.id);
+    } catch (error) {
+      statusMessage.textContent = `تعذر تحديث الحالة: ${error.message || error}`;
+      saveStatus.disabled = false;
+    }
+  });
+  panel.append(statusSelect, saveStatus, statusMessage);
+  container.append(panel);
+}
+
+async function loadOrders(openOrderId = selectedOrderId) {
+  const container = $("orderList");
+  if (!container) return;
   container.textContent = "جارٍ تحميل الطلبات...";
 
   const { data: orders, error } = await supabase
@@ -1749,183 +1932,63 @@ async function loadOrders() {
     return;
   }
 
-  container.replaceChildren();
+  cachedOrders = orders || [];
+  cachedOrderItems = new Map();
+  cachedProductImages = new Map();
 
-  if (!orders?.length) {
-    container.textContent = "لا توجد طلبات حالياً.";
+  if (!cachedOrders.length) {
+    selectedOrderId = null;
+    renderOrdersList();
     return;
   }
 
-  const orderIds = orders.map(order => order.id);
+  const orderIds = cachedOrders.map(order => order.id);
   const { data: items, error: itemsError } = await supabase
     .from("order_items")
     .select("*")
     .in("order_id", orderIds);
 
-  // لا نوقف عرض الطلبات إذا كان جدول تفاصيل المنتجات غير موجود.
-  // تبقى بيانات الطلب وتغيير الحالة متاحين، مع إظهار تنبيه واضح.
   if (itemsError) {
     console.error("ASTRO MOBILE order_items error:", itemsError);
     const warning = document.createElement("p");
     warning.setAttribute("role", "alert");
     warning.style.cssText = "padding:10px;background:#fff3cd;color:#664d03;border-radius:8px;margin:10px 0;";
-    warning.textContent = "تنبيه: تم تحميل الطلبات، لكن تفاصيل المنتجات غير متاحة حالياً لأن جدول order_items غير موجود أو غير ظاهر في قاعدة البيانات.";
+    warning.textContent = "تنبيه: تم تحميل الطلبات، لكن تفاصيل المنتجات غير متاحة حالياً.";
     container.append(warning);
   }
 
-  const itemsByOrder = new Map();
   (itemsError ? [] : (items || [])).forEach(item => {
-    const list = itemsByOrder.get(item.order_id) || [];
+    const list = cachedOrderItems.get(item.order_id) || [];
     list.push(item);
-    itemsByOrder.set(item.order_id, list);
+    cachedOrderItems.set(item.order_id, list);
   });
 
-  // صور المنتجات محفوظة في جدول products.image_url؛ نربطها بتفاصيل الطلب
-  // باستخدام product_id حتى لا نحتاج إلى تعديل تطبيق Flutter أو إعادة إرسال الطلب.
-  const productIds = [...new Set(
-    (itemsError ? [] : (items || []))
-      .map(item => item.product_id)
-      .filter(id => id !== null && id !== undefined && String(id).trim() !== "")
-      .map(id => String(id))
-  )];
+  const productIds = [...new Set((itemsError ? [] : (items || []))
+    .map(item => item.product_id)
+    .filter(id => id !== null && id !== undefined && String(id).trim() !== "")
+    .map(id => String(id)))];
 
-  const productImages = new Map();
   if (productIds.length) {
     const { data: products, error: productsError } = await supabase
       .from("products")
       .select("id,image_url")
       .in("id", productIds);
-
     if (productsError) {
       console.warn("ASTRO MOBILE product images lookup error:", productsError);
     } else {
       (products || []).forEach(product => {
-        if (product.image_url) {
-          productImages.set(String(product.id), product.image_url);
-        }
+        if (product.image_url) cachedProductImages.set(String(product.id), product.image_url);
       });
     }
   }
 
-  for (const order of orders) {
-    const card = document.createElement("article");
-    card.className = "item";
-    card.style.cssText = "display:block;background:#fff;color:#172033;border:1px solid #ddd;border-radius:12px;padding:16px;margin:14px 0;";
-
-    const heading = document.createElement("h3");
-    heading.textContent = `طلب رقم ${order.order_number || String(order.id).slice(0, 8)}`;
-    heading.style.cssText = "margin:0 0 14px;font-size:18px;";
-    card.append(heading);
-
-        addOrderField(card, "العميل", order.customer_name || order.name || "غير محدد");
-    addOrderField(card, "الهاتف", order.customer_phone || order.phone || "غير محدد");
-    addOrderField(card, "العنوان", order.customer_address || order.address || "غير محدد");
-    addOrderField(card, "طريقة الاستلام", order.delivery_method === "pickup" ? "استلام من المتجر" : order.delivery_method === "delivery" ? "توصيل" : order.delivery_method);
-    if (order.delivery_method === "delivery") {
-      addOrderField(card, "مدينة التوصيل", order.delivery_city || "غير محددة");
-      addOrderField(card, "رسوم التوصيل", `${Number(order.delivery_fee || 0).toFixed(2)} د.ل`);
-      addOrderField(card, "مدة الوصول عند الطلب", order.delivery_estimate || "غير محددة");
-    }
-    addOrderField(card, "طريقة الدفع", order.payment_method === "cash" ? "نقداً عند الاستلام" : order.payment_method === "transfer" ? "تحويل مصرفي" : order.payment_method);
-
-    const productTitle = document.createElement("h4");
-    productTitle.textContent = "المنتجات المطلوبة:";
-    productTitle.style.margin = "16px 0 8px";
-    card.append(productTitle);
-
-    const orderItems = itemsByOrder.get(order.id) || [];
-    if (!orderItems.length) {
-      addOrderField(card, "المنتجات", "لا توجد تفاصيل منتجات مسجلة لهذا الطلب");
-    } else {
-      orderItems.forEach(item => {
-        const itemBox = document.createElement("div");
-        itemBox.style.cssText = "border:1px solid #ddd;border-radius:9px;padding:10px;margin:8px 0;";
-        const imageUrl = item.image_url || productImages.get(String(item.product_id));
-        if (imageUrl) {
-          const image = document.createElement("img");
-          image.src = imageUrl;
-          image.alt = item.product_name || "صورة المنتج";
-          image.loading = "lazy";
-          image.style.cssText = "display:block;width:88px;height:88px;object-fit:contain;border:1px solid #eee;border-radius:8px;margin:8px 0;background:#fff;";
-          image.onerror = () => image.remove();
-          itemBox.append(image);
-        }
-        addOrderField(itemBox, "المنتج", item.product_name);
-        addOrderField(itemBox, "اللون", item.color || "غير محدد");
-        addOrderField(itemBox, "الكمية", String(item.quantity ?? 1));
-        addOrderField(itemBox, "سعر القطعة", `${item.unit_price ?? "—"} د.ل`);
-        card.append(itemBox);
-      });
-    }
-
-    const total = order.total ?? order.total_price ?? "—";
-    const totalLine = addOrderField(card, "الإجمالي", `${total} د.ل`);
-    totalLine.style.fontWeight = "bold";
-    totalLine.style.fontSize = "17px";
-
-    addOrderField(card, "تاريخ الطلب", order.created_at ? new Date(order.created_at).toLocaleString("ar-LY") : "غير محدد");
-
-    if (order.receipt_path) {
-      const receiptLine = document.createElement("p");
-      receiptLine.style.margin = "10px 0";
-      const receiptButton = document.createElement("button");
-      receiptButton.type = "button";
-      receiptButton.textContent = "عرض إيصال التحويل";
-      receiptButton.addEventListener("click", async () => {
-        receiptButton.disabled = true;
-        try {
-          const { data, error: receiptError } = await supabase
-            .storage.from("receipts")
-            .createSignedUrl(order.receipt_path, 300);
-          if (receiptError) throw receiptError;
-          window.open(data.signedUrl, "_blank", "noopener");
-        } catch (error) {
-          alert(`تعذر فتح الإيصال: ${error.message || error}`);
-        } finally {
-          receiptButton.disabled = false;
-        }
-      });
-      receiptLine.append(receiptButton);
-      card.append(receiptLine);
-    }
-
-    const statusTitle = document.createElement("h4");
-    statusTitle.textContent = "حالة الطلب:";
-    statusTitle.style.margin = "18px 0 8px";
-    card.append(statusTitle);
-
-    const statusSelect = document.createElement("select");
-    statusSelect.style.cssText = "width:100%;padding:12px;border:1px solid #bbb;border-radius:8px;background:#fff;color:#172033;font-size:15px;";
-    ORDER_STATUSES.forEach(status => {
-      const option = document.createElement("option");
-      option.value = status;
-      option.textContent = status;
-      statusSelect.append(option);
-    });
-    const currentStatus = order.status || "جديد";
-    if (!ORDER_STATUSES.includes(currentStatus)) {
-      const oldOption = document.createElement("option");
-      oldOption.value = currentStatus;
-      oldOption.textContent = currentStatus;
-      statusSelect.append(oldOption);
-    }
-    statusSelect.value = currentStatus;
-
-    const saveStatus = document.createElement("button");
-    saveStatus.type = "button";
-    saveStatus.textContent = "حفظ الحالة";
-    saveStatus.style.cssText = "margin:10px 0;padding:11px 16px;border:0;border-radius:8px;background:#14233f;color:#fff;";
-
-    const statusMessage = document.createElement("p");
-    statusMessage.setAttribute("role", "status");
-    statusMessage.style.margin = "6px 0";
-
-    saveStatus.addEventListener("click", () => {
-      updateOrderStatus(order.id, statusSelect.value, saveStatus, statusMessage);
-    });
-
-    card.append(statusSelect, saveStatus, statusMessage);
-    container.append(card);
+  const target = openOrderId ? cachedOrders.find(order => String(order.id) === String(openOrderId)) : null;
+  if (target) {
+    selectedOrderId = target.id;
+    renderOrderDetails(target);
+  } else {
+    selectedOrderId = null;
+    renderOrdersList();
   }
 }
 
