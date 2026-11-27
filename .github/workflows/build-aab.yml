@@ -296,13 +296,16 @@ jobs:
           set -e
           PROPS="astro_mobile/android/gradle.properties"
           test -f "$PROPS"
-          if grep -q '^android\.newDsl=' "$PROPS"; then
-            sed -i 's/^android\.newDsl=.*/android.newDsl=false/' "$PROPS"
-          else
-            printf '\nandroid.newDsl=false\n' >> "$PROPS"
-          fi
+          for FLAG in android.newDsl android.builtInKotlin; do
+            if grep -q "^${FLAG}=" "$PROPS"; then
+              sed -i "s/^${FLAG}=.*/${FLAG}=false/" "$PROPS"
+            else
+              printf '\n%s=false\n' "$FLAG" >> "$PROPS"
+            fi
+          done
           grep -qx 'android.newDsl=false' "$PROPS"
-          echo "Flutter AGP 9 compatibility flag verified."
+          grep -qx 'android.builtInKotlin=false' "$PROPS"
+          echo "Flutter AGP 9 legacy DSL and Kotlin compatibility flags verified."
 
       - name: Set unique Android application ID for new Play Console listing
         run: |
