@@ -299,6 +299,12 @@ jobs:
           set -euo pipefail
           PROPS=astro_mobile/android/gradle.properties
           test -f "$PROPS"
+          grep -q '^android.newDsl=false$' "$PROPS" || printf '\nandroid.newDsl=false\n' >> "$PROPS"
+          grep -q '^android.builtInKotlin=false$' "$PROPS" || printf 'android.builtInKotlin=false\n' >> "$PROPS"
+          grep -q '^android.newDsl=false$' "$PROPS"
+          grep -q '^android.builtInKotlin=false$' "$PROPS"
+          echo "Verified AGP 9 compatibility properties."
+
           grep -q '^android.newDsl=false      - name: Set unique Android application ID for new Play Console listing
         run: |
           set -e
