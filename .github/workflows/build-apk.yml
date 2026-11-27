@@ -280,6 +280,32 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
+      - name: Set unique Android application ID for new Play Console listing
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          android = Path("astro_mobile/android/app")
+          app = next((p for p in (android / "build.gradle.kts", android / "build.gradle") if p.exists()), None)
+          if app is None:
+              raise SystemExit("Android app Gradle file not found")
+          source = app.read_text()
+          target = "ly.astromobile.store"
+          if app.suffix == ".kts":
+              source, count = re.subn(r'(?m)^\s*namespace\s*=\s*"[^"]+"', f'    namespace = "{target}"', source, count=1)
+              if count != 1: raise SystemExit("Could not set Android namespace")
+              source, count = re.subn(r'(?m)^\s*applicationId\s*=\s*"[^"]+"', f'        applicationId = "{target}"', source, count=1)
+          else:
+              source, count = re.subn(r'(?m)^\s*namespace\s+["\'][^"\']+["\']', f'    namespace "{target}"', source, count=1)
+              if count != 1: raise SystemExit("Could not set Android namespace")
+              source, count = re.subn(r'(?m)^\s*applicationId\s+["\'][^"\']+["\']', f'        applicationId "{target}"', source, count=1)
+          if count != 1: raise SystemExit("Could not set Android applicationId")
+          app.write_text(source)
+          if target not in app.read_text(): raise SystemExit("New Android package ID verification failed")
+          print("Android namespace and applicationId set to ly.astromobile.store.")
+          PY
+
       - name: Set Android launcher app name to Astro Mobile
         run: |
           set -e
