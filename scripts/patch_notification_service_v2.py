@@ -128,6 +128,14 @@ class NotificationService {
         debugPrint('ASTRO FCM auto-init warning: $e');
       }
 
+      // Report the Firebase configuration loaded at runtime, without exposing secrets.
+      final options = Firebase.app().options;
+      final runtimeConfig = 'projectId=${options.projectId}; '
+          'appId=${options.appId}; '
+          'senderId=${options.messagingSenderId}; '
+          'apiKeyPresent=${options.apiKey.isNotEmpty}';
+      await _diagnostic(phone, 'firebase_runtime_config', 0, runtimeConfig);
+
       String? token;
       Object? lastError;
       const waits = [0, 5, 15];
