@@ -82,12 +82,20 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
         return 'تعذر الحصول على رمز Firebase. تحقق من خدمات Google على الهاتف.';
       }
       token = value;
-    } on FirebaseException catch (e) {
-      debugPrint('ASTRO FCM token error: ${e.code}');
-      return 'فشل الحصول على رمز Firebase (${e.code}).';
-    } catch (e) {
-      debugPrint('ASTRO FCM token error: $e');
-      return 'حدث خطأ أثناء استخراج رمز الإشعارات.';
+    } on FirebaseException catch (e, stackTrace) {
+      debugPrint('ASTRO FCM TOKEN FAILURE');
+      debugPrint('plugin=${e.plugin} code=${e.code} message=${e.message}');
+      debugPrint('details=${e.toString()}');
+      debugPrintStack(stackTrace: stackTrace);
+      final detail = (e.message ?? e.toString()).replaceAll('\\n', ' ');
+      final shortDetail = detail.length > 180 ? detail.substring(0, 180) : detail;
+      return 'تعذر استخراج رمز الإشعارات (${e.code}): $shortDetail';
+    } catch (e, stackTrace) {
+      debugPrint('ASTRO FCM TOKEN FAILURE: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      final detail = e.toString().replaceAll('\\n', ' ');
+      final shortDetail = detail.length > 180 ? detail.substring(0, 180) : detail;
+      return 'تعذر استخراج رمز الإشعارات: $shortDetail';
     }
 
     return await _registerToken(token, normalized);
