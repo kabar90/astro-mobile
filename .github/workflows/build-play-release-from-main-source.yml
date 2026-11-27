@@ -301,6 +301,9 @@ jobs:
 
       - name: Build release Android App Bundle with Gradle diagnostics
         working-directory: astro_mobile
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
         shell: bash
         run: |
           set -uo pipefail
