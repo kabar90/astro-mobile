@@ -266,5 +266,42 @@ class NotificationService {
   }
 }
 '''
+# Add a direct Firebase Installations probe so FIS can be tested independently
+# from the FCM registration token request.
+pubspec = Path("astro_mobile/pubspec.yaml")
+pub = pubspec.read_text()
+if "firebase_app_installations:" not in pub:
+    anchor = "  firebase_core: ^4.15.2"
+    if anchor not in pub:
+        raise SystemExit("firebase_core dependency anchor missing")
+    pub = pub.replace(anchor, anchor + "\\n  firebase_app_installations: ^0.4.5", 1)
+    pubspec.write_text(pub)
+
+if "package:firebase_app_installations/firebase_app_installations.dart" not in source:
+    source = source.replace(
+        "import 'package:firebase_core/firebase_core.dart';",
+        "import 'package:firebase_core/firebase_core.dart';\\nimport 'package:firebase_app_installations/firebase_app_installations.dart';",
+        1,
+    )
+
+probe = """      // Probe Firebase Installations separately from FCM token registration.
+      try {
+        final installationId = await FirebaseInstallations.instance
+            .getId().timeout(const Duration(seconds: 20));
+        await _diagnostic(phone, 'fis_get_id_success', 0,
+            'installationIdPresent=\\u0024{installationId.isNotEmpty}');
+        final installationToken = await FirebaseInstallations.instance
+            .getToken().timeout(const Duration(seconds: 20));
+        await _diagnostic(phone, 'fis_auth_token_success', 0,
+            'installationTokenPresent=\\u0024{installationToken.isNotEmpty}');
+      } catch (e) {
+        await _diagnostic(phone, 'fis_probe_failed', 0, e.toString());
+        debugPrint('ASTRO Firebase Installations probe failed: \\u0024e');
+      }
+
+      String? token;"""
+if "Probe Firebase Installations separately from FCM token registration." not in source:
+    source = source.replace("      String? token;", probe, 1)
+
 target.write_text(source)
 print("Rebuilt notification_service.dart")
