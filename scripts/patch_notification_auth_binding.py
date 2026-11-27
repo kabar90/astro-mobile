@@ -127,7 +127,7 @@ account = Path("astro_mobile/lib/screens/account_screen.dart")
 account_source = account.read_text(encoding="utf-8")
 import_line = "import '../services/notification_service.dart';"
 if import_line not in account_source:
-    anchor = "import '../services/astro_analytics_service.dart';"
+    anchor = "import '../main.dart';"
     if anchor not in account_source:
         raise SystemExit("Could not find account screen service import anchor")
     account_source = account_source.replace(anchor, anchor + "\\n" + import_line, 1)
