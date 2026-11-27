@@ -83,8 +83,8 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
       }
       token = value;
     } on FirebaseException catch (e) {
-      debugPrint('ASTRO FCM token error: \${e.code}');
-      return 'فشل الحصول على رمز Firebase (\${e.code}).';
+      debugPrint('ASTRO FCM token error: ${e.code}');
+      return 'فشل الحصول على رمز Firebase (${e.code}).';
     } catch (e) {
       debugPrint('ASTRO FCM token error: $e');
       return 'حدث خطأ أثناء استخراج رمز الإشعارات.';
@@ -114,11 +114,11 @@ s = s[:start] + """  Future<String> _registerToken(String token, String phone) a
         debugPrint('ASTRO FCM: server confirmed device registration.');
         return 'تم تسجيل جهازك لاستقبال الإشعارات بنجاح.';
       }
-      debugPrint('ASTRO FCM: unexpected registration response: \${data.runtimeType}');
+      debugPrint('ASTRO FCM: unexpected registration response: ${data.runtimeType}');
       return 'وصل الطلب إلى الخادم لكن لم يؤكد تسجيل الجهاز.';
     } on FunctionException catch (e) {
-      debugPrint('ASTRO FCM registration server error: \${e.status}');
-      return 'الخادم رفض تسجيل الإشعارات (HTTP \${e.status}).';
+      debugPrint('ASTRO FCM registration server error: ${e.status}');
+      return 'الخادم رفض تسجيل الإشعارات (HTTP ${e.status}).';
     } catch (e) {
       debugPrint('ASTRO FCM registration request error: $e');
       return 'تعذر الاتصال بخادم تسجيل الإشعارات.';
@@ -140,9 +140,9 @@ if import_line not in account_source:
         raise SystemExit("Could not find account screen service import anchor")
     account_source = account_source.replace(anchor, anchor + "\n" + import_line, 1)
 
-call = "      final notificationStatus =
+call = """      final notificationStatus =
           await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());
-      _message(notificationStatus);"
+      _message(notificationStatus);"""
 if call not in account_source:
     anchor = "      if (mounted) setState(() {});"
     if anchor not in account_source:
