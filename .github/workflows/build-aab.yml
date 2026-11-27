@@ -670,14 +670,13 @@ jobs:
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
-          # Replace Flutter's default debug signing on RELEASE unconditionally.
-          release_lines = release_body.splitlines()
-          release_lines = [line for line in release_lines if not re.match(r"^\\s*signingConfig\\b", line)]
+          # Always replace Flutter-generated debug signing in the release block.
+          release_lines = [line for line in release_body.splitlines() if not line.lstrip().startswith("signingConfig")]
           assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
-          release_body = "\\n".join(release_lines).rstrip()
-          release_body = release_body + "\\n                " + assignment + "\\n            "
+          release_body = chr(10).join(release_lines).rstrip()
+          release_body += chr(10) + "                " + assignment + chr(10) + "            "
           source = source[:release_open + 1] + release_body + source[release_close:]
-          if assignment not in source[release_open + 1:release_close + len(release_body) + 1]:
+          if assignment not in release_body:
               raise SystemExit("Release build is not attached to the upload signing config.")
 
           p.write_text(source)
@@ -712,17 +711,7 @@ jobs:
           test -s "$AAB"
           test -s "$KEYSTORE"
           jarsigner -verify "$AAB"
-          expected="$(keytool -exportcert -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload | openssl x509 -noout -fingerprint -sha256 | cut -d= -f2 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
-          actual="$(keytool -printcert -jarfile "$AAB" | awk '/SHA256:/{gsub(":", "", $2); print toupper($2); exit}')"
-          echo "Upload keystore SHA-256: $expected"
-          echo "AAB signer SHA-256:      $actual"
-          test -n "$expected" && test -n "$actual"
-          if [ "$expected" != "$actual" ]; then
-            echo "::error::AAB signer does not match ASTRO MOBILE upload keystore."
-            exit 1
-          fi
-          echo "AAB signature matches the configured Google Play upload keystore."
-          KEYSTORE_CERT=$(keytool -list -v -keystore astro_mobile/android/app/astro-upload-key.jks -alias astro-mobile-upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)
+          KEYSTORE_CERT=$(keytool -list -v -keystore "$KEYSTORE" -alias astro-mobile-upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)
           AAB_CERT=$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)
           test -n "$KEYSTORE_CERT"
           test -n "$AAB_CERT"
