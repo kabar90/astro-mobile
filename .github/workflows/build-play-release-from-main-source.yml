@@ -28,12 +28,12 @@ jobs:
           mkdir extracted
           unzip -q ASTRO_MOBILE_POINTS_PAYMENT_UI.zip -d extracted
           mapfile -t manifests < <(find extracted -type f -name pubspec.yaml -not -path '*/.dart_tool/*')
-          if [ "\${#manifests[@]}" -ne 1 ]; then
-            echo "Expected exactly one Flutter pubspec.yaml; found \${#manifests[@]}"
-            printf '%s\n' "\${manifests[@]}"
+          if [ "${#manifests[@]}" -ne 1 ]; then
+            echo "Expected exactly one Flutter pubspec.yaml; found ${#manifests[@]}"
+            printf '%s\n' "${manifests[@]}"
             exit 1
           fi
-          project_dir="$(dirname "\${manifests[0]}")"
+          project_dir="$(dirname "${manifests[0]}")"
           mv "$project_dir" astro_mobile
           rm -rf extracted
           test -s astro_mobile/pubspec.yaml
@@ -160,9 +160,9 @@ jobs:
 
       - name: Configure Android release signing with the Google Play upload keystore
         env:
-          KEYSTORE_BASE64: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -261,8 +261,8 @@ jobs:
 
       - name: Verify bundle signature and certificate
         env:
-          KEYSTORE_BASE64: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
