@@ -81,6 +81,14 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return 'تعذر ربط الإشعارات: الحساب غير مسجل الدخول.';
 
+    debugPrint('ASTRO FCM: bindCurrentCustomerPhone entered.');
+    await _reportRegistrationDiagnostic(
+      phone: normalized,
+      stage: 'bind_started',
+      attempt: 0,
+      error: 'FCM binding method entered; authenticated user is available.',
+    );
+
     _lastPhone = normalized;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_phoneKey, normalized);
@@ -99,7 +107,9 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
 
     for (var attempt = 1; attempt <= 4; attempt++) {
       try {
-        token = await FirebaseMessaging.instance.getToken();
+        token = await FirebaseMessaging.instance
+            .getToken()
+            .timeout(const Duration(seconds: 20));
         if (token != null && token!.isNotEmpty) break;
         lastError = StateError('Firebase returned an empty FCM token.');
       } on FirebaseException catch (e, stackTrace) {
@@ -132,6 +142,12 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
       return 'تعذر استخراج رمز الإشعارات بعد 4 محاولات: $shortDetail';
     }
 
+    await _reportRegistrationDiagnostic(
+      phone: normalized,
+      stage: 'token_acquired',
+      attempt: 4,
+      error: 'Firebase returned a token; submitting registration to Supabase.',
+    );
     return await _registerToken(token!, normalized);
   }
 """ + s[end:]
@@ -186,9 +202,16 @@ s = s[:start] + """  Future<void> _reportRegistrationDiagnostic({
       return 'وصل الطلب إلى الخادم لكن لم يؤكد تسجيل الجهاز.';
     } on FunctionException catch (e) {
       debugPrint('ASTRO FCM registration server error: ${e.status}');
+      await _reportRegistrationDiagnostic(
+        phone: phone, stage: 'server_register', attempt: 1,
+        error: 'HTTP ${e.status}: ${e.details ?? e.reasonPhrase ?? 'unknown'}',
+      );
       return 'الخادم رفض تسجيل الإشعارات (HTTP ${e.status}).';
     } catch (e) {
       debugPrint('ASTRO FCM registration request error: $e');
+      await _reportRegistrationDiagnostic(
+        phone: phone, stage: 'server_register', attempt: 1, error: e.toString(),
+      );
       return 'تعذر الاتصال بخادم تسجيل الإشعارات.';
     }
   }
