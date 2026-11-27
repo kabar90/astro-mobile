@@ -140,7 +140,7 @@ class NotificationService {
           lastError = StateError('Firebase returned an empty FCM token.');
         } catch (e) {
           lastError = e;
-          debugPrint('ASTRO FCM getToken attempt \${i + 1} failed: $e');
+          debugPrint('ASTRO FCM getToken attempt ${i + 1} failed: $e');
           await _diagnostic(phone, 'get_token_failed', i + 1, e.toString());
         }
       }
@@ -194,11 +194,11 @@ class NotificationService {
         debugPrint('ASTRO FCM: device token registered.');
         return 'تم تسجيل جهازك لاستقبال الإشعارات بنجاح.';
       }
-      debugPrint('ASTRO FCM registration response: \${response.data}');
+      debugPrint('ASTRO FCM registration response: ${response.data}');
       return 'لم يؤكد الخادم تسجيل جهازك.';
     } on FunctionException catch (e) {
       await _diagnostic(phone, 'server_register', 1,
-          'HTTP \${e.status}: \${e.details ?? e.reasonPhrase ?? 'unknown'}');
+          'HTTP ${e.status}: ${e.details ?? e.reasonPhrase ?? 'unknown'}');
       return 'تعذر تسجيل الجهاز لدى الخادم.';
     } catch (e) {
       await _diagnostic(phone, 'server_register', 1, e.toString());
