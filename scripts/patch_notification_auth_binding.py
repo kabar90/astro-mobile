@@ -64,38 +64,41 @@ start = s.find("  Future<void> bindCurrentCustomerPhone(String phone) async {")
 end = s.find("\n  Future<void> _registerToken(", start)
 if start < 0 or end < 0:
     raise SystemExit("Could not locate FCM binding methods")
-s = s[:start] + """  Future<void> bindCurrentCustomerPhone(String phone) async {
+s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async {
     final normalized = phone.trim();
-    if (normalized.isEmpty) return;
+    if (normalized.isEmpty) return 'رقم الهاتف غير متوفر في الحساب.';
 
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      debugPrint('ASTRO FCM: skipped registration because no customer is signed in.');
-      return;
-    }
+    if (user == null) return 'تعذر ربط الإشعارات: الحساب غير مسجل الدخول.';
 
     _lastPhone = normalized;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_phoneKey, normalized);
 
+    String token;
     try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token == null || token.isEmpty) {
-        debugPrint('ASTRO FCM: Firebase returned an empty device token.');
-        return;
+      final value = await FirebaseMessaging.instance.getToken();
+      if (value == null || value.isEmpty) {
+        return 'تعذر الحصول على رمز Firebase. تحقق من خدمات Google على الهاتف.';
       }
-      await _registerToken(token, normalized);
+      token = value;
+    } on FirebaseException catch (e) {
+      debugPrint('ASTRO FCM token error: \${e.code}');
+      return 'فشل الحصول على رمز Firebase (\${e.code}).';
     } catch (e) {
-      debugPrint('ASTRO FCM: token retrieval failed: $e');
+      debugPrint('ASTRO FCM token error: $e');
+      return 'حدث خطأ أثناء استخراج رمز الإشعارات.';
     }
+
+    return await _registerToken(token, normalized);
   }
 """ + s[end:]
 
 start = s.find("  Future<void> _registerToken(String token, String phone) async {")
-end = s.find("\n  Future<void> _showForeground(", start)
+end = s.find("\\n  Future<void> _showForeground(", start)
 if start < 0 or end < 0:
     raise SystemExit("Could not locate FCM server registration method")
-s = s[:start] + """  Future<void> _registerToken(String token, String phone) async {
+s = s[:start] + """  Future<String> _registerToken(String token, String phone) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'fcm-notifications',
@@ -107,13 +110,18 @@ s = s[:start] + """  Future<void> _registerToken(String token, String phone) asy
         },
       );
       final data = response.data;
-      if (data is! Map || data['success'] != true) {
-        debugPrint('ASTRO FCM: server did not confirm device registration.');
-        return;
+      if (data is Map && data['success'] == true) {
+        debugPrint('ASTRO FCM: server confirmed device registration.');
+        return 'تم تسجيل جهازك لاستقبال الإشعارات بنجاح.';
       }
-      debugPrint('ASTRO FCM: device registration confirmed for signed-in account.');
+      debugPrint('ASTRO FCM: unexpected registration response: \${data.runtimeType}');
+      return 'وصل الطلب إلى الخادم لكن لم يؤكد تسجيل الجهاز.';
+    } on FunctionException catch (e) {
+      debugPrint('ASTRO FCM registration server error: \${e.status}');
+      return 'الخادم رفض تسجيل الإشعارات (HTTP \${e.status}).';
     } catch (e) {
-      debugPrint('ASTRO FCM: server registration request failed: $e');
+      debugPrint('ASTRO FCM registration request error: $e');
+      return 'تعذر الاتصال بخادم تسجيل الإشعارات.';
     }
   }
 """ + s[end:]
@@ -132,7 +140,9 @@ if import_line not in account_source:
         raise SystemExit("Could not find account screen service import anchor")
     account_source = account_source.replace(anchor, anchor + "\n" + import_line, 1)
 
-call = "      await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());"
+call = "      final notificationStatus =
+          await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());
+      _message(notificationStatus);"
 if call not in account_source:
     anchor = "      if (mounted) setState(() {});"
     if anchor not in account_source:
