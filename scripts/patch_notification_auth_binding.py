@@ -1,5 +1,15 @@
 from pathlib import Path
 
+# Keep the Firebase Messaging Android implementation on the maintained
+# 16.x line while retaining compatibility with the project's Android SDK.
+pubspec = Path("astro_mobile/pubspec.yaml")
+pubspec_text = pubspec.read_text(encoding="utf-8")
+pubspec_text = pubspec_text.replace(
+    "firebase_messaging: ^16.1.0",
+    "firebase_messaging: ^16.7.1",
+)
+pubspec.write_text(pubspec_text, encoding="utf-8")
+
 p = Path("astro_mobile/lib/services/notification_service.dart")
 s = p.read_text(encoding="utf-8")
 
@@ -75,30 +85,48 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_phoneKey, normalized);
 
-    String token;
+    String? token;
+    Object? lastError;
+
+    // Ensure FCM auto-init is enabled, then retry transient registration
+    // failures. FCM may temporarily return SERVICE_NOT_AVAILABLE or
+    // "FCM Registration failed" while Google Play services reconnects.
     try {
-      final value = await FirebaseMessaging.instance.getToken();
-      if (value == null || value.isEmpty) {
-        return 'تعذر الحصول على رمز Firebase. تحقق من خدمات Google على الهاتف.';
-      }
-      token = value;
-    } on FirebaseException catch (e, stackTrace) {
-      debugPrint('ASTRO FCM TOKEN FAILURE');
-      debugPrint('plugin=${e.plugin} code=${e.code} message=${e.message}');
-      debugPrint('details=${e.toString()}');
-      debugPrintStack(stackTrace: stackTrace);
-      final detail = (e.message ?? e.toString()).replaceAll('\\n', ' ');
-      final shortDetail = detail.length > 180 ? detail.substring(0, 180) : detail;
-      return 'تعذر استخراج رمز الإشعارات (${e.code}): $shortDetail';
-    } catch (e, stackTrace) {
-      debugPrint('ASTRO FCM TOKEN FAILURE: $e');
-      debugPrintStack(stackTrace: stackTrace);
-      final detail = e.toString().replaceAll('\\n', ' ');
-      final shortDetail = detail.length > 180 ? detail.substring(0, 180) : detail;
-      return 'تعذر استخراج رمز الإشعارات: $shortDetail';
+      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    } catch (e) {
+      debugPrint('ASTRO FCM auto-init configuration warning: $e');
     }
 
-    return await _registerToken(token, normalized);
+    for (var attempt = 1; attempt <= 4; attempt++) {
+      try {
+        token = await FirebaseMessaging.instance.getToken();
+        if (token != null && token!.isNotEmpty) break;
+        lastError = StateError('Firebase returned an empty FCM token.');
+      } on FirebaseException catch (e, stackTrace) {
+        lastError = e;
+        debugPrint('ASTRO FCM TOKEN FAILURE attempt=$attempt');
+        debugPrint('plugin=${e.plugin} code=${e.code} message=${e.message}');
+        debugPrint('details=${e.toString()}');
+        debugPrintStack(stackTrace: stackTrace);
+      } catch (e, stackTrace) {
+        lastError = e;
+        debugPrint('ASTRO FCM TOKEN FAILURE attempt=$attempt: $e');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+
+      if (attempt < 4) {
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+
+    if (token == null || token!.isEmpty) {
+      final detail = (lastError?.toString() ?? 'No token returned')
+          .replaceAll('\\n', ' ');
+      final shortDetail = detail.length > 220 ? detail.substring(0, 220) : detail;
+      return 'تعذر استخراج رمز الإشعارات بعد 4 محاولات: $shortDetail';
+    }
+
+    return await _registerToken(token!, normalized);
   }
 """ + s[end:]
 
