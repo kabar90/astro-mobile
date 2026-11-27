@@ -90,8 +90,27 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
     );
 
     _lastPhone = normalized;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_phoneKey, normalized);
+    late SharedPreferences prefs;
+    try {
+      prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 10));
+      await prefs.setString(_phoneKey, normalized)
+          .timeout(const Duration(seconds: 10));
+      await _reportRegistrationDiagnostic(
+        phone: normalized,
+        stage: 'preferences_ready',
+        attempt: 0,
+        error: 'Local phone binding preferences saved.',
+      );
+    } catch (e) {
+      await _reportRegistrationDiagnostic(
+        phone: normalized,
+        stage: 'preferences_failed',
+        attempt: 0,
+        error: e.toString(),
+      );
+      return 'تعذر تهيئة تسجيل الإشعارات.';
+    }
 
     String? token;
     Object? lastError;
@@ -100,9 +119,23 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
     // failures. FCM may temporarily return SERVICE_NOT_AVAILABLE or
     // "FCM Registration failed" while Google Play services reconnects.
     try {
-      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+      await FirebaseMessaging.instance
+          .setAutoInitEnabled(true)
+          .timeout(const Duration(seconds: 10));
+      await _reportRegistrationDiagnostic(
+        phone: normalized,
+        stage: 'auto_init_ready',
+        attempt: 0,
+        error: 'Firebase Messaging auto-init enabled.',
+      );
     } catch (e) {
       debugPrint('ASTRO FCM auto-init configuration warning: $e');
+      await _reportRegistrationDiagnostic(
+        phone: normalized,
+        stage: 'auto_init_failed',
+        attempt: 0,
+        error: e.toString(),
+      );
     }
 
     for (var attempt = 1; attempt <= 4; attempt++) {
