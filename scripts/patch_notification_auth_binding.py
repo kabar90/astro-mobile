@@ -18,7 +18,7 @@ if "import 'dart:async';" not in s:
 
 if "_authSubscription" not in s:
     s = s.replace(
-        "  String? _lastPhone;\n",
+        "  String? _lastPhone;\n  Future<String>? _bindingFuture;\n",
         "  String? _lastPhone;\n  StreamSubscription<AuthState>? _authSubscription;\n",
         1,
     )
@@ -74,8 +74,19 @@ start = s.find("  Future<void> bindCurrentCustomerPhone(String phone) async {")
 end = s.find("\n  Future<void> _registerToken(", start)
 if start < 0 or end < 0:
     raise SystemExit("Could not locate FCM binding methods")
-s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async {
+s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) {
     final normalized = phone.trim();
+    final inFlight = _bindingFuture;
+    if (inFlight != null) return inFlight;
+
+    final future = _bindCurrentCustomerPhone(normalized);
+    _bindingFuture = future;
+    return future.whenComplete(() {
+      if (identical(_bindingFuture, future)) _bindingFuture = null;
+    });
+  }
+
+  Future<String> _bindCurrentCustomerPhone(String normalized) async {
     if (normalized.isEmpty) return 'رقم الهاتف غير متوفر في الحساب.';
 
     final user = Supabase.instance.client.auth.currentUser;
