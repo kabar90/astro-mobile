@@ -49,7 +49,7 @@ if "import 'dart:async';" not in source:
 source = source.replace(old, new, 1)
 if "runApp(const AstroMobileApp());\n\n  unawaited(_initializeBackgroundServices());" not in source:
     raise SystemExit("Non-blocking startup verification failed.")
-main_body = source.split("Future<void> main() async {", 1)[1].split("\\n}\\n\\nFuture<void> _initializeBackgroundServices", 1)[0]\nif "await NotificationService.instance.initialize()" in main_body:
+main_body = source.split("  unawaited(_initializeBackgroundServices());", 1)[0]
     raise SystemExit("FCM initialization is still awaited inside main().")
 
 path.write_text(source)
