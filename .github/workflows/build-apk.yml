@@ -76,6 +76,15 @@ jobs:
           grep -q "bindCurrentCustomerPhone(_normalizedPhone())" astro_mobile/lib/screens/account_screen.dart
           echo "Automatic customer FCM token binding verified."
 
+      - name: Rebuild Firebase notification service with isolated token registration
+        run: |
+          set -e
+          python3 scripts/patch_notification_service_v2.py
+          grep -q "Firebase listeners initialize independently of token registration" astro_mobile/lib/services/notification_service.dart
+          grep -q "getToken()" astro_mobile/lib/services/notification_service.dart
+          grep -q "Future<List<Map<String, dynamic>>> history()" astro_mobile/lib/services/notification_service.dart
+          echo "Rebuilt notification service and preserved existing public methods."
+
       - name: Add independent service inquiries screen
         run: |
           set -e
