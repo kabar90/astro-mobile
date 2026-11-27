@@ -3,6 +3,9 @@ name: Build ASTRO MOBILE Play AAB
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - play-aab-fix-flutter-3385
 
 permissions:
   contents: read
