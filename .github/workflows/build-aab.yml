@@ -630,7 +630,7 @@ jobs:
 
           signing_match = re.search(r"\bsigningConfigs\s*\{", source)
           release_config = """
-                  release {
+                  create("release") {
                       keyAlias = "astro-mobile-upload"
                       keyPassword = System.getenv("KEY_PASSWORD")
                       storeFile = file("astro-upload-key.jks")
@@ -649,7 +649,7 @@ jobs:
               signing_open = source.find("{", signing_match.start())
               signing_close = matching_brace(source, signing_open)
               signing_body = source[signing_open + 1:signing_close]
-              if not re.search(r"\brelease\s*\{", signing_body):
+              if not re.search(r'(?:\brelease\s*\{|\bcreate\s*\(\s*["\']release["\']\s*\))', signing_body):
                   source = source[:signing_close] + "\n" + release_config + "\n" + source[signing_close:]
           else:
               android_close = matching_brace(source, android_open)
