@@ -176,9 +176,9 @@ if import_line not in account_source:
         raise SystemExit("Could not find account screen service import anchor")
     account_source = account_source.replace(anchor, anchor + "\n" + import_line, 1)
 
-call = """      final notificationStatus =
-          await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());
-      _message(notificationStatus);"""
+call = """      // Register FCM silently in the background; never show technical
+      // notification-registration messages to customers.
+      await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());"""
 if call not in account_source:
     anchor = "      if (mounted) setState(() {});"
     if anchor not in account_source:
