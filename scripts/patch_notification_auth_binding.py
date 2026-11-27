@@ -157,6 +157,29 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) {
         debugPrintStack(stackTrace: stackTrace);
       }
 
+      // Report each failed native FCM request immediately. Previously the
+      // app only uploaded the final error after all four retries, hiding the
+      // exact attempt that failed and making diagnosis unnecessarily slow.
+      if (token == null || token!.isEmpty) {
+        final attemptDetail = (lastError?.toString() ?? 'No token returned')
+            .replaceAll('\\n', ' ');
+        await _reportRegistrationDiagnostic(
+          phone: normalized,
+          stage: 'getToken_attempt_failed',
+          attempt: attempt,
+          error: attemptDetail.length > 500
+              ? attemptDetail.substring(0, 500)
+              : attemptDetail,
+        );
+      } else {
+        await _reportRegistrationDiagnostic(
+          phone: normalized,
+          stage: 'getToken_attempt_succeeded',
+          attempt: attempt,
+          error: 'FCM token returned successfully.',
+        );
+      }
+
       if (attempt < 4) {
         await Future.delayed(Duration(seconds: attempt * 2));
       }
