@@ -248,6 +248,18 @@ jobs:
           test -f astro_mobile/lib/services/astro_analytics_service.dart
           echo "First-open and install attribution tracking applied."
 
+      - name: Launch app without waiting for Firebase Messaging
+        run: |
+          set -e
+          python3 scripts/patch_nonblocking_firebase_startup.py
+          grep -q "unawaited(_initializeBackgroundServices())" astro_mobile/lib/main.dart
+          grep -q "await NotificationService.instance.initialize()" astro_mobile/lib/main.dart
+          if sed -n '/Future<void> main()/,/class AstroMobileApp/p' astro_mobile/lib/main.dart | grep -q "await NotificationService.instance.initialize"; then
+            echo "Firebase initialization must not block main()."
+            exit 1
+          fi
+          echo "App startup is independent of FCM token registration and analytics."
+
       - name: Upload extracted Flutter source for safe inspection
         uses: actions/upload-artifact@v4
         with:
