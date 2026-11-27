@@ -3,9 +3,6 @@ name: Build ASTRO MOBILE Play AAB
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - play-aab-fix-flutter-3385
 
 permissions:
   contents: read
@@ -289,7 +286,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.38.5'
 
       - name: Generate Android project
         working-directory: astro_mobile
@@ -671,7 +667,7 @@ jobs:
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
-          if True:
+          if "signingConfig" not in release_body:
               assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
               source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
 
