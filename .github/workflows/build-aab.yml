@@ -716,7 +716,7 @@ jobs:
 
       - name: Build signed Play AAB
         working-directory: astro_mobile
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --stacktrace
 
       - name: Verify signed Play AAB
         run: |
