@@ -145,16 +145,28 @@ jobs:
               a = a.replace("plugins {", "plugins {\n" + line, 1)
           if app.suffix == ".kts":
               if "isCoreLibraryDesugaringEnabled = true" not in a:
+                  if "compileOptions {" not in a:
+                      raise SystemExit("Android compileOptions block is missing.")
                   a = a.replace("compileOptions {", "compileOptions {\n        isCoreLibraryDesugaringEnabled = true", 1)
+              dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+              a = re.sub(r'(?m)^dependencies\\s*\\{', lambda m: m.group(0) + "\\n" + dependency, a, count=1) if "desugar_jdk_libs" not in a and re.search(r'(?m)^dependencies\\s*\\{', a) else a
               if "desugar_jdk_libs" not in a:
-                  a = a.replace("dependencies {", 'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")', 1)
+                  a = a.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
               a = a.replace("minSdk = flutter.minSdkVersion", "minSdk = 23")
           else:
               if "coreLibraryDesugaringEnabled true" not in a:
+                  if "compileOptions {" not in a:
+                      raise SystemExit("Android compileOptions block is missing.")
                   a = a.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true", 1)
+              dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
               if "desugar_jdk_libs" not in a:
-                  a = a.replace("dependencies {", "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'", 1)
+                  if re.search(r'(?m)^dependencies\\s*\\{', a):
+                      a = re.sub(r'(?m)^(dependencies\\s*\\{)', r'\\1\\n' + dependency, a, count=1)
+                  else:
+                      a = a.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
               a = a.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 23")
+          if "desugar_jdk_libs" not in a:
+              raise SystemExit("Failed to add coreLibraryDesugaring dependency.")
           app.write_text(a)
           PY
 
