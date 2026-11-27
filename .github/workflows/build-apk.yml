@@ -77,7 +77,7 @@ jobs:
           echo "Clean FCM notification service rebuild verified."
           grep -q "Future<void> _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
           grep -q "onAuthStateChange.listen" astro_mobile/lib/services/notification_service.dart
-          grep -q "await _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
+          grep -q "unawaited(_bindAuthenticatedUser())" astro_mobile/lib/services/notification_service.dart
           grep -q "bindCurrentCustomerPhone(_normalizedPhone())" astro_mobile/lib/screens/account_screen.dart
           echo "Automatic customer FCM token binding verified."
 
