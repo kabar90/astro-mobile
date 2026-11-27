@@ -623,12 +623,12 @@ jobs:
                           return i
               raise SystemExit("Unbalanced Gradle braces")
 
-          android_match = re.search(r"\\bandroid\\s*\\{", source)
+          android_match = re.search(r"\bandroid\s*\{", source)
           if not android_match:
               raise SystemExit("Android Gradle block not found")
           android_open = source.find("{", android_match.start())
 
-          signing_match = re.search(r"\\bsigningConfigs\\s*\\{", source)
+          signing_match = re.search(r"\bsigningConfigs\s*\{", source)
           release_config = """
                   release {
                       keyAlias = "astro-mobile-upload"
@@ -649,19 +649,19 @@ jobs:
               signing_open = source.find("{", signing_match.start())
               signing_close = matching_brace(source, signing_open)
               signing_body = source[signing_open + 1:signing_close]
-              if not re.search(r"\\brelease\\s*\\{", signing_body):
-                  source = source[:signing_close] + "\\n" + release_config + "\\n" + source[signing_close:]
+              if not re.search(r"\brelease\s*\{", signing_body):
+                  source = source[:signing_close] + "\n" + release_config + "\n" + source[signing_close:]
           else:
               android_close = matching_brace(source, android_open)
-              source = source[:android_open + 1] + "\\n        signingConfigs {\\n" + release_config + "\\n        }\\n" + source[android_open + 1:]
+              source = source[:android_open + 1] + "\n        signingConfigs {\n" + release_config + "\n        }\n" + source[android_open + 1:]
 
-          build_types = re.search(r"\\bbuildTypes\\s*\\{", source)
+          build_types = re.search(r"\bbuildTypes\s*\{", source)
           if not build_types:
               raise SystemExit("buildTypes block not found")
           bt_open = source.find("{", build_types.start())
           bt_close = matching_brace(source, bt_open)
           bt_body = source[bt_open + 1:bt_close]
-          release_match = re.search(r"\\brelease\\s*\\{", bt_body)
+          release_match = re.search(r"\brelease\s*\{", bt_body)
           if not release_match:
               raise SystemExit("release build type not found")
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
@@ -669,7 +669,7 @@ jobs:
           release_body = source[release_open + 1:release_close]
           if "signingConfig" not in release_body:
               assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
-              source = source[:release_close] + "\\n                " + assignment + "\\n            " + source[release_close:]
+              source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
 
           p.write_text(source)
           print("Verified release signing config exists and is attached to release build type.")
