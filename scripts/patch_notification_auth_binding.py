@@ -95,7 +95,7 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
 """ + s[end:]
 
 start = s.find("  Future<void> _registerToken(String token, String phone) async {")
-end = s.find("\\n  Future<void> _showForeground(", start)
+end = s.find("\n  Future<void> _showForeground(", start)
 if start < 0 or end < 0:
     raise SystemExit("Could not locate FCM server registration method")
 s = s[:start] + """  Future<String> _registerToken(String token, String phone) async {
