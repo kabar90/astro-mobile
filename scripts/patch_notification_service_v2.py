@@ -274,13 +274,13 @@ if "firebase_app_installations:" not in pub:
     anchor = "  firebase_core: ^4.15.2"
     if anchor not in pub:
         raise SystemExit("firebase_core dependency anchor missing")
-    pub = pub.replace(anchor, anchor + "\\n  firebase_app_installations: ^0.4.5", 1)
+    pub = pub.replace(anchor, anchor + "\n  firebase_app_installations: ^0.4.5", 1)
     pubspec.write_text(pub)
 
 if "package:firebase_app_installations/firebase_app_installations.dart" not in source:
     source = source.replace(
         "import 'package:firebase_core/firebase_core.dart';",
-        "import 'package:firebase_core/firebase_core.dart';\\nimport 'package:firebase_app_installations/firebase_app_installations.dart';",
+        "import 'package:firebase_core/firebase_core.dart';\nimport 'package:firebase_app_installations/firebase_app_installations.dart';",
         1,
     )
 
