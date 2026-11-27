@@ -123,6 +123,12 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
       final detail = (lastError?.toString() ?? 'No token returned')
           .replaceAll('\\n', ' ');
       final shortDetail = detail.length > 220 ? detail.substring(0, 220) : detail;
+      await _reportRegistrationDiagnostic(
+        phone: normalized,
+        stage: 'getToken',
+        attempt: 4,
+        error: shortDetail,
+      );
       return 'تعذر استخراج رمز الإشعارات بعد 4 محاولات: $shortDetail';
     }
 
@@ -134,7 +140,33 @@ start = s.find("  Future<void> _registerToken(String token, String phone) async 
 end = s.find("\n  Future<void> _showForeground(", start)
 if start < 0 or end < 0:
     raise SystemExit("Could not locate FCM server registration method")
-s = s[:start] + """  Future<String> _registerToken(String token, String phone) async {
+s = s[:start] + """  Future<void> _reportRegistrationDiagnostic({
+    required String phone,
+    required String stage,
+    required int attempt,
+    required String error,
+  }) async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final digits = phone.replaceAll(RegExp(r'\\D'), '');
+      await Supabase.instance.client.functions.invoke(
+        'fcm-notifications',
+        body: {
+          'action': 'diagnostic',
+          'user_id': user?.id,
+          'phone_suffix': digits.length >= 4 ? digits.substring(digits.length - 4) : 'unknown',
+          'stage': stage,
+          'attempt': attempt,
+          'error': error.length > 500 ? error.substring(0, 500) : error,
+          'platform': defaultTargetPlatform.name,
+        },
+      );
+    } catch (e) {
+      debugPrint('ASTRO FCM diagnostic upload failed: $e');
+    }
+  }
+
+  Future<String> _registerToken(String token, String phone) async {
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'fcm-notifications',
