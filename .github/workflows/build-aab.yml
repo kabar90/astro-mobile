@@ -674,7 +674,11 @@ jobs:
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
           assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
-          if re.search(r'(?m)^\s*signingConfig\b.*
+          if re.search(r'(?m)^\s*signingConfig\b.*$', release_body):
+              release_body = re.sub(r'(?m)^\s*signingConfig\b.*$', "                " + assignment, release_body)
+              source = source[:release_open + 1] + release_body + source[release_close:]
+          else:
+              source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
           p.write_text(source)
           print("Verified release signing config exists and is attached to release build type.")
           PY
