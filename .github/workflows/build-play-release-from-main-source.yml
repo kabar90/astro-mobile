@@ -1,0 +1,288 @@
+name: ASTRO MOBILE - Fresh Google Play release from main source
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-play-release-from-main-source.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout selected main-source snapshot
+        uses: actions/checkout@v4
+
+      - name: Extract only the approved source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s ASTRO_MOBILE_POINTS_PAYMENT_UI.zip
+          rm -rf extracted astro_mobile
+          mkdir extracted
+          unzip -q ASTRO_MOBILE_POINTS_PAYMENT_UI.zip -d extracted
+          mapfile -t manifests < <(find extracted -type f -name pubspec.yaml -not -path '*/.dart_tool/*')
+          if [ "\${#manifests[@]}" -ne 1 ]; then
+            echo "Expected exactly one Flutter pubspec.yaml; found \${#manifests[@]}"
+            printf '%s\n' "\${manifests[@]}"
+            exit 1
+          fi
+          project_dir="$(dirname "\${manifests[0]}")"
+          mv "$project_dir" astro_mobile
+          rm -rf extracted
+          test -s astro_mobile/pubspec.yaml
+          echo "Approved source archive SHA:"
+          git rev-parse HEAD
+          echo "Flutter package manifest:"
+          sed -n '1,100p' astro_mobile/pubspec.yaml
+          echo "Source archive extracted without applying repository patch scripts."
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up pinned Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.5"
+          channel: stable
+          cache: true
+
+      - name: Generate clean Android host project
+        working-directory: astro_mobile
+        run: flutter create --org ly.astromobile --platforms=android .
+
+      - name: Pin supported Android Gradle toolchain and application identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("astro_mobile/android")
+          settings = next((p for p in (root / "settings.gradle.kts", root / "settings.gradle") if p.exists()), None)
+          wrapper = root / "gradle/wrapper/gradle-wrapper.properties"
+          app = next((p for p in (root / "app/build.gradle.kts", root / "app/build.gradle") if p.exists()), None)
+          if not settings or not wrapper.is_file() or not app:
+              raise SystemExit("Generated Android Gradle project is incomplete.")
+
+          s = settings.read_text()
+          s, n = re.subn(r'(id\(["\']com\.android\.application["\']\)\s+version\s+["\'])[^"\']+(["\'])',
+                         r'\g<1>8.11.1\2', s, count=1)
+          if n != 1:
+              raise SystemExit("Could not pin Android Gradle Plugin 8.11.1.")
+          settings.write_text(s)
+
+          w = wrapper.read_text()
+          w, n = re.subn(r'gradle-[0-9.]+-(all|bin)\.zip',
+                         'gradle-8.13-all.zip', w, count=1)
+          if n != 1:
+              raise SystemExit("Could not pin Gradle 8.13.")
+          wrapper.write_text(w)
+
+          target = "ly.astromobile.store"
+          a = app.read_text()
+          if app.suffix == ".kts":
+              a, n1 = re.subn(r'(?m)^\s*namespace\s*=\s*"[^"]+"',
+                              f'    namespace = "{target}"', a, count=1)
+              a, n2 = re.subn(r'(?m)^\s*applicationId\s*=\s*"[^"]+"',
+                              f'        applicationId = "{target}"', a, count=1)
+          else:
+              a, n1 = re.subn(r'(?m)^\s*namespace\s+["\'][^"\']+["\']',
+                              f'    namespace "{target}"', a, count=1)
+              a, n2 = re.subn(r'(?m)^\s*applicationId\s+["\'][^"\']+["\']',
+                              f'        applicationId "{target}"', a, count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit("Could not set the verified Firebase/Play application ID.")
+          app.write_text(a)
+          print("Pinned AGP 8.11.1 / Gradle 8.13; application ID ly.astromobile.store.")
+          PY
+
+      - name: Configure Firebase for the approved Android application
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cfg = json.loads(Path("google-services.json").read_text())
+          package = "ly.astromobile.store"
+          matches = [c for c in cfg.get("client", [])
+                     if c.get("client_info", {}).get("android_client_info", {}).get("package_name") == package]
+          if len(matches) != 1:
+              raise SystemExit(f"Firebase config must contain exactly one {package} client; found {len(matches)}")
+          app_id = matches[0]["client_info"].get("mobilesdk_app_id")
+          if not app_id:
+              raise SystemExit("Firebase Android app ID is missing.")
+          print(f"Firebase project: {cfg['project_info']['project_id']}")
+          print(f"Firebase Android package verified: {package}")
+          PY
+          mkdir -p astro_mobile/android/app
+          cp google-services.json astro_mobile/android/app/google-services.json
+          python3 - <<'PY'
+          from pathlib import Path
+          settings = next(p for p in (Path("astro_mobile/android/settings.gradle.kts"), Path("astro_mobile/android/settings.gradle")) if p.exists())
+          app = next(p for p in (Path("astro_mobile/android/app/build.gradle.kts"), Path("astro_mobile/android/app/build.gradle")) if p.exists())
+          s = settings.read_text()
+          if "com.google.gms.google-services" not in s:
+              if settings.suffix == ".kts":
+                  s = s.replace("plugins {", 'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false', 1)
+              else:
+                  s = s.replace("plugins {", "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false", 1)
+          settings.write_text(s)
+          a = app.read_text()
+          if "com.google.gms.google-services" not in a:
+              line = '    id("com.google.gms.google-services")' if app.suffix == ".kts" else "    id 'com.google.gms.google-services'"
+              a = a.replace("plugins {", "plugins {\n" + line, 1)
+          if app.suffix == ".kts":
+              if "isCoreLibraryDesugaringEnabled = true" not in a:
+                  a = a.replace("compileOptions {", "compileOptions {\n        isCoreLibraryDesugaringEnabled = true", 1)
+              if "desugar_jdk_libs" not in a:
+                  a = a.replace("dependencies {", 'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")', 1)
+              a = a.replace("minSdk = flutter.minSdkVersion", "minSdk = 23")
+          else:
+              if "coreLibraryDesugaringEnabled true" not in a:
+                  a = a.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true", 1)
+              if "desugar_jdk_libs" not in a:
+                  a = a.replace("dependencies {", "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'", 1)
+              a = a.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 23")
+          app.write_text(a)
+          PY
+
+      - name: Configure Android release signing with the Google Play upload keystore
+        env:
+          KEYSTORE_BASE64: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_PASSWORD"
+          mkdir -p astro_mobile/android/app
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > astro_mobile/android/app/astro-upload-key.jks
+          test -s astro_mobile/android/app/astro-upload-key.jks
+          keytool -list -v -keystore astro_mobile/android/app/astro-upload-key.jks \
+            -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload \
+            | sed -n '/Alias name:/p;/Entry type:/p;/SHA256:/p;/SHA1:/p'
+          export KEYSTORE_PASSWORD KEY_PASSWORD
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = next(p for p in (Path("astro_mobile/android/app/build.gradle.kts"), Path("astro_mobile/android/app/build.gradle")) if p.exists())
+          kts = p.suffix == ".kts"
+          s = p.read_text()
+          if kts:
+              signing = '''
+              signingConfigs {
+                  create("release") {
+                      storeFile = file("astro-upload-key.jks")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias = "astro-mobile-upload"
+                      keyPassword = System.getenv("KEY_PASSWORD")
+                  }
+              }
+              '''
+              assignment = 'signingConfig = signingConfigs.getByName("release")'
+          else:
+              signing = '''
+              signingConfigs {
+                  release {
+                      storeFile file("astro-upload-key.jks")
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias "astro-mobile-upload"
+                      keyPassword System.getenv("KEY_PASSWORD")
+                  }
+              }
+              '''
+              assignment = "signingConfig signingConfigs.release"
+          if "signingConfigs {" not in s:
+              s = s.replace("android {", "android {\n" + signing, 1)
+          elif "astro-upload-key.jks" not in s:
+              raise SystemExit("Unexpected existing signing configuration; refusing to overwrite it.")
+          match = re.search(r'\brelease\s*\{', s[s.find("buildTypes {"):])
+          if not match:
+              raise SystemExit("Release build type not found.")
+          start = s.find("buildTypes {") + match.start()
+          open_brace = s.find("{", start)
+          depth = 0
+          close = None
+          for i in range(open_brace, len(s)):
+              if s[i] == "{": depth += 1
+              elif s[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      close = i
+                      break
+          if close is None: raise SystemExit("Unbalanced release block.")
+          body = s[open_brace + 1:close]
+          body = re.sub(r'(?m)^\s*signingConfig\s*=?.*$', '', body)
+          body = body.rstrip() + "\n            " + assignment + "\n        "
+          s = s[:open_brace + 1] + body + s[close:]
+          p.write_text(s)
+          print("Release variant is explicitly bound to alias astro-mobile-upload.")
+          PY
+
+      - name: Set release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("astro_mobile/pubspec.yaml")
+          s = p.read_text()
+          m = re.search(r'(?m)^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$', s)
+          if not m:
+              raise SystemExit("Could not read a numeric Flutter version from pubspec.yaml.")
+          old = m.group(0)
+          new = f"version: {m.group(1)}.{m.group(2)}.{m.group(3)}+{int(m.group(4)) + 1}"
+          p.write_text(s.replace(old, new, 1))
+          print(f"Incremented source build number: {old.strip()} -> {new}")
+          PY
+
+      - name: Resolve Dart dependencies
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Build release Android App Bundle
+        working-directory: astro_mobile
+        run: flutter build appbundle --release
+
+      - name: Verify bundle signature and certificate
+        env:
+          KEYSTORE_BASE64: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: \${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
+          test -s "$AAB"
+          jarsigner -verify -verbose -certs "$AAB" >/tmp/jarsigner-verify.txt
+          grep -q "jar verified" /tmp/jarsigner-verify.txt
+          echo "AAB signer certificate:"
+          keytool -printcert -jarfile "$AAB" | sed -n '/Owner:/p;/Issuer:/p;/SHA256:/p;/SHA1:/p'
+          echo "Upload keystore certificate:"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/astro-upload-key.jks
+          keytool -list -v -keystore /tmp/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload \
+            | sed -n '/Owner:/p;/Issuer:/p;/SHA256:/p;/SHA1:/p'
+          rm -f /tmp/astro-upload-key.jks
+          echo "Bundle signature verification completed."
+
+      - name: Upload fresh Google Play AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRO-MOBILE-FRESH-GOOGLE-PLAY-AAB
+          path: astro_mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
