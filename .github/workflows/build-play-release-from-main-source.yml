@@ -325,15 +325,22 @@ jobs:
           test -s "$AAB"
           jarsigner -verify -verbose -certs "$AAB" >/tmp/jarsigner-verify.txt
           grep -q "jar verified" /tmp/jarsigner-verify.txt
-          echo "AAB signer certificate:"
-          keytool -printcert -jarfile "$AAB" | sed -n '/Owner:/p;/Issuer:/p;/SHA256:/p;/SHA1:/p'
-          echo "Upload keystore certificate:"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/astro-upload-key.jks
-          keytool -list -v -keystore /tmp/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload \
-            | sed -n '/Owner:/p;/Issuer:/p;/SHA256:/p;/SHA1:/p'
-          rm -f /tmp/astro-upload-key.jks
-          echo "Bundle signature verification completed."
 
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > /tmp/astro-upload-key.jks
+          AAB_SHA256="$(keytool -printcert -jarfile "$AAB" | awk '/SHA256:/ {gsub(":", "", $2); print toupper($2); exit}')"
+          KEYSTORE_SHA256="$(keytool -list -v -keystore /tmp/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload | awk '/SHA256:/ {gsub(":", "", $2); print toupper($2); exit}')"
+          rm -f /tmp/astro-upload-key.jks
+
+          test -n "$AAB_SHA256"
+          test -n "$KEYSTORE_SHA256"
+          echo "AAB signer SHA-256: $AAB_SHA256"
+          echo "Upload key SHA-256: $KEYSTORE_SHA256"
+          if [ "$AAB_SHA256" != "$KEYSTORE_SHA256" ]; then
+            echo "::error::AAB signer certificate does not match the Google Play upload keystore."
+            exit 1
+          fi
+          echo "Verified: AAB is signed with the configured Google Play upload key."
+          
       - name: Upload fresh Google Play AAB
         uses: actions/upload-artifact@v4
         with:
