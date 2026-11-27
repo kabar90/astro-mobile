@@ -1,3 +1,4 @@
+
 name: Build ASTRO MOBILE Play AAB
 
 on:
@@ -603,9 +604,6 @@ jobs:
           mkdir -p astro_mobile/android/app
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > astro_mobile/android/app/astro-upload-key.jks
           test -s astro_mobile/android/app/astro-upload-key.jks
-          keytool -list -keystore astro_mobile/android/app/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload >/dev/null
-          keytool -exportcert -rfc -keystore astro_mobile/android/app/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload | openssl x509 -noout -fingerprint -sha256 | sed 's/.*=//' | tr -d ':' > expected-upload-cert.sha256
-          test -s expected-upload-cert.sha256
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -672,155 +670,8 @@ jobs:
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
-          assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
-          if re.search(r'(?m)^\s*signingConfig\b.*$', release_body):
-              release_body = re.sub(r'(?m)^\s*signingConfig\b.*$', "                " + assignment, release_body)
-              source = source[:release_open + 1] + release_body + source[release_close:]
-          else:
-              source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
-          p.write_text(source)
-          print("Verified release signing config exists and is attached to release build type.")
-          PY
-
-      - name: Get dependencies
-        working-directory: astro_mobile
-        run: flutter pub get
-
-      - name: Clean project
-        working-directory: astro_mobile
-        run: flutter clean
-
-      - name: Get dependencies again
-        working-directory: astro_mobile
-        run: flutter pub get
-
-      - name: Generate ASTRO MOBILE launcher icon
-        working-directory: astro_mobile
-        run: dart run flutter_launcher_icons
-
-      - name: Build signed Play AAB
-        working-directory: astro_mobile
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
-        run: |
-          set -e
-          test -n "$KEYSTORE_PASSWORD"
-          test -n "$KEY_PASSWORD"
-          test -s android/app/astro-upload-key.jks
-          flutter build appbundle --release
-
-      - name: Verify signed Play AAB
-        run: |
-          set -e
-          AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
-          test -s "$AAB"
-          jarsigner -verify "$AAB"
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import subprocess
-
-          expected = Path("expected-upload-cert.sha256").read_text().strip().upper()
-          result = subprocess.run(
-              ["keytool", "-printcert", "-jarfile", "astro_mobile/build/app/outputs/bundle/release/app-release.aab"],
-              check=True, capture_output=True, text=True
-          )
-          match = re.search(r"SHA256:\s*([0-9A-Fa-f:]+)", result.stdout)
-          if not match:
-              raise SystemExit("Could not read the AAB signing certificate SHA-256 fingerprint.")
-          actual = match.group(1).replace(":", "").upper()
-          if actual != expected:
-              raise SystemExit(
-                  "AAB signing certificate does not match the configured Google Play upload keystore. "
-                  f"Expected {expected}, got {actual}."
-              )
-          if "CN=Android Debug" in result.stdout:
-              raise SystemExit("AAB was signed with the Android Debug certificate.")
-          print("AAB signature verified against the configured Google Play upload certificate.")
-          PY
-
-      - name: Upload Play AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ASTRO-MOBILE-GOOGLE-PLAY-AAB
-          path: astro_mobile/build/app/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 14
-, release_body):
-              release_body = re.sub(r'(?m)^\s*signingConfig\b.*
-          p.write_text(source)
-          print("Verified release signing config exists and is attached to release build type.")
-          PY
-
-      - name: Get dependencies
-        working-directory: astro_mobile
-        run: flutter pub get
-
-      - name: Clean project
-        working-directory: astro_mobile
-        run: flutter clean
-
-      - name: Get dependencies again
-        working-directory: astro_mobile
-        run: flutter pub get
-
-      - name: Generate ASTRO MOBILE launcher icon
-        working-directory: astro_mobile
-        run: dart run flutter_launcher_icons
-
-      - name: Build signed Play AAB
-        working-directory: astro_mobile
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
-        run: |
-          set -e
-          test -n "$KEYSTORE_PASSWORD"
-          test -n "$KEY_PASSWORD"
-          test -s android/app/astro-upload-key.jks
-          flutter build appbundle --release
-
-      - name: Verify signed Play AAB
-        run: |
-          set -e
-          AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
-          test -s "$AAB"
-          jarsigner -verify "$AAB"
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import subprocess
-
-          expected = Path("expected-upload-cert.sha256").read_text().strip().upper()
-          result = subprocess.run(
-              ["keytool", "-printcert", "-jarfile", "astro_mobile/build/app/outputs/bundle/release/app-release.aab"],
-              check=True, capture_output=True, text=True
-          )
-          match = re.search(r"SHA256:\s*([0-9A-Fa-f:]+)", result.stdout)
-          if not match:
-              raise SystemExit("Could not read the AAB signing certificate SHA-256 fingerprint.")
-          actual = match.group(1).replace(":", "").upper()
-          if actual != expected:
-              raise SystemExit(
-                  "AAB signing certificate does not match the configured Google Play upload keystore. "
-                  f"Expected {expected}, got {actual}."
-              )
-          if "CN=Android Debug" in result.stdout:
-              raise SystemExit("AAB was signed with the Android Debug certificate.")
-          print("AAB signature verified against the configured Google Play upload certificate.")
-          PY
-
-      - name: Upload Play AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ASTRO-MOBILE-GOOGLE-PLAY-AAB
-          path: astro_mobile/build/app/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 14
-, "                " + assignment, release_body)
-              source = source[:release_open + 1] + release_body + source[release_close:]
-          else:
+          if True:
+              assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
               source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
 
           p.write_text(source)
@@ -845,15 +696,7 @@ jobs:
 
       - name: Build signed Play AAB
         working-directory: astro_mobile
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
-        run: |
-          set -e
-          test -n "$KEYSTORE_PASSWORD"
-          test -n "$KEY_PASSWORD"
-          test -s android/app/astro-upload-key.jks
-          flutter build appbundle --release
+        run: flutter build appbundle --release
 
       - name: Verify signed Play AAB
         run: |
@@ -861,29 +704,6 @@ jobs:
           AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           jarsigner -verify "$AAB"
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import subprocess
-
-          expected = Path("expected-upload-cert.sha256").read_text().strip().upper()
-          result = subprocess.run(
-              ["keytool", "-printcert", "-jarfile", "astro_mobile/build/app/outputs/bundle/release/app-release.aab"],
-              check=True, capture_output=True, text=True
-          )
-          match = re.search(r"SHA256:\s*([0-9A-Fa-f:]+)", result.stdout)
-          if not match:
-              raise SystemExit("Could not read the AAB signing certificate SHA-256 fingerprint.")
-          actual = match.group(1).replace(":", "").upper()
-          if actual != expected:
-              raise SystemExit(
-                  "AAB signing certificate does not match the configured Google Play upload keystore. "
-                  f"Expected {expected}, got {actual}."
-              )
-          if "CN=Android Debug" in result.stdout:
-              raise SystemExit("AAB was signed with the Android Debug certificate.")
-          print("AAB signature verified against the configured Google Play upload certificate.")
-          PY
 
       - name: Upload Play AAB artifact
         uses: actions/upload-artifact@v4
