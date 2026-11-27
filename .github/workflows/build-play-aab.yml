@@ -616,13 +616,14 @@ jobs:
               block = '''\n    signingConfigs {\n        release {\n            keyAlias = "astro-mobile-upload"\n            keyPassword = System.getenv("KEY_PASSWORD")\n            storeFile = file("astro-upload-key.jks")\n            storePassword = System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n''' if kotlin else '''\n    signingConfigs {\n        release {\n            keyAlias "astro-mobile-upload"\n            keyPassword System.getenv("KEY_PASSWORD")\n            storeFile file("astro-upload-key.jks")\n            storePassword System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n'''
               s = s[:at] + block + s[at:]
           if kotlin:
-              s, n = re.subn(r'(buildTypes\\s*\\{\\s*release\\s*\\{)', r'\\1\\n            signingConfig = signingConfigs.getByName("release")', s, count=1)
+              s, n = re.subn(r'(buildTypes\s*\\{\s*release\s*\\{)', r'\1\n            signingConfig = signingConfigs.getByName("release")', s, count=1)
           else:
-              s, n = re.subn(r'(buildTypes\\s*\\{\\s*release\\s*\\{)', r'\\1\\n            signingConfig signingConfigs.release', s, count=1)
+              s, n = re.subn(r'(buildTypes\s*\\{\s*release\s*\\{)', r'\1\n            signingConfig signingConfigs.release', s, count=1)
           if n != 1: raise SystemExit('could not configure release signing')
           p.write_text(s)
           print('Upload signing configured.')
           PY
+
       - name: Get dependencies
         working-directory: astro_mobile
         run: flutter pub get
