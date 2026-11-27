@@ -306,6 +306,561 @@ jobs:
           print("Android namespace and applicationId set to ly.astromobile.store.")
           PY
 
+      - name: Align Android launcher activity with the new package
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path("astro_mobile/android/app/src/main")
+          target = "ly.astromobile.store"
+          files = list(root.rglob("MainActivity.kt")) + list(root.rglob("MainActivity.java"))
+          if len(files) != 1:
+              raise SystemExit(f"Expected exactly one MainActivity source, found {len(files)}")
+          source_file = files[0]
+          source = source_file.read_text()
+          source, count = re.subn(r'(?m)^package\\s+[A-Za-z0-9_.]+\\s*        run: |
+          set -e
+          python3 scripts/patch_app_display_name.py
+          grep -q 'android:label="Astro Mobile"' astro_mobile/android/app/src/main/AndroidManifest.xml
+          echo "Android launcher name verified as Astro Mobile."
+
+      - name: Ensure Gradle plugin repositories
+        run: |
+          set -e
+          python3 - <<'PYCODE'
+          from pathlib import Path
+
+          android = Path("astro_mobile/android")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
+          if settings is None:
+              raise SystemExit("Gradle settings file not found")
+
+          source = settings.read_text()
+          mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          is_kts = settings.suffix == ".kts"
+          mirror = (
+              f'maven {{ url = uri("{mirror_url}") }}'
+              if is_kts else
+              f"maven {{ url '{mirror_url}' }}"
+          )
+
+          def add_mirror_to_block(text, block_name):
+              token = block_name + " {"
+              start = text.find(token)
+              if start < 0:
+                  return text, False
+              open_brace = text.find("{", start)
+              depth = 0
+              close_brace = None
+              for index in range(open_brace, len(text)):
+                  if text[index] == "{":
+                      depth += 1
+                  elif text[index] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          close_brace = index
+                          break
+              if close_brace is None:
+                  raise SystemExit(f"Unclosed {block_name} block")
+              block = text[start:close_brace + 1]
+              if mirror_url not in block:
+                  repo_token = "repositories {"
+                  repo_at = block.find(repo_token)
+                  if repo_at < 0:
+                      insertion = "repositories {\n        google()\n        " + mirror + "\n        mavenCentral()\n    }\n    "
+                      block = block[:1 + block.find("{")] + "\n    " + insertion + block[1 + block.find("{"):]
+                  else:
+                      repo_open = block.find("{", repo_at)
+                      block = block[:repo_open + 1] + "\n        " + mirror + block[repo_open + 1:]
+              return text[:start] + block + text[close_brace + 1:], True
+
+          source, found = add_mirror_to_block(source, "pluginManagement")
+          if not found:
+              raise SystemExit("pluginManagement block not found in generated settings file")
+
+          source, found_dep = add_mirror_to_block(source, "dependencyResolutionManagement")
+          if not found_dep:
+              source += (
+                  "\ndependencyResolutionManagement {\n"
+                  "    repositories {\n"
+                  "        google()\n"
+                  f"        {mirror}\n"
+                  "        mavenCentral()\n"
+                  "    }\n"
+                  "}\n"
+              )
+
+          settings.write_text(source)
+          check = settings.read_text()
+          if mirror_url not in check or "pluginManagement" not in check:
+              raise SystemExit("Gradle repository mirror verification failed")
+          print("Gradle plugin and dependency repositories configured.")
+          PYCODE
+
+      - name: Add Google-hosted Maven Central mirror for Android dependencies
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          android = Path("astro_mobile/android")
+          root = android / "build.gradle.kts"
+          if not root.exists(): root = android / "build.gradle"
+          if not root.exists(): raise SystemExit("Android root Gradle file not found")
+          source = root.read_text(); mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          if mirror_url not in source:
+              mirror = ('maven { url = uri("' + mirror_url + '") }' if root.suffix == ".kts" else "maven { url '" + mirror_url + "' }")
+              if "mavenCentral()" not in source: raise SystemExit("Expected mavenCentral() repository declaration was not found")
+              source = source.replace("mavenCentral()", mirror + "\n        mavenCentral()", 1); root.write_text(source)
+          if mirror_url not in root.read_text(): raise SystemExit("Maven mirror was not added")
+          print("Added Google-hosted Maven Central mirror before the standard Maven Central repository.")
+          PY
+
+      - name: Configure Supabase email deep link
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
+          content = manifest.read_text(); scheme = "com.astromobile.store"; host = "login-callback"
+          if f'android:scheme="{scheme}"' not in content:
+              intent_filter = f'''\n                  <intent-filter>\n                      <action android:name="android.intent.action.VIEW" />\n                      <category android:name="android.intent.category.DEFAULT" />\n                      <category android:name="android.intent.category.BROWSABLE" />\n                      <data android:scheme="{scheme}" android:host="{host}" />\n                  </intent-filter>\n              '''
+              if "</activity>" not in content: raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
+              content = content.replace("</activity>", intent_filter + "\n        </activity>", 1); manifest.write_text(content)
+          print(f"Configured Android auth callback: {scheme}://{host}")
+          PY
+
+      - name: Configure Android Gradle
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+
+          android = Path("astro_mobile/android")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
+          app = next((p for p in (android / "app" / "build.gradle.kts", android / "app" / "build.gradle") if p.exists()), None)
+          if settings is None or app is None:
+              raise SystemExit("Android Gradle files not found")
+
+          def add_plugin(path, plugin_line):
+              content = path.read_text()
+              if "com.google.gms.google-services" not in content:
+                  marker = "plugins {"
+                  pos = content.find(marker)
+                  if pos < 0:
+                      raise SystemExit(f"plugins block not found in {path}")
+                  insert_at = pos + len(marker)
+                  content = content[:insert_at] + "\n" + plugin_line + content[insert_at:]
+                  path.write_text(content)
+              if "com.google.gms.google-services" not in path.read_text():
+                  raise SystemExit(f"Firebase Gradle plugin was not added to {path}")
+
+          is_kts = app.suffix == ".kts"
+          settings_plugin = (
+              '    id("com.google.gms.google-services") version "4.4.2" apply false'
+              if settings.suffix == ".kts" else
+              "    id 'com.google.gms.google-services' version '4.4.2' apply false"
+          )
+          app_plugin = (
+              '    id("com.google.gms.google-services")'
+              if is_kts else
+              "    id 'com.google.gms.google-services'"
+          )
+          add_plugin(settings, settings_plugin)
+          add_plugin(app, app_plugin)
+
+          app_text = app.read_text()
+          if is_kts:
+              if "isCoreLibraryDesugaringEnabled = true" not in app_text:
+                  marker = "compileOptions {"
+                  pos = app_text.find(marker)
+                  if pos < 0:
+                      raise SystemExit("compileOptions block not found in Kotlin Gradle file")
+                  at = pos + len(marker)
+                  app_text = app_text[:at] + "\n        isCoreLibraryDesugaringEnabled = true" + app_text[at:]
+              if "coreLibraryDesugaring(" not in app_text:
+                  marker = "dependencies {"
+                  pos = app_text.find(marker)
+                  dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n'
+                  if pos < 0:
+                      app_text += "\n\ndependencies {\n" + dependency + "}\n"
+                  else:
+                      at = pos + len(marker)
+                      app_text = app_text[:at] + "\n" + dependency + app_text[at:]
+              app_text = app_text.replace("minSdk = flutter.minSdkVersion", "minSdk = 23")
+          else:
+              if "coreLibraryDesugaringEnabled true" not in app_text:
+                  marker = "compileOptions {"
+                  pos = app_text.find(marker)
+                  if pos < 0:
+                      raise SystemExit("compileOptions block not found in Groovy Gradle file")
+                  at = pos + len(marker)
+                  app_text = app_text[:at] + "\n        coreLibraryDesugaringEnabled true" + app_text[at:]
+              if "coreLibraryDesugaring " not in app_text:
+                  marker = "dependencies {"
+                  pos = app_text.find(marker)
+                  dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n"
+                  if pos < 0:
+                      app_text += "\n\ndependencies {\n" + dependency + "}\n"
+                  else:
+                      at = pos + len(marker)
+                      app_text = app_text[:at] + "\n" + dependency + app_text[at:]
+              app_text = app_text.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 23")
+
+          app.write_text(app_text)
+          if "com.google.gms.google-services" not in settings.read_text():
+              raise SystemExit("Firebase plugin missing from settings")
+          if "com.google.gms.google-services" not in app.read_text():
+              raise SystemExit("Firebase plugin missing from app")
+          if "desugar_jdk_libs:2.1.4" not in app.read_text():
+              raise SystemExit("Desugaring dependency missing")
+          print("Android Gradle and Firebase plugin configuration completed.")
+          PY
+
+      - name: Disable crashing Android release lint tasks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          android = Path("astro_mobile/android"); candidates = [android / "build.gradle.kts", android / "build.gradle"]
+          root = next((p for p in candidates if p.exists()), None)
+          if root is None: raise SystemExit("Android root Gradle file not found")
+          content = root.read_text()
+          snippet = '''\n          subprojects {\n              tasks.configureEach {\n                  if (name.startsWith("lintVital")) {\n                      enabled = false\n                  }\n              }\n          }\n          '''
+          if 'name.startsWith("lintVital")' not in content: root.write_text(content.rstrip() + "\n" + snippet)
+          print("Release lint configuration completed.")
+          PY
+
+      - name: Add Firebase config
+        run: |
+          test -f google-services.json
+          mkdir -p astro_mobile/android/app
+          cp google-services.json astro_mobile/android/app/google-services.json
+
+      - name: Get dependencies
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Clean project
+        working-directory: astro_mobile
+        run: flutter clean
+
+      - name: Get dependencies again
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Generate ASTRO MOBILE launcher icon
+        working-directory: astro_mobile
+        run: dart run flutter_launcher_icons
+
+      - name: Build APK (retry transient repository rate limits)
+        working-directory: astro_mobile
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "APK build attempt ${attempt}/3"
+            if flutter build apk --release; then exit 0; fi
+            if [ "${attempt}" -lt 3 ]; then
+              wait_seconds=$((attempt * 30))
+              echo "Build failed; waiting ${wait_seconds}s before retry (helps with Maven HTTP 429 rate limits)."
+              sleep "${wait_seconds}"
+            fi
+          done
+          echo "APK build failed after 3 attempts."
+          exit 1
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRO-MOBILE-BLUE-BRAND
+          path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish updated APK to the existing download link
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          test -f astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+          gh release upload v1.0.0 astro_mobile/build/app/outputs/flutter-apk/app-release.apk --repo "${GITHUB_REPOSITORY}" --clobber
+          echo "Updated v1.0.0 app-release.apk in place; the existing download URL is preserved."
+, f'package {target}', source, count=1)
+          if count != 1:
+              raise SystemExit("Could not update MainActivity package declaration")
+          destination = root / "kotlin" / Path(*target.split(".")) / source_file.name
+          if source_file.suffix == ".java":
+              destination = root / "java" / Path(*target.split(".")) / source_file.name
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          destination.write_text(source)
+          if source_file != destination:
+              source_file.unlink()
+          check = destination.read_text()
+          if f"package {target}" not in check:
+              raise SystemExit("MainActivity package verification failed")
+          print(f"MainActivity moved and aligned to {target}.")
+          PY
+          grep -R -q '^package ly.astromobile.store        run: |
+          set -e
+          python3 scripts/patch_app_display_name.py
+          grep -q 'android:label="Astro Mobile"' astro_mobile/android/app/src/main/AndroidManifest.xml
+          echo "Android launcher name verified as Astro Mobile."
+
+      - name: Ensure Gradle plugin repositories
+        run: |
+          set -e
+          python3 - <<'PYCODE'
+          from pathlib import Path
+
+          android = Path("astro_mobile/android")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
+          if settings is None:
+              raise SystemExit("Gradle settings file not found")
+
+          source = settings.read_text()
+          mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          is_kts = settings.suffix == ".kts"
+          mirror = (
+              f'maven {{ url = uri("{mirror_url}") }}'
+              if is_kts else
+              f"maven {{ url '{mirror_url}' }}"
+          )
+
+          def add_mirror_to_block(text, block_name):
+              token = block_name + " {"
+              start = text.find(token)
+              if start < 0:
+                  return text, False
+              open_brace = text.find("{", start)
+              depth = 0
+              close_brace = None
+              for index in range(open_brace, len(text)):
+                  if text[index] == "{":
+                      depth += 1
+                  elif text[index] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          close_brace = index
+                          break
+              if close_brace is None:
+                  raise SystemExit(f"Unclosed {block_name} block")
+              block = text[start:close_brace + 1]
+              if mirror_url not in block:
+                  repo_token = "repositories {"
+                  repo_at = block.find(repo_token)
+                  if repo_at < 0:
+                      insertion = "repositories {\n        google()\n        " + mirror + "\n        mavenCentral()\n    }\n    "
+                      block = block[:1 + block.find("{")] + "\n    " + insertion + block[1 + block.find("{"):]
+                  else:
+                      repo_open = block.find("{", repo_at)
+                      block = block[:repo_open + 1] + "\n        " + mirror + block[repo_open + 1:]
+              return text[:start] + block + text[close_brace + 1:], True
+
+          source, found = add_mirror_to_block(source, "pluginManagement")
+          if not found:
+              raise SystemExit("pluginManagement block not found in generated settings file")
+
+          source, found_dep = add_mirror_to_block(source, "dependencyResolutionManagement")
+          if not found_dep:
+              source += (
+                  "\ndependencyResolutionManagement {\n"
+                  "    repositories {\n"
+                  "        google()\n"
+                  f"        {mirror}\n"
+                  "        mavenCentral()\n"
+                  "    }\n"
+                  "}\n"
+              )
+
+          settings.write_text(source)
+          check = settings.read_text()
+          if mirror_url not in check or "pluginManagement" not in check:
+              raise SystemExit("Gradle repository mirror verification failed")
+          print("Gradle plugin and dependency repositories configured.")
+          PYCODE
+
+      - name: Add Google-hosted Maven Central mirror for Android dependencies
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          android = Path("astro_mobile/android")
+          root = android / "build.gradle.kts"
+          if not root.exists(): root = android / "build.gradle"
+          if not root.exists(): raise SystemExit("Android root Gradle file not found")
+          source = root.read_text(); mirror_url = "https://maven-central.storage-download.googleapis.com/maven2/"
+          if mirror_url not in source:
+              mirror = ('maven { url = uri("' + mirror_url + '") }' if root.suffix == ".kts" else "maven { url '" + mirror_url + "' }")
+              if "mavenCentral()" not in source: raise SystemExit("Expected mavenCentral() repository declaration was not found")
+              source = source.replace("mavenCentral()", mirror + "\n        mavenCentral()", 1); root.write_text(source)
+          if mirror_url not in root.read_text(): raise SystemExit("Maven mirror was not added")
+          print("Added Google-hosted Maven Central mirror before the standard Maven Central repository.")
+          PY
+
+      - name: Configure Supabase email deep link
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("astro_mobile/android/app/src/main/AndroidManifest.xml")
+          content = manifest.read_text(); scheme = "com.astromobile.store"; host = "login-callback"
+          if f'android:scheme="{scheme}"' not in content:
+              intent_filter = f'''\n                  <intent-filter>\n                      <action android:name="android.intent.action.VIEW" />\n                      <category android:name="android.intent.category.DEFAULT" />\n                      <category android:name="android.intent.category.BROWSABLE" />\n                      <data android:scheme="{scheme}" android:host="{host}" />\n                  </intent-filter>\n              '''
+              if "</activity>" not in content: raise SystemExit("MainActivity closing tag not found in AndroidManifest.xml")
+              content = content.replace("</activity>", intent_filter + "\n        </activity>", 1); manifest.write_text(content)
+          print(f"Configured Android auth callback: {scheme}://{host}")
+          PY
+
+      - name: Configure Android Gradle
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+
+          android = Path("astro_mobile/android")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
+          app = next((p for p in (android / "app" / "build.gradle.kts", android / "app" / "build.gradle") if p.exists()), None)
+          if settings is None or app is None:
+              raise SystemExit("Android Gradle files not found")
+
+          def add_plugin(path, plugin_line):
+              content = path.read_text()
+              if "com.google.gms.google-services" not in content:
+                  marker = "plugins {"
+                  pos = content.find(marker)
+                  if pos < 0:
+                      raise SystemExit(f"plugins block not found in {path}")
+                  insert_at = pos + len(marker)
+                  content = content[:insert_at] + "\n" + plugin_line + content[insert_at:]
+                  path.write_text(content)
+              if "com.google.gms.google-services" not in path.read_text():
+                  raise SystemExit(f"Firebase Gradle plugin was not added to {path}")
+
+          is_kts = app.suffix == ".kts"
+          settings_plugin = (
+              '    id("com.google.gms.google-services") version "4.4.2" apply false'
+              if settings.suffix == ".kts" else
+              "    id 'com.google.gms.google-services' version '4.4.2' apply false"
+          )
+          app_plugin = (
+              '    id("com.google.gms.google-services")'
+              if is_kts else
+              "    id 'com.google.gms.google-services'"
+          )
+          add_plugin(settings, settings_plugin)
+          add_plugin(app, app_plugin)
+
+          app_text = app.read_text()
+          if is_kts:
+              if "isCoreLibraryDesugaringEnabled = true" not in app_text:
+                  marker = "compileOptions {"
+                  pos = app_text.find(marker)
+                  if pos < 0:
+                      raise SystemExit("compileOptions block not found in Kotlin Gradle file")
+                  at = pos + len(marker)
+                  app_text = app_text[:at] + "\n        isCoreLibraryDesugaringEnabled = true" + app_text[at:]
+              if "coreLibraryDesugaring(" not in app_text:
+                  marker = "dependencies {"
+                  pos = app_text.find(marker)
+                  dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n'
+                  if pos < 0:
+                      app_text += "\n\ndependencies {\n" + dependency + "}\n"
+                  else:
+                      at = pos + len(marker)
+                      app_text = app_text[:at] + "\n" + dependency + app_text[at:]
+              app_text = app_text.replace("minSdk = flutter.minSdkVersion", "minSdk = 23")
+          else:
+              if "coreLibraryDesugaringEnabled true" not in app_text:
+                  marker = "compileOptions {"
+                  pos = app_text.find(marker)
+                  if pos < 0:
+                      raise SystemExit("compileOptions block not found in Groovy Gradle file")
+                  at = pos + len(marker)
+                  app_text = app_text[:at] + "\n        coreLibraryDesugaringEnabled true" + app_text[at:]
+              if "coreLibraryDesugaring " not in app_text:
+                  marker = "dependencies {"
+                  pos = app_text.find(marker)
+                  dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n"
+                  if pos < 0:
+                      app_text += "\n\ndependencies {\n" + dependency + "}\n"
+                  else:
+                      at = pos + len(marker)
+                      app_text = app_text[:at] + "\n" + dependency + app_text[at:]
+              app_text = app_text.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 23")
+
+          app.write_text(app_text)
+          if "com.google.gms.google-services" not in settings.read_text():
+              raise SystemExit("Firebase plugin missing from settings")
+          if "com.google.gms.google-services" not in app.read_text():
+              raise SystemExit("Firebase plugin missing from app")
+          if "desugar_jdk_libs:2.1.4" not in app.read_text():
+              raise SystemExit("Desugaring dependency missing")
+          print("Android Gradle and Firebase plugin configuration completed.")
+          PY
+
+      - name: Disable crashing Android release lint tasks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          android = Path("astro_mobile/android"); candidates = [android / "build.gradle.kts", android / "build.gradle"]
+          root = next((p for p in candidates if p.exists()), None)
+          if root is None: raise SystemExit("Android root Gradle file not found")
+          content = root.read_text()
+          snippet = '''\n          subprojects {\n              tasks.configureEach {\n                  if (name.startsWith("lintVital")) {\n                      enabled = false\n                  }\n              }\n          }\n          '''
+          if 'name.startsWith("lintVital")' not in content: root.write_text(content.rstrip() + "\n" + snippet)
+          print("Release lint configuration completed.")
+          PY
+
+      - name: Add Firebase config
+        run: |
+          test -f google-services.json
+          mkdir -p astro_mobile/android/app
+          cp google-services.json astro_mobile/android/app/google-services.json
+
+      - name: Get dependencies
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Clean project
+        working-directory: astro_mobile
+        run: flutter clean
+
+      - name: Get dependencies again
+        working-directory: astro_mobile
+        run: flutter pub get
+
+      - name: Generate ASTRO MOBILE launcher icon
+        working-directory: astro_mobile
+        run: dart run flutter_launcher_icons
+
+      - name: Build APK (retry transient repository rate limits)
+        working-directory: astro_mobile
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "APK build attempt ${attempt}/3"
+            if flutter build apk --release; then exit 0; fi
+            if [ "${attempt}" -lt 3 ]; then
+              wait_seconds=$((attempt * 30))
+              echo "Build failed; waiting ${wait_seconds}s before retry (helps with Maven HTTP 429 rate limits)."
+              sleep "${wait_seconds}"
+            fi
+          done
+          echo "APK build failed after 3 attempts."
+          exit 1
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRO-MOBILE-BLUE-BRAND
+          path: astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish updated APK to the existing download link
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          test -f astro_mobile/build/app/outputs/flutter-apk/app-release.apk
+          gh release upload v1.0.0 astro_mobile/build/app/outputs/flutter-apk/app-release.apk --repo "${GITHUB_REPOSITORY}" --clobber
+          echo "Updated v1.0.0 app-release.apk in place; the existing download URL is preserved."
+ astro_mobile/android/app/src/main
+          echo "Launcher activity package verified."
+
       - name: Set Android launcher app name to Astro Mobile
         run: |
           set -e
