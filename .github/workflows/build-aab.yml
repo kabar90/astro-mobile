@@ -604,24 +604,75 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          root = Path('astro_mobile/android/app')
-          p = root / 'build.gradle.kts'
+
+          root = Path("astro_mobile/android/app")
+          p = root / "build.gradle.kts"
           kotlin = p.exists()
-          if not kotlin: p = root / 'build.gradle'
-          s = p.read_text()
-          if 'signingConfigs' not in s:
-              pos = s.find('android {')
-              if pos < 0: raise SystemExit('android block missing')
-              at = pos + len('android {')
-              block = '''\n    signingConfigs {\n        release {\n            keyAlias = "astro-mobile-upload"\n            keyPassword = System.getenv("KEY_PASSWORD")\n            storeFile = file("astro-upload-key.jks")\n            storePassword = System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n''' if kotlin else '''\n    signingConfigs {\n        release {\n            keyAlias "astro-mobile-upload"\n            keyPassword System.getenv("KEY_PASSWORD")\n            storeFile file("astro-upload-key.jks")\n            storePassword System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n'''
-              s = s[:at] + block + s[at:]
-          if kotlin:
-              s, n = re.subn(r'(buildTypes\s*\{\s*release\s*\{)', r'\1\n            signingConfig = signingConfigs.getByName("release")', s, count=1)
+          if not kotlin:
+              p = root / "build.gradle"
+          source = p.read_text()
+
+          def matching_brace(text, open_pos):
+              depth = 0
+              for i in range(open_pos, len(text)):
+                  if text[i] == "{":
+                      depth += 1
+                  elif text[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          return i
+              raise SystemExit("Unbalanced Gradle braces")
+
+          android_match = re.search(r"\\bandroid\\s*\\{", source)
+          if not android_match:
+              raise SystemExit("Android Gradle block not found")
+          android_open = source.find("{", android_match.start())
+
+          signing_match = re.search(r"\\bsigningConfigs\\s*\\{", source)
+          release_config = """
+                  release {
+                      keyAlias = "astro-mobile-upload"
+                      keyPassword = System.getenv("KEY_PASSWORD")
+                      storeFile = file("astro-upload-key.jks")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD")
+                  }
+          """ if kotlin else """
+                  release {
+                      keyAlias "astro-mobile-upload"
+                      keyPassword System.getenv("KEY_PASSWORD")
+                      storeFile file("astro-upload-key.jks")
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
+                  }
+          """
+
+          if signing_match:
+              signing_open = source.find("{", signing_match.start())
+              signing_close = matching_brace(source, signing_open)
+              signing_body = source[signing_open + 1:signing_close]
+              if not re.search(r"\\brelease\\s*\\{", signing_body):
+                  source = source[:signing_close] + "\\n" + release_config + "\\n" + source[signing_close:]
           else:
-              s, n = re.subn(r'(buildTypes\s*\{\s*release\s*\{)', r'\1\n            signingConfig signingConfigs.release', s, count=1)
-          if n != 1: raise SystemExit('could not configure release signing')
-          p.write_text(s)
-          print('Upload signing configured.')
+              android_close = matching_brace(source, android_open)
+              source = source[:android_open + 1] + "\\n        signingConfigs {\\n" + release_config + "\\n        }\\n" + source[android_open + 1:]
+
+          build_types = re.search(r"\\bbuildTypes\\s*\\{", source)
+          if not build_types:
+              raise SystemExit("buildTypes block not found")
+          bt_open = source.find("{", build_types.start())
+          bt_close = matching_brace(source, bt_open)
+          bt_body = source[bt_open + 1:bt_close]
+          release_match = re.search(r"\\brelease\\s*\\{", bt_body)
+          if not release_match:
+              raise SystemExit("release build type not found")
+          release_open = bt_open + 1 + bt_body.find("{", release_match.start())
+          release_close = matching_brace(source, release_open)
+          release_body = source[release_open + 1:release_close]
+          if "signingConfig" not in release_body:
+              assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
+              source = source[:release_close] + "\\n                " + assignment + "\\n            " + source[release_close:]
+
+          p.write_text(source)
+          print("Verified release signing config exists and is attached to release build type.")
           PY
 
       - name: Get dependencies
