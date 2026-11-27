@@ -24,6 +24,19 @@ jobs:
           test -n "$PROJECT_DIR"
           mv "$PROJECT_DIR" astro_mobile
 
+      - name: Bind Firebase notifications silently to authenticated customers
+        run: |
+          set -e
+          python3 scripts/patch_notification_auth_binding.py
+          grep -q "Future<void> _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
+          grep -q "onAuthStateChange.listen" astro_mobile/lib/services/notification_service.dart
+          grep -q "bindCurrentCustomerPhone(_normalizedPhone())" astro_mobile/lib/screens/account_screen.dart
+          if grep -q "_message(notificationStatus)" astro_mobile/lib/screens/account_screen.dart; then
+            echo "Customer-facing FCM registration message must not be present."
+            exit 1
+          fi
+          echo "Silent automatic FCM registration patch verified for Play AAB."
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
