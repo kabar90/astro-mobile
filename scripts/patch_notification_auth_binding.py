@@ -89,28 +89,10 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
       error: 'FCM binding method entered; authenticated user is available.',
     );
 
+    // Do not block FCM registration on SharedPreferences. Some Android
+    // installations can stall the plugin channel here; FCM token retrieval
+    // must proceed independently of local history/preferences.
     _lastPhone = normalized;
-    late SharedPreferences prefs;
-    try {
-      prefs = await SharedPreferences.getInstance()
-          .timeout(const Duration(seconds: 10));
-      await prefs.setString(_phoneKey, normalized)
-          .timeout(const Duration(seconds: 10));
-      await _reportRegistrationDiagnostic(
-        phone: normalized,
-        stage: 'preferences_ready',
-        attempt: 0,
-        error: 'Local phone binding preferences saved.',
-      );
-    } catch (e) {
-      await _reportRegistrationDiagnostic(
-        phone: normalized,
-        stage: 'preferences_failed',
-        attempt: 0,
-        error: e.toString(),
-      );
-      return 'تعذر تهيئة تسجيل الإشعارات.';
-    }
 
     String? token;
     Object? lastError;
@@ -137,6 +119,13 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
         error: e.toString(),
       );
     }
+
+    await _reportRegistrationDiagnostic(
+      phone: normalized,
+      stage: 'get_token_started',
+      attempt: 0,
+      error: 'Starting Firebase Messaging token retrieval.',
+    );
 
     for (var attempt = 1; attempt <= 4; attempt++) {
       try {
@@ -173,6 +162,17 @@ s = s[:start] + """  Future<String> bindCurrentCustomerPhone(String phone) async
         error: shortDetail,
       );
       return 'تعذر استخراج رمز الإشعارات بعد 4 محاولات: $shortDetail';
+    }
+
+    // Save the account phone only after FCM has returned a real token.
+    // This is best-effort and must never prevent the server registration.
+    try {
+      final prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 3));
+      await prefs.setString(_phoneKey, normalized)
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint('ASTRO FCM local preference save skipped: $e');
     }
 
     await _reportRegistrationDiagnostic(
