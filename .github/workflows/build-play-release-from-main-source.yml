@@ -107,67 +107,99 @@ jobs:
           print("Pinned AGP 8.11.1 / Gradle 8.13; application ID ly.astromobile.store.")
           PY
 
-      - name: Configure Firebase for the approved Android application
+      - name: Configure Firebase and Android notification dependencies
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json
+          import re
           from pathlib import Path
-          cfg = json.loads(Path("google-services.json").read_text())
+
           package = "ly.astromobile.store"
-          matches = [c for c in cfg.get("client", [])
-                     if c.get("client_info", {}).get("android_client_info", {}).get("package_name") == package]
-          if len(matches) != 1:
-              raise SystemExit(f"Firebase config must contain exactly one {package} client; found {len(matches)}")
-          app_id = matches[0]["client_info"].get("mobilesdk_app_id")
-          if not app_id:
+          cfg = json.loads(Path("google-services.json").read_text(encoding="utf-8"))
+          clients = [
+              client for client in cfg.get("client", [])
+              if client.get("client_info", {}).get("android_client_info", {}).get("package_name") == package
+          ]
+          if len(clients) != 1:
+              raise SystemExit(
+                  f"Firebase config must contain exactly one Android client for {package}; found {len(clients)}"
+              )
+          if not clients[0].get("client_info", {}).get("mobilesdk_app_id"):
               raise SystemExit("Firebase Android app ID is missing.")
-          print(f"Firebase project: {cfg['project_info']['project_id']}")
+          print(f"Firebase project verified: {cfg['project_info']['project_id']}")
           print(f"Firebase Android package verified: {package}")
-          PY
-          mkdir -p astro_mobile/android/app
-          cp google-services.json astro_mobile/android/app/google-services.json
-          python3 - <<'PY'
-          from pathlib import Path
-          settings = next(p for p in (Path("astro_mobile/android/settings.gradle.kts"), Path("astro_mobile/android/settings.gradle")) if p.exists())
-          app = next(p for p in (Path("astro_mobile/android/app/build.gradle.kts"), Path("astro_mobile/android/app/build.gradle")) if p.exists())
-          s = settings.read_text()
-          if "com.google.gms.google-services" not in s:
-              if settings.suffix == ".kts":
-                  s = s.replace("plugins {", 'plugins {\n    id("com.google.gms.google-services") version "4.4.2" apply false', 1)
-              else:
-                  s = s.replace("plugins {", "plugins {\n    id 'com.google.gms.google-services' version '4.4.2' apply false", 1)
-          settings.write_text(s)
-          a = app.read_text()
-          if "com.google.gms.google-services" not in a:
-              line = '    id("com.google.gms.google-services")' if app.suffix == ".kts" else "    id 'com.google.gms.google-services'"
-              a = a.replace("plugins {", "plugins {\n" + line, 1)
+
+          android = Path("astro_mobile/android")
+          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.is_file()), None)
+          app = next((p for p in (android / "app/build.gradle.kts", android / "app/build.gradle") if p.is_file()), None)
+          if settings is None or app is None:
+              raise SystemExit("Generated Android Gradle settings or app build file is missing.")
+
+          settings_text = settings.read_text(encoding="utf-8")
+          if "com.google.gms.google-services" not in settings_text:
+              plugin_line = (
+                  '    id("com.google.gms.google-services") version "4.4.2" apply false'
+                  if settings.suffix == ".kts"
+                  else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
+              )
+              match = re.search(r"(?m)^plugins\\s*\\{", settings_text)
+              if not match:
+                  raise SystemExit("Could not find the top-level plugins block in Android settings.")
+              insert_at = match.end()
+              settings_text = settings_text[:insert_at] + "\\n" + plugin_line + settings_text[insert_at:]
+              settings.write_text(settings_text, encoding="utf-8")
+
+          app_text = app.read_text(encoding="utf-8")
+          if "com.google.gms.google-services" not in app_text:
+              plugin_line = (
+                  '    id("com.google.gms.google-services")'
+                  if app.suffix == ".kts"
+                  else "    id 'com.google.gms.google-services'"
+              )
+              match = re.search(r"(?m)^plugins\\s*\\{", app_text)
+              if not match:
+                  raise SystemExit("Could not find the app plugins block.")
+              insert_at = match.end()
+              app_text = app_text[:insert_at] + "\\n" + plugin_line + app_text[insert_at:]
+
           if app.suffix == ".kts":
-              if "isCoreLibraryDesugaringEnabled = true" not in a:
-                  if "compileOptions {" not in a:
-                      raise SystemExit("Android compileOptions block is missing.")
-                  a = a.replace("compileOptions {", "compileOptions {\n        isCoreLibraryDesugaringEnabled = true", 1)
+              desugar_flag = "isCoreLibraryDesugaringEnabled = true"
               dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-              a = re.sub(r'(?m)^dependencies\\s*\\{', lambda m: m.group(0) + "\\n" + dependency, a, count=1) if "desugar_jdk_libs" not in a and re.search(r'(?m)^dependencies\\s*\\{', a) else a
-              if "desugar_jdk_libs" not in a:
-                  a = a.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
-              a = a.replace("minSdk = flutter.minSdkVersion", "minSdk = 23")
+              min_sdk_pattern = r"(?m)^\\s*minSdk\\s*=\\s*flutter\\.minSdkVersion\\s*$"
+              min_sdk_replacement = "        minSdk = 23"
           else:
-              if "coreLibraryDesugaringEnabled true" not in a:
-                  if "compileOptions {" not in a:
-                      raise SystemExit("Android compileOptions block is missing.")
-                  a = a.replace("compileOptions {", "compileOptions {\n        coreLibraryDesugaringEnabled true", 1)
+              desugar_flag = "coreLibraryDesugaringEnabled true"
               dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-              if "desugar_jdk_libs" not in a:
-                  if re.search(r'(?m)^dependencies\\s*\\{', a):
-                      a = re.sub(r'(?m)^(dependencies\\s*\\{)', r'\\1\\n' + dependency, a, count=1)
-                  else:
-                      a = a.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
-              a = a.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 23")
-          if "desugar_jdk_libs" not in a:
-              raise SystemExit("Failed to add coreLibraryDesugaring dependency.")
-          app.write_text(a)
+              min_sdk_pattern = r"(?m)^\\s*minSdkVersion\\s+flutter\\.minSdkVersion\\s*$"
+              min_sdk_replacement = "        minSdkVersion 23"
+
+          if desugar_flag not in app_text:
+              compile_options = re.search(r"(?m)^\\s*compileOptions\\s*\\{", app_text)
+              if not compile_options:
+                  raise SystemExit("Android compileOptions block is missing.")
+              insert_at = compile_options.end()
+              app_text = app_text[:insert_at] + "\\n        " + desugar_flag + app_text[insert_at:]
+
+          if "desugar_jdk_libs" not in app_text:
+              dependencies = re.search(r"(?m)^dependencies\\s*\\{", app_text)
+              if dependencies:
+                  insert_at = dependencies.end()
+                  app_text = app_text[:insert_at] + "\\n" + dependency + app_text[insert_at:]
+              else:
+                  app_text = app_text.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
+
+          app_text, min_sdk_count = re.subn(min_sdk_pattern, min_sdk_replacement, app_text, count=1)
+          if "desugar_jdk_libs" not in app_text or desugar_flag not in app_text:
+              raise SystemExit("Core library desugaring configuration was not applied.")
+          if min_sdk_count == 0 and not re.search(r"(?m)^\\s*minSdk(?:Version)?\\s*=?.*23", app_text):
+              raise SystemExit("Could not confirm Android minimum SDK 23.")
+          app.write_text(app_text, encoding="utf-8")
+
+          Path("astro_mobile/android/app").mkdir(parents=True, exist_ok=True)
+          Path("astro_mobile/android/app/google-services.json").write_bytes(Path("google-services.json").read_bytes())
+          print("Google Services plugin, Firebase config, core library desugaring, and Android minSdk configured.")
           PY
 
       - name: Configure Android release signing with the Google Play upload keystore
