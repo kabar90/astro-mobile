@@ -300,7 +300,6 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           android = Path("astro_mobile/android")
           settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
@@ -308,16 +307,31 @@ jobs:
           if settings is None or not wrapper.exists():
               raise SystemExit("Generated Android Gradle settings or wrapper file is missing")
 
-          source = settings.read_text()
-          pattern = r'(id\\(["\\\']com\\.android\\.application["\\\']\\)\\s+version\\s+["\\\'])[^"\\\']+(["\\\'])'
-          updated, count = re.subn(pattern, r'\\g<1>8.11.1\\2', source, count=1)
-          if count != 1:
-              raise SystemExit("Could not locate Android application plugin version in settings.gradle")
-          settings.write_text(updated)
+          lines = settings.read_text().splitlines()
+          found = False
+          for index, line in enumerate(lines):
+              if "com.android.application" in line and "version" in line:
+                  prefix = line.split("version", 1)[0]
+                  quote = '"' if '"' in line.split("version", 1)[1] else "'"
+                  lines[index] = prefix + "version " + quote + "8.11.1" + quote + " apply false"
+                  found = True
+                  break
+          if not found:
+              raise SystemExit("Android application plugin version was not found")
+          settings.write_text("\n".join(lines) + "\n")
 
-          wrapper_text = wrapper.read_text()
-          updated_wrapper, wrapper_count = re.subn(
-              r'(?m)^distributionUrl=.*gradle-[0-9.]+-(?:all|bin)\\.zip
+          wrapper_lines = wrapper.read_text().splitlines()
+          found = False
+          for index, line in enumerate(wrapper_lines):
+              if line.startswith("distributionUrl="):
+                  wrapper_lines[index] = "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-all.zip"
+                  found = True
+                  break
+          if not found:
+              raise SystemExit("Gradle wrapper distribution URL was not found")
+          wrapper.write_text("\n".join(wrapper_lines) + "\n")
+          print("Pinned Android Gradle Plugin to 8.11.1 and Gradle wrapper to 8.13.")
+          PY
       - name: Keep Flutter compatible with AGP 9 legacy DSL
         run: |
           set -e
