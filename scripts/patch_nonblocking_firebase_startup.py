@@ -14,17 +14,12 @@ old = """  await AstroAnalyticsService.recordFirstOpen();
   runApp(const AstroMobileApp());
 }"""
 
-new = """  // Launch the store as soon as its essential backend is ready.
-  // Analytics and FCM registration are deliberately non-blocking so a
-  // temporary Google Play services / FCM delay can never hold the splash
-  // screen or prevent customers from opening the store.
+new = """  // Launch the store before starting optional background services.
   runApp(const AstroMobileApp());
-
   unawaited(_initializeBackgroundServices());
 }
 
 Future<void> _initializeBackgroundServices() async {
-  // These services are best-effort and must never delay or stop the UI.
   try {
     await AstroAnalyticsService.recordFirstOpen()
         .timeout(const Duration(seconds: 8));
@@ -47,9 +42,12 @@ if "import 'dart:async';" not in source:
     source = "import 'dart:async';\n" + source
 
 source = source.replace(old, new, 1)
-if "runApp(const AstroMobileApp());\n\n  unawaited(_initializeBackgroundServices());" not in source:
+if "runApp(const AstroMobileApp());\n  unawaited(_initializeBackgroundServices());" not in source:
     raise SystemExit("Non-blocking startup verification failed.")
-main_body = source.split("  unawaited(_initializeBackgroundServices());", 1)[0]
+
+main_body = source.split("Future<void> main() async {", 1)[1]
+main_body = main_body.split("  unawaited(_initializeBackgroundServices());", 1)[0]
+if "await NotificationService.instance.initialize()" in main_body:
     raise SystemExit("FCM initialization is still awaited inside main().")
 
 path.write_text(source)
