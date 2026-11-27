@@ -298,39 +298,14 @@ jobs:
       - name: Pin stable Android Gradle tooling and preserve Flutter compatibility flags
         run: |
           set -e
-          python3 - <<'PY'
-          from pathlib import Path
-
-          android = Path("astro_mobile/android")
-          settings = next((p for p in (android / "settings.gradle.kts", android / "settings.gradle") if p.exists()), None)
-          wrapper = android / "gradle" / "wrapper" / "gradle-wrapper.properties"
-          if settings is None or not wrapper.exists():
-              raise SystemExit("Generated Android Gradle settings or wrapper file is missing")
-
-          lines = settings.read_text().splitlines()
-          found = False
-          for index, line in enumerate(lines):
-              if "com.android.application" in line and "version" in line:
-                  prefix = line.split("version", 1)[0]
-                  suffix = line.split("version", 1)[1]
-                  quote = '"' if '"' in suffix else "'"
-                  lines[index] = prefix + "version " + quote + "8.11.1" + quote + " apply false"
-                  found = True
-                  break
-          if not found:
-              raise SystemExit("Android application plugin version was not found")
-          settings.write_text(chr(10).join(lines) + chr(10))
-
-          wrapper_lines = wrapper.read_text().splitlines()
-          for index, line in enumerate(wrapper_lines):
-              if line.startswith("distributionUrl="):
-                  wrapper_lines[index] = "distributionUrl=https" + chr(92) + "://services.gradle.org/distributions/gradle-8.13-all.zip"
-                  break
-          else:
-              raise SystemExit("Gradle wrapper distribution URL was not found")
-          wrapper.write_text(chr(10).join(wrapper_lines) + chr(10))
-          print("Pinned Android Gradle Plugin 8.11.1 and Gradle 8.13.")
-          PY
+          SETTINGS="astro_mobile/android/settings.gradle.kts"
+          WRAPPER="astro_mobile/android/gradle/wrapper/gradle-wrapper.properties"
+          test -f "$SETTINGS"
+          test -f "$WRAPPER"
+          sed -i 's/version "9.0.0"/version "8.11.1"/' "$SETTINGS"
+          sed -i 's/gradle-9.1.0-all.zip/gradle-8.13-all.zip/' "$WRAPPER"
+          grep -q 'com.android.application.*8.11.1' "$SETTINGS"
+          grep -q 'gradle-8.13-all.zip' "$WRAPPER"
           PROPS="astro_mobile/android/gradle.properties"
           test -f "$PROPS"
           for FLAG in android.newDsl android.builtInKotlin; do
