@@ -289,10 +289,32 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.38.5'
 
       - name: Generate Android project
         working-directory: astro_mobile
         run: flutter create --platforms=android .
+
+      - name: Verify Flutter generated a supported Android Gradle Plugin
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          settings = Path("astro_mobile/android/settings.gradle.kts")
+          if not settings.exists():
+              settings = Path("astro_mobile/android/settings.gradle")
+          source = settings.read_text()
+          match = re.search(r'com\\.android\\.application["\\']?\\s*\\)?\\s*version\\s*["\\']([^"\\']+)', source)
+          if not match:
+              match = re.search(r'com\\.android\\.application.*?version\\s*["\\']([^"\\']+)', source, re.S)
+          if not match:
+              raise SystemExit("Could not identify Android Gradle Plugin version in generated settings.")
+          version = match.group(1)
+          print("Generated Android Gradle Plugin:", version)
+          if version.startswith("9."):
+              raise SystemExit("AGP 9 is not supported by this pinned Flutter build; refusing to continue.")
+          PY
 
       - name: Set unique Android application ID for new Play Console listing
         run: |
