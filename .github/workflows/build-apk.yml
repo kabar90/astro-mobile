@@ -73,6 +73,7 @@ jobs:
           grep -q "Future<void> _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
           grep -q "onAuthStateChange.listen" astro_mobile/lib/services/notification_service.dart
           grep -q "await _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
+          grep -q "bindCurrentCustomerPhone(_normalizedPhone())" astro_mobile/lib/screens/account_screen.dart
           echo "Automatic customer FCM token binding verified."
 
       - name: Add independent service inquiries screen
