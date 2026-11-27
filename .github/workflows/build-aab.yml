@@ -301,18 +301,8 @@ jobs:
           else
             printf '\nandroid.newDsl=false\n' >> "$PROPS"
           fi
-          grep -q '^android\.newDsl=false      - name: Keep Flutter compatible with the generated Android Gradle DSL
-        run: |
-          set -e
-          PROPS="astro_mobile/android/gradle.properties"
-          test -f "$PROPS"
-          if grep -q '^android\.newDsl=' "$PROPS"; then
-            sed -i 's/^android\.newDsl=.*/android.newDsl=false/' "$PROPS"
-          else
-            printf '\nandroid.newDsl=false\n' >> "$PROPS"
-          fi
           grep -qx 'android.newDsl=false' "$PROPS"
-          echo "Disabled AGP 9 new DSL for Flutter Gradle plugin compatibility."
+          echo "Flutter AGP 9 compatibility flag verified."
 
       - name: Set unique Android application ID for new Play Console listing
         run: |
