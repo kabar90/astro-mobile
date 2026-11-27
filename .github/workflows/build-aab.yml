@@ -281,7 +281,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-astro-mobile-v2
+          key: gradle-${{ runner.os }}-astro-mobile-v1
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -289,69 +289,10 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.38.5'
 
-      - name: Generate Android project with stable Play-compatible Gradle versions
+      - name: Generate Android project
         working-directory: astro_mobile
-        run: |
-          set -e
-          flutter create --platforms=android .
-          python3 - <<'PY'
-          from pathlib import Path
-
-          settings = Path("android/settings.gradle.kts")
-          wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
-          if not settings.is_file() or not wrapper.is_file():
-              raise SystemExit("Expected generated Android Gradle files are missing.")
-
-          lines = settings.read_text().splitlines()
-          for index, line in enumerate(lines):
-              if "com.android.application" in line and "version" in line:
-                  before, marker, after = line.partition("version")
-                  first_quote = after.find('"')
-                  second_quote = after.find('"', first_quote + 1)
-                  if first_quote < 0 or second_quote < 0:
-                      raise SystemExit("Android Gradle Plugin version format was not recognized.")
-                  lines[index] = before + marker + after[:first_quote + 1] + "8.11.1" + after[second_quote:]
-                  break
-          else:
-              raise SystemExit("Android Gradle Plugin declaration was not found in generated settings.gradle.kts.")
-          settings.write_text("\n".join(lines) + "\n")
-
-          wrapper_text = wrapper.read_text()
-          wrapper_lines = wrapper_text.splitlines()
-          for index, line in enumerate(wrapper_lines):
-              if line.startswith("distributionUrl=") and "gradle-" in line:
-                  prefix = line[:line.index("gradle-")]
-                  suffix = "-all.zip" if "-all.zip" in line else ""
-                  wrapper_lines[index] = prefix + "gradle-8.13" + suffix
-                  break
-          else:
-              raise SystemExit("Gradle wrapper distribution URL was not found.")
-          wrapper.write_text("\n".join(wrapper_lines) + "\n")
-
-          if not any("com.android.application" in line and 'version "8.11.1"' in line for line in settings.read_text().splitlines()):
-              raise SystemExit("Android Gradle Plugin pin verification failed.")
-          if "gradle-8.13" not in wrapper.read_text():
-              raise SystemExit("Gradle wrapper pin verification failed.")
-          print("Pinned Android Gradle Plugin 8.11.1 and Gradle 8.13.")
-          PY
-
-      - name: Keep Flutter compatible with AGP 9 legacy DSL
-        run: |
-          set -e
-          PROPS="astro_mobile/android/gradle.properties"
-          test -f "$PROPS"
-          for FLAG in android.newDsl android.builtInKotlin; do
-            if grep -q "^${FLAG}=" "$PROPS"; then
-              sed -i "s/^${FLAG}=.*/${FLAG}=false/" "$PROPS"
-            else
-              printf '\n%s=false\n' "$FLAG" >> "$PROPS"
-            fi
-          done
-          grep -qx 'android.newDsl=false' "$PROPS"
-          grep -qx 'android.builtInKotlin=false' "$PROPS"
-          echo "Flutter AGP 9 legacy DSL and Kotlin compatibility flags verified."
+        run: flutter create --platforms=android .
 
       - name: Set unique Android application ID for new Play Console listing
         run: |
@@ -647,7 +588,7 @@ jobs:
       - name: Set Play release version
         run: |
           set -e
-          sed -i 's/version: 1.2.0+3/version: 1.2.0+4/' astro_mobile/pubspec.yaml
+          sed -i 's/version: 1.2.0+3/version: 1.2.0+5/' astro_mobile/pubspec.yaml
           grep -q 'version: 1.2.0+4' astro_mobile/pubspec.yaml
 
       - name: Configure Google Play upload signing
@@ -656,15 +597,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
         run: |
-          set -euo pipefail
+          set -e
           test -n "$KEYSTORE_BASE64"
           test -n "$KEYSTORE_PASSWORD"
           test -n "$KEY_PASSWORD"
           mkdir -p astro_mobile/android/app
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > astro_mobile/android/app/astro-upload-key.jks
           test -s astro_mobile/android/app/astro-upload-key.jks
-          keytool -list -keystore astro_mobile/android/app/astro-upload-key.jks -storepass "$KEYSTORE_PASSWORD" -alias astro-mobile-upload >/dev/null
-
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -674,8 +613,6 @@ jobs:
           kotlin = p.exists()
           if not kotlin:
               p = root / "build.gradle"
-          if not p.exists():
-              raise SystemExit("Android app Gradle file not found")
           source = p.read_text()
 
           def matching_brace(text, open_pos):
@@ -693,35 +630,33 @@ jobs:
           if not android_match:
               raise SystemExit("Android Gradle block not found")
           android_open = source.find("{", android_match.start())
-          signing_match = re.search(r"\bsigningConfigs\s*\{", source)
 
-          if kotlin:
-              upload_config = """
-                  create("astroPlayUpload") {
-                      storeFile = file("astro-upload-key.jks")
-                      storePassword = System.getenv("KEYSTORE_PASSWORD")
+          signing_match = re.search(r"\bsigningConfigs\s*\{", source)
+          release_config = """
+                  create("release") {
                       keyAlias = "astro-mobile-upload"
                       keyPassword = System.getenv("KEY_PASSWORD")
+                      storeFile = file("astro-upload-key.jks")
+                      storePassword = System.getenv("KEYSTORE_PASSWORD")
                   }
-              """
-          else:
-              upload_config = """
-                  astroPlayUpload {
-                      storeFile file("astro-upload-key.jks")
-                      storePassword System.getenv("KEYSTORE_PASSWORD")
+          """ if kotlin else """
+                  release {
                       keyAlias "astro-mobile-upload"
                       keyPassword System.getenv("KEY_PASSWORD")
+                      storeFile file("astro-upload-key.jks")
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
                   }
-              """
+          """
 
           if signing_match:
               signing_open = source.find("{", signing_match.start())
               signing_close = matching_brace(source, signing_open)
               signing_body = source[signing_open + 1:signing_close]
-              if "astroPlayUpload" not in signing_body:
-                  source = source[:signing_close] + "\n" + upload_config + "\n" + source[signing_close:]
+              if not re.search(r'(?:\brelease\s*\{|\bcreate\s*\(\s*["\']release["\']\s*\))', signing_body):
+                  source = source[:signing_close] + "\n" + release_config + "\n" + source[signing_close:]
           else:
-              source = source[:android_open + 1] + "\n        signingConfigs {\n" + upload_config + "\n        }\n" + source[android_open + 1:]
+              android_close = matching_brace(source, android_open)
+              source = source[:android_open + 1] + "\n        signingConfigs {\n" + release_config + "\n        }\n" + source[android_open + 1:]
 
           build_types = re.search(r"\bbuildTypes\s*\{", source)
           if not build_types:
@@ -735,14 +670,14 @@ jobs:
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
-          assignment = ('signingConfig = signingConfigs.getByName("astroPlayUpload")'
-                        if kotlin else 'signingConfig signingConfigs.astroPlayUpload')
-          release_body = re.sub(r"(?m)^\s*signingConfig\s*=?.*$", "", release_body)
-          release_body = release_body.rstrip() + "\n                " + assignment + "\n            "
-          source = source[:release_open + 1] + release_body + source[release_close:]
+          if "signingConfig" not in release_body:
+              assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
+              source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
+
           p.write_text(source)
-          print("Forced release build type to use the astroPlayUpload keystore.")
+          print("Verified release signing config exists and is attached to release build type.")
           PY
+
       - name: Get dependencies
         working-directory: astro_mobile
         run: flutter pub get
