@@ -278,7 +278,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-astro-mobile-v1
+          key: gradle-${{ runner.os }}-astro-mobile-v2
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -290,6 +290,19 @@ jobs:
       - name: Generate Android project
         working-directory: astro_mobile
         run: flutter create --platforms=android .
+
+      - name: Keep Flutter compatible with the generated Android Gradle DSL
+        run: |
+          set -e
+          PROPS="astro_mobile/android/gradle.properties"
+          test -f "$PROPS"
+          if grep -q '^android\.newDsl=' "$PROPS"; then
+            sed -i 's/^android\.newDsl=.*/android.newDsl=false/' "$PROPS"
+          else
+            printf '\nandroid.newDsl=false\n' >> "$PROPS"
+          fi
+          grep -qx 'android.newDsl=false' "$PROPS"
+          echo "Disabled AGP 9 new DSL for Flutter Gradle plugin compatibility."
 
       - name: Set unique Android application ID for new Play Console listing
         run: |
