@@ -609,12 +609,12 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            echo "AAB build attempt ${attempt}/3"
+            echo "AAB build attempt \${attempt}/3"
             if flutter build appbundle --release; then exit 0; fi
-            if [ "${attempt}" -lt 3 ]; then
+            if [ "\${attempt}" -lt 3 ]; then
               wait_seconds=$((attempt * 30))
-              echo "Build failed; waiting ${wait_seconds}s before retry."
-              sleep "${wait_seconds}"
+              echo "Build failed; waiting \${wait_seconds}s before retry."
+              sleep "\${wait_seconds}"
             fi
           done
           echo "AAB build failed after 3 attempts."
