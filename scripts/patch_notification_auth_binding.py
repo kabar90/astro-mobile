@@ -120,3 +120,24 @@ s = s[:start] + """  Future<void> _registerToken(String token, String phone) asy
 
 p.write_text(s, encoding="utf-8")
 print("Automatic FCM registration on authenticated session added.")
+
+# Explicitly register the device after the account screen completes login or
+# signup. This avoids relying only on an auth stream event during app startup.
+account = Path("astro_mobile/lib/screens/account_screen.dart")
+account_source = account.read_text(encoding="utf-8")
+import_line = "import '../services/notification_service.dart';"
+if import_line not in account_source:
+    anchor = "import '../services/astro_analytics_service.dart';"
+    if anchor not in account_source:
+        raise SystemExit("Could not find account screen service import anchor")
+    account_source = account_source.replace(anchor, anchor + "\\n" + import_line, 1)
+
+call = "      await NotificationService.instance.bindCurrentCustomerPhone(_normalizedPhone());"
+if call not in account_source:
+    anchor = "      if (mounted) setState(() {});"
+    if anchor not in account_source:
+        raise SystemExit("Could not find account submit completion anchor")
+    account_source = account_source.replace(anchor, call + "\\n" + anchor, 1)
+account.write_text(account_source, encoding="utf-8")
+print("Explicit FCM registration after account login/signup added.")
+
