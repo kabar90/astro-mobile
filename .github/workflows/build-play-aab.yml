@@ -584,12 +584,47 @@ jobs:
 
       - name: Set Play release version
         run: |
+          set -e
+          sed -i 's/version: 1.2.0+3/version: 1.2.0+4/' astro_mobile/pubspec.yaml
+          grep -q 'version: 1.2.0+4' astro_mobile/pubspec.yaml
+
+      - name: Configure Google Play upload signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ASTRO_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -e
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_PASSWORD"
+          mkdir -p astro_mobile/android/app
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > astro_mobile/android/app/astro-upload-key.jks
+          test -s astro_mobile/android/app/astro-upload-key.jks
           python3 - <<'PY'
           from pathlib import Path
           import re
-          p = Path("astro_mobile/pubspec.yaml")
+          root = Path('astro_mobile/android/app')
+          p = root / 'build.gradle.kts'
+          kotlin = p.exists()
+          if not kotlin: p = root / 'build.gradle'
           s = p.read_text()
-          s, n = re.subn(r'(?m)^version:\s*1\.2\.0\+3\s*        working-directory: astro_mobile
+          if 'signingConfigs' not in s:
+              pos = s.find('android {')
+              if pos < 0: raise SystemExit('android block missing')
+              at = pos + len('android {')
+              block = '''\n    signingConfigs {\n        release {\n            keyAlias = "astro-mobile-upload"\n            keyPassword = System.getenv("KEY_PASSWORD")\n            storeFile = file("astro-upload-key.jks")\n            storePassword = System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n''' if kotlin else '''\n    signingConfigs {\n        release {\n            keyAlias "astro-mobile-upload"\n            keyPassword System.getenv("KEY_PASSWORD")\n            storeFile file("astro-upload-key.jks")\n            storePassword System.getenv("KEYSTORE_PASSWORD")\n        }\n    }\n'''
+              s = s[:at] + block + s[at:]
+          if kotlin:
+              s, n = re.subn(r'(buildTypes\\s*\\{\\s*release\\s*\\{)', r'\\1\\n            signingConfig = signingConfigs.getByName("release")', s, count=1)
+          else:
+              s, n = re.subn(r'(buildTypes\\s*\\{\\s*release\\s*\\{)', r'\\1\\n            signingConfig signingConfigs.release', s, count=1)
+          if n != 1: raise SystemExit('could not configure release signing')
+          p.write_text(s)
+          print('Upload signing configured.')
+          PY
+      - name: Get dependencies
+        working-directory: astro_mobile
         run: flutter pub get
 
       - name: Clean project
@@ -604,29 +639,16 @@ jobs:
         working-directory: astro_mobile
         run: dart run flutter_launcher_icons
 
-      - name: Build signed Play AAB (retry transient repository rate limits)
+      - name: Build signed Play AAB
         working-directory: astro_mobile
-        shell: bash
-        run: |
-          for attempt in 1 2 3; do
-            echo "AAB build attempt \${attempt}/3"
-            if flutter build appbundle --release; then exit 0; fi
-            if [ "\${attempt}" -lt 3 ]; then
-              wait_seconds=$((attempt * 30))
-              echo "Build failed; waiting \${wait_seconds}s before retry."
-              sleep "\${wait_seconds}"
-            fi
-          done
-          echo "AAB build failed after 3 attempts."
-          exit 1
+        run: flutter build appbundle --release
 
       - name: Verify signed Play AAB
         run: |
           set -e
-          AAB="astro_mobile/build/app/outputs/bundle/release/app-release.aab"
+          AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           jarsigner -verify "$AAB"
-          echo "AAB exists and its upload signature verifies."
 
       - name: Upload Play AAB artifact
         uses: actions/upload-artifact@v4
