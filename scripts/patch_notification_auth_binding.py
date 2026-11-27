@@ -19,7 +19,7 @@ if "import 'dart:async';" not in s:
 if "_authSubscription" not in s:
     s = s.replace(
         "  String? _lastPhone;\n  Future<String>? _bindingFuture;\n",
-        "  String? _lastPhone;\n  StreamSubscription<AuthState>? _authSubscription;\n",
+        "  String? _lastPhone;\n  StreamSubscription<AuthState>? _authSubscription;\n  Future<String>? _bindingFuture;\n",
         1,
     )
 
