@@ -59,5 +59,64 @@ method = """  Future<void> _bindAuthenticatedUser() async {
 if "Future<void> _bindAuthenticatedUser()" not in s:
     s = s.replace(marker, method + marker, 1)
 
+
+start = s.find("  Future<void> bindCurrentCustomerPhone(String phone) async {")
+end = s.find("\n  Future<void> _registerToken(", start)
+if start < 0 or end < 0:
+    raise SystemExit("Could not locate FCM binding methods")
+s = s[:start] + """  Future<void> bindCurrentCustomerPhone(String phone) async {
+    final normalized = phone.trim();
+    if (normalized.isEmpty) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      debugPrint('ASTRO FCM: skipped registration because no customer is signed in.');
+      return;
+    }
+
+    _lastPhone = normalized;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_phoneKey, normalized);
+
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('ASTRO FCM: Firebase returned an empty device token.');
+        return;
+      }
+      await _registerToken(token, normalized);
+    } catch (e) {
+      debugPrint('ASTRO FCM: token retrieval failed: $e');
+    }
+  }
+""" + s[end:]
+
+start = s.find("  Future<void> _registerToken(String token, String phone) async {")
+end = s.find("\n  Future<void> _showForeground(", start)
+if start < 0 or end < 0:
+    raise SystemExit("Could not locate FCM server registration method")
+s = s[:start] + """  Future<void> _registerToken(String token, String phone) async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'fcm-notifications',
+        body: {
+          'action': 'register',
+          'phone': phone,
+          'token': token,
+          'platform': defaultTargetPlatform.name,
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['success'] != true) {
+        debugPrint('ASTRO FCM: server did not confirm device registration.');
+        return;
+      }
+      debugPrint('ASTRO FCM: device registration confirmed for signed-in account.');
+    } catch (e) {
+      debugPrint('ASTRO FCM: server registration request failed: $e');
+    }
+  }
+""" + s[end:]
+
 p.write_text(s, encoding="utf-8")
 print("Automatic FCM registration on authenticated session added.")
