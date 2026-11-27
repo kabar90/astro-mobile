@@ -298,28 +298,42 @@ jobs:
           flutter create --platforms=android .
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           settings = Path("android/settings.gradle.kts")
           wrapper = Path("android/gradle/wrapper/gradle-wrapper.properties")
           if not settings.is_file() or not wrapper.is_file():
               raise SystemExit("Expected generated Android Gradle files are missing.")
 
-          source = settings.read_text()
-          match = re.search(r'(id\\("com\\.android\\.application"\\)\\s+version\\s+")([^"]+)(")', source)
-          if not match:
-              raise SystemExit("Android Gradle Plugin declaration was not found.")
-          source = source[:match.start()] + match.group(1) + "8.11.1" + match.group(3) + source[match.end():]
-          settings.write_text(source)
+          lines = settings.read_text().splitlines()
+          for index, line in enumerate(lines):
+              if "com.android.application" in line and "version" in line:
+                  before, marker, after = line.partition("version")
+                  first_quote = after.find('"')
+                  second_quote = after.find('"', first_quote + 1)
+                  if first_quote < 0 or second_quote < 0:
+                      raise SystemExit("Android Gradle Plugin version format was not recognized.")
+                  lines[index] = before + marker + after[:first_quote + 1] + "8.11.1" + after[second_quote:]
+                  break
+          else:
+              raise SystemExit("Android Gradle Plugin declaration was not found in generated settings.gradle.kts.")
+          settings.write_text("\n".join(lines) + "\n")
 
-          source = wrapper.read_text()
-          updated, count = re.subn(r'gradle-[^/\\s]+-all\\.zip', 'gradle-8.13-all.zip', source, count=1)
-          if count != 1:
-              raise SystemExit("Gradle wrapper distribution was not found.")
-          wrapper.write_text(updated)
+          wrapper_text = wrapper.read_text()
+          wrapper_lines = wrapper_text.splitlines()
+          for index, line in enumerate(wrapper_lines):
+              if line.startswith("distributionUrl=") and "gradle-" in line:
+                  prefix = line[:line.index("gradle-")]
+                  suffix = "-all.zip" if "-all.zip" in line else ""
+                  wrapper_lines[index] = prefix + "gradle-8.13" + suffix
+                  break
+          else:
+              raise SystemExit("Gradle wrapper distribution URL was not found.")
+          wrapper.write_text("\n".join(wrapper_lines) + "\n")
 
-          if "8.11.1" not in settings.read_text() or "gradle-8.13-all.zip" not in wrapper.read_text():
-              raise SystemExit("Pinned Gradle versions failed verification.")
+          if not any("com.android.application" in line and 'version "8.11.1"' in line for line in settings.read_text().splitlines()):
+              raise SystemExit("Android Gradle Plugin pin verification failed.")
+          if "gradle-8.13" not in wrapper.read_text():
+              raise SystemExit("Gradle wrapper pin verification failed.")
           print("Pinned Android Gradle Plugin 8.11.1 and Gradle 8.13.")
           PY
 
