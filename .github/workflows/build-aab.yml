@@ -305,7 +305,7 @@ jobs:
           grep -q '^android.builtInKotlin=false$' "$PROPS"
           echo "Verified AGP 9 compatibility properties."
 
-          grep -q '^android.newDsl=false      - name: Set unique Android application ID for new Play Console listing
+      - name: Set unique Android application ID for new Play Console listing
         run: |
           set -e
           python3 - <<'PY'
