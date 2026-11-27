@@ -70,6 +70,11 @@ jobs:
         run: |
           set -e
           python3 scripts/patch_notification_auth_binding.py
+          python3 scripts/patch_notification_service_v2.py
+          grep -q "Future<String> bindCurrentCustomerPhone(String phone)" astro_mobile/lib/services/notification_service.dart
+          grep -q "onTokenRefresh.listen" astro_mobile/lib/services/notification_service.dart
+          grep -q "_bindAuthenticatedUser" astro_mobile/lib/services/notification_service.dart
+          echo "Clean FCM notification service rebuild verified."
           grep -q "Future<void> _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
           grep -q "onAuthStateChange.listen" astro_mobile/lib/services/notification_service.dart
           grep -q "await _bindAuthenticatedUser()" astro_mobile/lib/services/notification_service.dart
