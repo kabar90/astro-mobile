@@ -319,16 +319,16 @@ jobs:
                   break
           if not found:
               raise SystemExit("Android application plugin version was not found")
-          settings.write_text("\\n".join(lines) + "\\n")
+          settings.write_text(chr(10).join(lines) + chr(10))
 
           wrapper_lines = wrapper.read_text().splitlines()
           for index, line in enumerate(wrapper_lines):
               if line.startswith("distributionUrl="):
-                  wrapper_lines[index] = "distributionUrl=https\\\\://services.gradle.org/distributions/gradle-8.13-all.zip"
+                  wrapper_lines[index] = "distributionUrl=https" + chr(92) + "://services.gradle.org/distributions/gradle-8.13-all.zip"
                   break
           else:
               raise SystemExit("Gradle wrapper distribution URL was not found")
-          wrapper.write_text("\\n".join(wrapper_lines) + "\\n")
+          wrapper.write_text(chr(10).join(wrapper_lines) + chr(10))
           print("Pinned Android Gradle Plugin 8.11.1 and Gradle 8.13.")
           PY
           PROPS="astro_mobile/android/gradle.properties"
