@@ -299,9 +299,17 @@ jobs:
         working-directory: astro_mobile
         run: flutter pub get
 
-      - name: Build release Android App Bundle
+      - name: Build release Android App Bundle with Gradle diagnostics
         working-directory: astro_mobile
-        run: flutter build appbundle --release
+        shell: bash
+        run: |
+          set -uo pipefail
+          if flutter build appbundle --release; then
+            exit 0
+          fi
+          echo "Flutter build failed; rerunning the exact failing Gradle signing task with full diagnostics."
+          cd android
+          ./gradlew :app:signReleaseBundle --stacktrace --info --no-daemon
 
       - name: Verify bundle signature and certificate
         env:
