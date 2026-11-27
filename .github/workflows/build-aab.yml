@@ -295,9 +295,9 @@ jobs:
         working-directory: astro_mobile
         run: flutter create --platforms=android .
 
-      - name: Pin Android Gradle Plugin to stable Flutter-compatible release
+      - name: Pin stable Android Gradle tooling and preserve Flutter compatibility flags
         run: |
-          set -euo pipefail
+          set -e
           python3 - <<'PY'
           from pathlib import Path
 
@@ -312,29 +312,25 @@ jobs:
           for index, line in enumerate(lines):
               if "com.android.application" in line and "version" in line:
                   prefix = line.split("version", 1)[0]
-                  quote = '"' if '"' in line.split("version", 1)[1] else "'"
+                  suffix = line.split("version", 1)[1]
+                  quote = '"' if '"' in suffix else "'"
                   lines[index] = prefix + "version " + quote + "8.11.1" + quote + " apply false"
                   found = True
                   break
           if not found:
               raise SystemExit("Android application plugin version was not found")
-          settings.write_text("\n".join(lines) + "\n")
+          settings.write_text("\\n".join(lines) + "\\n")
 
           wrapper_lines = wrapper.read_text().splitlines()
-          found = False
           for index, line in enumerate(wrapper_lines):
               if line.startswith("distributionUrl="):
-                  wrapper_lines[index] = "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-all.zip"
-                  found = True
+                  wrapper_lines[index] = "distributionUrl=https\\\\://services.gradle.org/distributions/gradle-8.13-all.zip"
                   break
-          if not found:
+          else:
               raise SystemExit("Gradle wrapper distribution URL was not found")
-          wrapper.write_text("\n".join(wrapper_lines) + "\n")
-          print("Pinned Android Gradle Plugin to 8.11.1 and Gradle wrapper to 8.13.")
+          wrapper.write_text("\\n".join(wrapper_lines) + "\\n")
+          print("Pinned Android Gradle Plugin 8.11.1 and Gradle 8.13.")
           PY
-      - name: Keep Flutter compatible with AGP 9 legacy DSL
-        run: |
-          set -e
           PROPS="astro_mobile/android/gradle.properties"
           test -f "$PROPS"
           for FLAG in android.newDsl android.builtInKotlin; do
