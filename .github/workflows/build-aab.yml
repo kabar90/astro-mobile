@@ -589,7 +589,7 @@ jobs:
         run: |
           set -e
           sed -i 's/version: 1.2.0+3/version: 1.2.0+5/' astro_mobile/pubspec.yaml
-          grep -q 'version: 1.2.0+4' astro_mobile/pubspec.yaml
+          grep -q 'version: 1.2.0+5' astro_mobile/pubspec.yaml
 
       - name: Configure Google Play upload signing
         env:
