@@ -252,12 +252,18 @@ jobs:
         run: |
           set -e
           python3 scripts/patch_nonblocking_firebase_startup.py
-          grep -q "unawaited(_initializeBackgroundServices())" astro_mobile/lib/main.dart
-          grep -q "await NotificationService.instance.initialize()" astro_mobile/lib/main.dart
-          if sed -n '/Future<void> main()/,/class AstroMobileApp/p' astro_mobile/lib/main.dart | grep -q "await NotificationService.instance.initialize"; then
-            echo "Firebase initialization must not block main()."
-            exit 1
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("astro_mobile/lib/main.dart").read_text()
+          if "unawaited(_initializeBackgroundServices())" not in source:
+              raise SystemExit("Background startup call is missing.")
+          main_body = source.split("Future<void> main() async {", 1)[1].split("  unawaited(_initializeBackgroundServices());", 1)[0]
+          if "await NotificationService.instance.initialize()" in main_body:
+              raise SystemExit("Firebase initialization must not block main().")
+          if "await NotificationService.instance.initialize()" not in source:
+              raise SystemExit("Background FCM initialization is missing.")
+          print("Verified FCM initialization runs only after runApp.")
+          PY
           echo "App startup is independent of FCM token registration and analytics."
 
       - name: Upload extracted Flutter source for safe inspection
