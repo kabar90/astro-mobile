@@ -144,11 +144,11 @@ jobs:
                   if settings.suffix == ".kts"
                   else "    id 'com.google.gms.google-services' version '4.4.2' apply false"
               )
-              match = re.search(r"(?m)^plugins\\s*\\{", settings_text)
+              match = re.search(r"(?m)^plugins\s*\{", settings_text)
               if not match:
                   raise SystemExit("Could not find the top-level plugins block in Android settings.")
               insert_at = match.end()
-              settings_text = settings_text[:insert_at] + "\\n" + plugin_line + settings_text[insert_at:]
+              settings_text = settings_text[:insert_at] + "\n" + plugin_line + settings_text[insert_at:]
               settings.write_text(settings_text, encoding="utf-8")
 
           app_text = app.read_text(encoding="utf-8")
@@ -158,42 +158,42 @@ jobs:
                   if app.suffix == ".kts"
                   else "    id 'com.google.gms.google-services'"
               )
-              match = re.search(r"(?m)^plugins\\s*\\{", app_text)
+              match = re.search(r"(?m)^plugins\s*\{", app_text)
               if not match:
                   raise SystemExit("Could not find the app plugins block.")
               insert_at = match.end()
-              app_text = app_text[:insert_at] + "\\n" + plugin_line + app_text[insert_at:]
+              app_text = app_text[:insert_at] + "\n" + plugin_line + app_text[insert_at:]
 
           if app.suffix == ".kts":
               desugar_flag = "isCoreLibraryDesugaringEnabled = true"
               dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-              min_sdk_pattern = r"(?m)^\\s*minSdk\\s*=\\s*flutter\\.minSdkVersion\\s*$"
+              min_sdk_pattern = r"(?m)^\s*minSdk\s*=\s*flutter\.minSdkVersion\s*$"
               min_sdk_replacement = "        minSdk = 23"
           else:
               desugar_flag = "coreLibraryDesugaringEnabled true"
               dependency = "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-              min_sdk_pattern = r"(?m)^\\s*minSdkVersion\\s+flutter\\.minSdkVersion\\s*$"
+              min_sdk_pattern = r"(?m)^\s*minSdkVersion\s+flutter\.minSdkVersion\s*$"
               min_sdk_replacement = "        minSdkVersion 23"
 
           if desugar_flag not in app_text:
-              compile_options = re.search(r"(?m)^\\s*compileOptions\\s*\\{", app_text)
+              compile_options = re.search(r"(?m)^\s*compileOptions\s*\{", app_text)
               if not compile_options:
                   raise SystemExit("Android compileOptions block is missing.")
               insert_at = compile_options.end()
-              app_text = app_text[:insert_at] + "\\n        " + desugar_flag + app_text[insert_at:]
+              app_text = app_text[:insert_at] + "\n        " + desugar_flag + app_text[insert_at:]
 
           if "desugar_jdk_libs" not in app_text:
-              dependencies = re.search(r"(?m)^dependencies\\s*\\{", app_text)
+              dependencies = re.search(r"(?m)^dependencies\s*\{", app_text)
               if dependencies:
                   insert_at = dependencies.end()
-                  app_text = app_text[:insert_at] + "\\n" + dependency + app_text[insert_at:]
+                  app_text = app_text[:insert_at] + "\n" + dependency + app_text[insert_at:]
               else:
-                  app_text = app_text.rstrip() + "\\n\\ndependencies {\\n" + dependency + "\\n}\\n"
+                  app_text = app_text.rstrip() + "\n\ndependencies {\n" + dependency + "\n}\n"
 
           app_text, min_sdk_count = re.subn(min_sdk_pattern, min_sdk_replacement, app_text, count=1)
           if "desugar_jdk_libs" not in app_text or desugar_flag not in app_text:
               raise SystemExit("Core library desugaring configuration was not applied.")
-          if min_sdk_count == 0 and not re.search(r"(?m)^\\s*minSdk(?:Version)?\\s*=?.*23", app_text):
+          if min_sdk_count == 0 and not re.search(r"(?m)^\s*minSdk(?:Version)?\s*=?.*23", app_text):
               raise SystemExit("Could not confirm Android minimum SDK 23.")
           app.write_text(app_text, encoding="utf-8")
 
