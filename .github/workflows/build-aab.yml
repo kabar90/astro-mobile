@@ -670,9 +670,12 @@ jobs:
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
           release_close = matching_brace(source, release_open)
           release_body = source[release_open + 1:release_close]
-          if "signingConfig" not in release_body:
-              assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
-              source = source[:release_close] + "\n                " + assignment + "\n            " + source[release_close:]
+          # Never keep Flutter's generated debug signing config on a release build.
+          release_body = re.sub(r"(?m)^[ \\t]*signingConfig\\s*(?:=.*|signingConfigs\\.[A-Za-z_][A-Za-z0-9_]*)[^\\n]*\\n?", "", release_body)
+          assignment = 'signingConfig = signingConfigs.getByName("release")' if kotlin else 'signingConfig signingConfigs.release'
+          source = source[:release_open + 1] + release_body.rstrip() + "\\n                " + assignment + "\\n            " + source[release_close:]
+          if "signingConfigs.getByName(\\"release\\")" not in source and "signingConfig signingConfigs.release" not in source:
+              raise SystemExit("Release build is not attached to the upload signing config.")
 
           p.write_text(source)
           print("Verified release signing config exists and is attached to release build type.")
@@ -704,6 +707,17 @@ jobs:
           AAB=astro_mobile/build/app/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           jarsigner -verify "$AAB"
+          KEYSTORE_CERT=$(keytool -list -v -keystore astro_mobile/android/app/astro-upload-key.jks -alias astro-mobile-upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)
+          AAB_CERT=$(keytool -printcert -jarfile "$AAB" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1)
+          test -n "$KEYSTORE_CERT"
+          test -n "$AAB_CERT"
+          if [ "$KEYSTORE_CERT" != "$AAB_CERT" ]; then
+            echo "AAB signing certificate does not match the configured Google Play upload keystore."
+            echo "Expected: $KEYSTORE_CERT"
+            echo "Actual:   $AAB_CERT"
+            exit 1
+          fi
+          echo "AAB signature matches the configured Google Play upload keystore."
 
       - name: Upload Play AAB artifact
         uses: actions/upload-artifact@v4
