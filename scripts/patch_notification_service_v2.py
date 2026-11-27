@@ -179,11 +179,11 @@ class NotificationService {
       debugPrint('ASTRO FCM: unexpected registration response: $data');
       return 'وصل الطلب إلى الخادم لكن لم يؤكد تسجيل الجهاز.';
     } on FunctionException catch (error) {
-      debugPrint('ASTRO FCM registration rejected: HTTP \${error.status}');
+      debugPrint('ASTRO FCM registration rejected: HTTP ${error.status}');
       await _reportDiagnostic(phone: phone, stage: 'server_register', attempt: 1,
-        error: 'HTTP \${error.status}: \${error.details ?? error.reasonPhrase ?? 'unknown'}',
+        error: 'HTTP ${error.status}: ${error.details ?? error.reasonPhrase ?? 'unknown'}',
         userId: userId);
-      return 'الخادم رفض تسجيل الإشعارات (HTTP \${error.status}).';
+      return 'الخادم رفض تسجيل الإشعارات (HTTP ${error.status}).';
     } catch (error) {
       debugPrint('ASTRO FCM registration request failed: $error');
       await _reportDiagnostic(phone: phone, stage: 'server_register', attempt: 1,
