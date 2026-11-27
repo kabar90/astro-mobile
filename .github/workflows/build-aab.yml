@@ -627,11 +627,11 @@ jobs:
                           return i
               raise SystemExit("Unbalanced Gradle braces")
 
-          android_match = re.search(r"\\bandroid\\s*\\{", source)
+          android_match = re.search(r"\bandroid\s*\{", source)
           if not android_match:
               raise SystemExit("Android Gradle block not found")
           android_open = source.find("{", android_match.start())
-          signing_match = re.search(r"\\bsigningConfigs\\s*\\{", source)
+          signing_match = re.search(r"\bsigningConfigs\s*\{", source)
 
           if kotlin:
               upload_config = """
@@ -657,17 +657,17 @@ jobs:
               signing_close = matching_brace(source, signing_open)
               signing_body = source[signing_open + 1:signing_close]
               if "astroPlayUpload" not in signing_body:
-                  source = source[:signing_close] + "\\n" + upload_config + "\\n" + source[signing_close:]
+                  source = source[:signing_close] + "\n" + upload_config + "\n" + source[signing_close:]
           else:
-              source = source[:android_open + 1] + "\\n        signingConfigs {\\n" + upload_config + "\\n        }\\n" + source[android_open + 1:]
+              source = source[:android_open + 1] + "\n        signingConfigs {\n" + upload_config + "\n        }\n" + source[android_open + 1:]
 
-          build_types = re.search(r"\\bbuildTypes\\s*\\{", source)
+          build_types = re.search(r"\bbuildTypes\s*\{", source)
           if not build_types:
               raise SystemExit("buildTypes block not found")
           bt_open = source.find("{", build_types.start())
           bt_close = matching_brace(source, bt_open)
           bt_body = source[bt_open + 1:bt_close]
-          release_match = re.search(r"\\brelease\\s*\\{", bt_body)
+          release_match = re.search(r"\brelease\s*\{", bt_body)
           if not release_match:
               raise SystemExit("release build type not found")
           release_open = bt_open + 1 + bt_body.find("{", release_match.start())
@@ -675,8 +675,8 @@ jobs:
           release_body = source[release_open + 1:release_close]
           assignment = ('signingConfig = signingConfigs.getByName("astroPlayUpload")'
                         if kotlin else 'signingConfig signingConfigs.astroPlayUpload')
-          release_body = re.sub(r"(?m)^\\s*signingConfig\\s*=?.*$", "", release_body)
-          release_body = release_body.rstrip() + "\\n                " + assignment + "\\n            "
+          release_body = re.sub(r"(?m)^\s*signingConfig\s*=?.*$", "", release_body)
+          release_body = release_body.rstrip() + "\n                " + assignment + "\n            "
           source = source[:release_open + 1] + release_body + source[release_close:]
           p.write_text(source)
           print("Forced release build type to use the astroPlayUpload keystore.")
