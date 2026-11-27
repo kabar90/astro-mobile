@@ -289,14 +289,14 @@ probe = """      // Probe Firebase Installations separately from FCM token regis
         final installationId = await FirebaseInstallations.instance
             .getId().timeout(const Duration(seconds: 20));
         await _diagnostic(phone, 'fis_get_id_success', 0,
-            'installationIdPresent=\\u0024{installationId.isNotEmpty}');
+            'installationIdPresent=${installationId.isNotEmpty}');
         final installationToken = await FirebaseInstallations.instance
             .getToken().timeout(const Duration(seconds: 20));
         await _diagnostic(phone, 'fis_auth_token_success', 0,
-            'installationTokenPresent=\\u0024{installationToken.isNotEmpty}');
+            'installationTokenPresent=${installationToken.isNotEmpty}');
       } catch (e) {
         await _diagnostic(phone, 'fis_probe_failed', 0, e.toString());
-        debugPrint('ASTRO Firebase Installations probe failed: \\u0024e');
+        debugPrint('ASTRO Firebase Installations probe failed: $e');
       }
 
       String? token;"""
